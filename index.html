@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avaliação de Perfil Vocacional — Técnico de Nível Médio [build 2026-09-18-f]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#F8FAFC; --border:#DCE3EC;
+    --text:#16202B; --text-muted:#5B6B7D;
+    --navy:#1F3864; --navy-ink:#152947; --blue:#2E5395; --blue-soft:#E7EEF8;
+    --escola:#1F7A5C; --escola-soft:#E4F3EC;
+    --gestao:#2E5395; --gestao-soft:#E7EEF8;
+    --hibrido:#966017; --hibrido-soft:#FBF0DC;
+    --danger:#B3261E; --danger-soft:#FBEAE9;
+    --focus:#2E5395;
+    --radius:10px; --radius-sm:7px;
+    --shadow:0 1px 2px rgba(16,24,32,.06), 0 6px 18px rgba(16,24,32,.07);
+    --font-ui:'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0F161F; --surface:#17212C; --surface-2:#1C2733; --border:#2B3947;
+      --text:#E7ECF2; --text-muted:#93A5B7;
+      --navy:#3C5D89; --navy-ink:#274063; --blue:#5A82BC; --blue-soft:#1E2C3E;
+      --escola:#3FBE93; --escola-soft:#15302A;
+      --gestao:#7FA3D6; --gestao-soft:#1E2C3E;
+      --hibrido:#E0A945; --hibrido-soft:#332707;
+      --danger:#E5837B; --danger-soft:#3A1E1C;
+      --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 22px rgba(0,0,0,.4);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F161F; --surface:#17212C; --surface-2:#1C2733; --border:#2B3947;
+    --text:#E7ECF2; --text-muted:#93A5B7;
+    --navy:#3C5D89; --navy-ink:#274063; --blue:#5A82BC; --blue-soft:#1E2C3E;
+    --escola:#3FBE93; --escola-soft:#15302A;
+    --gestao:#7FA3D6; --gestao-soft:#1E2C3E;
+    --hibrido:#E0A945; --hibrido-soft:#332707;
+    --danger:#E5837B; --danger-soft:#3A1E1C;
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 22px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:var(--font-ui); font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  button, input, select{ font-family:inherit; color:inherit; }
+  h1,h2,h3{ margin:0; font-weight:600; }
+  p{ margin:0; }
+  .wrap{ max-width:900px; margin:0 auto; padding:0 20px 64px; }
+  .visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+
+  /* ---------- Cabeçalho ---------- */
+  .topbar{
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-ink) 100%);
+    color:#fff; padding:22px 0 20px; margin-bottom:22px;
+  }
+  .topbar-inner{ max-width:900px; margin:0 auto; padding:0 20px; display:flex; align-items:flex-start; gap:14px; }
+  .topbar-mark{
+    width:38px; height:38px; border-radius:9px; flex:none;
+    background:rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center;
+  }
+  .topbar h1{ font-size:19px; letter-spacing:.1px; }
+  .topbar .sub{ margin-top:3px; font-size:13px; color:rgba(255,255,255,.72); }
+
+  /* ---------- Abas ---------- */
+  .tabs{ display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--border); }
+  .tab-btn{
+    appearance:none; border:none; background:transparent; cursor:pointer;
+    padding:10px 4px; margin-right:18px; font-size:14.5px; font-weight:500;
+    color:var(--text-muted); border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .tab-btn.active{ color:var(--navy); border-bottom-color:var(--blue); font-weight:600; }
+  :root[data-theme="dark"] .tab-btn.active, @media (prefers-color-scheme: dark){ }
+  .tab-btn:focus-visible, button:focus-visible, input:focus-visible{
+    outline:2px solid var(--focus); outline-offset:2px;
+  }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  /* ---------- Cartões ---------- */
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:22px 24px; margin-bottom:18px;
+  }
+  .card-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:16px; }
+  .card-step{
+    width:24px; height:24px; border-radius:50%; background:var(--blue-soft); color:var(--blue);
+    font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .card-head h2{ font-size:16px; }
+  .card-head .hint{ font-size:12.5px; color:var(--text-muted); margin-left:auto; }
+
+  /* ---------- Campos ---------- */
+  label{ display:block; font-size:12.5px; font-weight:600; color:var(--text-muted); margin-bottom:6px; letter-spacing:.1px; }
+  input[type="text"], input[type="date"], select{
+    width:100%; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text); font-size:14.5px;
+  }
+  select{ cursor:pointer; }
+  select option{ background:var(--surface); color:var(--text); }
+  .field{ margin-bottom:14px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:600px){ .row2{ grid-template-columns:1fr; } }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+  @media (max-width:700px){ .row3{ grid-template-columns:1fr; } }
+  .field-erro{ font-size:12px; color:var(--danger); margin-top:6px; }
+
+  .search-wrap{ position:relative; }
+  .search-results{
+    position:absolute; z-index:20; top:calc(100% + 4px); left:0; right:0;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+    box-shadow:var(--shadow); max-height:260px; overflow-y:auto; display:none;
+  }
+  .search-results.show{ display:block; }
+  .search-item{ padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border); }
+  .search-item:last-child{ border-bottom:none; }
+  .search-item:hover, .search-item.hi{ background:var(--blue-soft); }
+  .search-item .nome{ font-size:14px; font-weight:500; }
+  .search-item .meta{ font-size:12px; color:var(--text-muted); font-family:var(--font-mono); }
+  .search-empty{ padding:12px; font-size:13px; color:var(--text-muted); }
+
+  .candidato-chip{
+    display:flex; align-items:center; gap:12px; background:var(--surface-2);
+    border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; margin-top:10px;
+  }
+  .candidato-chip .info{ flex:1; min-width:0; }
+  .candidato-chip .nome{ font-weight:600; font-size:14.5px; }
+  .candidato-chip .meta{ font-size:12.5px; color:var(--text-muted); font-family:var(--font-mono); margin-top:2px; }
+  .chip-x{
+    appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-muted);
+    width:26px; height:26px; border-radius:50%; cursor:pointer; font-size:14px; line-height:1; flex:none;
+  }
+  .chip-x:hover{ color:var(--danger); border-color:var(--danger); }
+
+  .link-btn{
+    appearance:none; background:none; border:none; padding:0; cursor:pointer;
+    color:var(--blue); font-size:12.5px; font-weight:600; text-decoration:underline; text-underline-offset:2px;
+  }
+  .manual-toggle-row{ display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:10px; flex-wrap:wrap;}
+
+  .import-row{
+    display:flex; align-items:center; gap:10px; margin-top:14px; padding-top:14px; border-top:1px dashed var(--border);
+    flex-wrap:wrap;
+  }
+  .import-row .count{ font-size:12.5px; color:var(--text-muted); }
+
+  /* ---------- Botões ---------- */
+  .btn{
+    appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text);
+    padding:9px 15px; border-radius:var(--radius-sm); font-size:13.5px; font-weight:600; cursor:pointer;
+  }
+  .btn:hover{ background:var(--surface-2); }
+  .btn-primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .btn-primary:hover{ background:var(--navy); border-color:var(--navy); }
+  .btn-primary:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn-ghost{ background:transparent; border-color:transparent; color:var(--blue); }
+  .btn-sm{ padding:6px 11px; font-size:12.5px; }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; }
+
+  /* ---------- Questionário ---------- */
+  .bloco{ margin-bottom:22px; }
+  .bloco:last-child{ margin-bottom:0; }
+  .bloco-title{
+    font-size:13px; font-weight:700; color:var(--navy); text-transform:none;
+    padding-bottom:8px; margin-bottom:14px; border-bottom:1px solid var(--border);
+  }
+  :root[data-theme="dark"] .bloco-title{ color:var(--gestao); }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .bloco-title{ color:var(--gestao); } }
+  .pergunta{ margin-bottom:16px; }
+  .pergunta:last-child{ margin-bottom:0; }
+  .pergunta-texto{ font-size:14px; margin-bottom:9px; display:flex; gap:8px; }
+  .pergunta-num{ color:var(--text-muted); font-weight:600; flex:none; }
+  .escala{ display:flex; gap:8px; flex-wrap:wrap; }
+  .escala button{
+    appearance:none; cursor:pointer; min-width:44px; height:38px; padding:0 4px;
+    border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2);
+    color:var(--text); font-family:var(--font-mono); font-size:14px; font-weight:500;
+  }
+  .escala button:hover{ border-color:var(--blue); }
+  .escala button.on{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .escala-legenda{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-muted); max-width:290px; margin-top:5px; }
+
+  .seg-group{ display:flex; gap:8px; }
+  .seg-btn{
+    appearance:none; cursor:pointer; min-width:64px; height:36px; padding:0 14px;
+    border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2);
+    color:var(--text); font-size:13.5px; font-weight:600;
+  }
+  .seg-btn:hover{ border-color:var(--blue); }
+  .seg-btn.on{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .pcd-nota{
+    margin-top:9px; font-size:12px; padding:8px 11px; border-radius:var(--radius-sm);
+    background:var(--hibrido-soft); color:var(--hibrido); border:1px solid transparent;
+  }
+  .pcd-base-legal{ font-size:10.5px; color:var(--text-muted); margin-top:10px; line-height:1.5; }
+
+  .conn-status{
+    display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
+    padding:4px 10px; border-radius:20px; margin-left:10px; vertical-align:middle;
+  }
+  .conn-status .dot{ width:7px; height:7px; border-radius:50%; }
+  .conn-status.on{ background:var(--escola-soft); color:var(--escola); }
+  .conn-status.on .dot{ background:var(--escola); }
+  .conn-status.off{ background:var(--surface-2); color:var(--text-muted); border:1px solid var(--border); }
+  .conn-status.off .dot{ background:var(--text-muted); }
+
+  .progresso-wrap{ display:flex; align-items:center; gap:12px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border); }
+  .progresso-barra{ flex:1; height:6px; border-radius:4px; background:var(--surface-2); overflow:hidden; }
+  .progresso-fill{ height:100%; background:var(--blue); width:0%; transition:width .2s ease; }
+  .progresso-txt{ font-size:12.5px; color:var(--text-muted); white-space:nowrap; font-family:var(--font-mono); }
+
+  /* ---------- Relatório ---------- */
+  .report-placeholder{ padding:26px 10px; text-align:center; color:var(--text-muted); font-size:13.5px; }
+  .report-placeholder strong{ display:block; color:var(--text); font-size:14.5px; margin-bottom:4px; font-weight:600; }
+
+  #relatorio{ background:var(--surface); }
+  .rep-head{ text-align:center; margin-bottom:16px; }
+  .rep-orgao{ font-size:11.5px; letter-spacing:.2px; color:var(--text-muted); }
+  .rep-titulo{ font-size:16.5px; font-weight:700; color:var(--navy); margin-top:4px; }
+  :root[data-theme="dark"] .rep-titulo{ color:var(--gestao); }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .rep-titulo{ color:var(--gestao); } }
+  .rep-sub{ font-size:12.5px; color:var(--text-muted); margin-top:2px; }
+  .rep-divider{ height:1px; background:var(--border); margin:16px 0; }
+
+  .rep-dados{ display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; font-size:13px; margin-bottom:4px; }
+  .rep-dados .full{ grid-column:1 / -1; }
+  .rep-dados dt{ color:var(--text-muted); font-size:11px; text-transform:none; }
+  .rep-dados dd{ margin:1px 0 0; font-weight:600; }
+
+  .rep-calc{ display:grid; grid-template-columns:1fr 1fr; gap:0 22px; margin-top:18px; }
+  @media (max-width:520px){ .rep-calc{ grid-template-columns:1fr; } }
+  .rep-dim-titulo{ font-size:12px; font-weight:700; padding:6px 0; border-bottom:1px solid var(--border); margin-bottom:6px; }
+  .rep-dim-titulo.e{ color:var(--escola); }
+  .rep-dim-titulo.g{ color:var(--gestao); }
+  .rep-dim-linha{ display:flex; justify-content:space-between; font-size:13px; padding:4px 0; font-family:var(--font-mono); }
+  .rep-dim-total{ display:flex; justify-content:space-between; font-size:13.5px; font-weight:700; padding-top:7px; margin-top:5px; border-top:1px solid var(--border); }
+
+  .rep-resultado{
+    margin-top:20px; border-radius:var(--radius-sm); padding:16px 18px; border:1px solid var(--border);
+    border-left:5px solid var(--blue); background:var(--surface-2);
+  }
+  .rep-resultado.escola{ border-left-color:var(--escola); background:var(--escola-soft); }
+  .rep-resultado.gestao{ border-left-color:var(--gestao); background:var(--gestao-soft); }
+  .rep-resultado.hibrido{ border-left-color:var(--hibrido); background:var(--hibrido-soft); }
+  .rep-resultado .diff{ font-size:11.5px; color:var(--text-muted); margin-bottom:6px; font-family:var(--font-mono); }
+  .rep-resultado .perfil{ font-size:15.5px; font-weight:700; margin-bottom:2px; }
+  .rep-resultado .tipo{ font-size:12px; font-style:italic; color:var(--text-muted); margin-bottom:8px; }
+  .rep-resultado .texto{ font-size:13px; line-height:1.55; }
+
+  .report-toolbar{ display:flex; gap:10px; justify-content:flex-end; margin-top:16px; flex-wrap:wrap; }
+
+  /* ---------- Histórico ---------- */
+  table.hist{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  table.hist th, table.hist td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); }
+  table.hist th{ font-size:11px; color:var(--text-muted); font-weight:600; }
+  table.hist tr:last-child td{ border-bottom:none; }
+  table.hist tbody tr:hover{ background:var(--surface-2); }
+  .badge{ display:inline-block; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600; }
+  .badge.escola{ background:var(--escola-soft); color:var(--escola); }
+  .badge.gestao{ background:var(--gestao-soft); color:var(--gestao); }
+  .badge.hibrido{ background:var(--hibrido-soft); color:var(--hibrido); }
+  .hist-empty{ padding:28px 10px; text-align:center; color:var(--text-muted); font-size:13.5px; }
+  .hist-actions{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+  .table-scroll{ overflow-x:auto; }
+  #histBusca, #candBusca{ margin-bottom:14px; }
+
+  .edit-banner{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:var(--hibrido-soft); color:var(--hibrido); border:1px solid transparent;
+    border-radius:var(--radius-sm); padding:10px 16px; margin-bottom:16px; font-size:13px; font-weight:600;
+  }
+
+  .status-pill{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; }
+  .status-pill.ok{ color:var(--escola); }
+  .status-pill.pend{ color:var(--text-muted); }
+  .btn-icon{
+    appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-muted);
+    width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:13px; line-height:1;
+  }
+  .btn-icon:hover{ color:var(--danger); border-color:var(--danger); }
+  .row-actions{ display:flex; gap:6px; }
+
+  /* ---------- Impressão ---------- */
+  #printStage{ display:none; }
+  @media print{
+    @page{ size:A4; margin:15mm 16mm; }
+    html, body{ background:#fff !important; height:auto !important; }
+    .topbar, .wrap{ display:none !important; }
+    #printStage{
+      display:block !important; width:100%; margin:0; padding:0;
+      font-family: Arial, Helvetica, sans-serif !important; color:#111 !important;
+    }
+    #printStage .print-page{ page-break-after:always; }
+    #printStage .print-page:last-child{ page-break-after:auto; }
+    #printStage .rep-titulo{ color:#1F3864 !important; }
+    #printStage .rep-resultado{ background:#F5F5F5 !important; border-color:#ccc !important; }
+    #printStage .rep-resultado.escola{ border-left-color:#1F7A5C !important; }
+    #printStage .rep-resultado.gestao{ border-left-color:#2E5395 !important; }
+    #printStage .rep-resultado.hibrido{ border-left-color:#966017 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <div class="topbar-inner">
+    <div class="topbar-mark" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="9.25" stroke="#fff" stroke-width="1.5"/>
+        <path d="M15.2 8.8L13 13l-4.2 2.2L11 11l4.2-2.2z" fill="#fff"/>
+        <circle cx="12" cy="12" r="1.15" fill="var(--navy-ink)"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Avaliação de Perfil Vocacional</h1>
+      <div class="sub">Técnico de Nível Médio · Convocação Ensino Médio · SEC-BA / CPM
+        <span class="conn-status off" id="connStatus"><span class="dot"></span>Verificando…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="tabs no-print">
+    <button class="tab-btn active" data-tab="nova" type="button">Nova avaliação</button>
+    <button class="tab-btn" data-tab="candidatos" type="button">Candidatos <span id="candCount"></span></button>
+    <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
+  </div>
+
+  <!-- ===================== ABA: NOVA AVALIAÇÃO ===================== -->
+  <div class="tab-panel active" id="panel-nova">
+
+    <div class="edit-banner no-print" id="editBanner" style="display:none">
+      <span id="editBannerTexto"></span>
+      <button class="link-btn" type="button" id="btnCancelarEdicao">Cancelar edição</button>
+    </div>
+
+    <!-- Passo 1: Candidato -->
+    <div class="card no-print">
+      <div class="card-head">
+        <span class="card-step">1</span>
+        <h2>Candidato</h2>
+        <span class="hint" id="baseCount">— candidatos na base</span>
+      </div>
+
+      <div id="buscaBox">
+        <label for="buscaInput">Buscar por nome, CPF ou nº de inscrição</label>
+        <div class="search-wrap">
+          <input type="text" id="buscaInput" autocomplete="off" placeholder="Digite para buscar…">
+          <div class="search-results" id="buscaResultados"></div>
+        </div>
+      </div>
+
+      <div id="candidatoSelecionado" style="display:none"></div>
+
+      <div class="manual-toggle-row">
+        <button class="link-btn" type="button" id="btnManual">Candidato não está na lista? Preencher manualmente</button>
+      </div>
+
+      <div id="manualBox" style="display:none; margin-top:12px;">
+        <div class="row2">
+          <div class="field"><label for="manNome">Nome completo</label><input type="text" id="manNome" placeholder="Nome do candidato"></div>
+          <div class="field"><label for="manCpf">CPF</label><input type="text" id="manCpf" placeholder="Somente números" inputmode="numeric" maxlength="14"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="manInsc">Nº de inscrição</label><input type="text" id="manInsc" placeholder="Opcional"></div>
+          <div class="field"><label for="manMun">Município</label><input type="text" id="manMun" placeholder="Opcional"></div>
+        </div>
+        <button class="btn btn-sm" type="button" id="btnUsarManual">Usar estes dados</button>
+      </div>
+
+      <div class="row2" style="margin-top:16px;">
+        <div class="field" style="max-width:220px;">
+          <label for="dataAvaliacao">Data da avaliação</label>
+          <input type="date" id="dataAvaliacao">
+        </div>
+      </div>
+
+      <div class="field" id="pcdBox" style="margin-top:4px;">
+        <label>Pessoa com deficiência (PcD)</label>
+        <div class="seg-group" id="pcdToggle">
+          <button type="button" class="seg-btn on" data-pcd="nao">Não</button>
+          <button type="button" class="seg-btn" data-pcd="sim">Sim</button>
+        </div>
+        <div id="pcdNota" class="pcd-nota" style="display:none"></div>
+
+        <div id="pcdTipoBox" style="display:none; margin-top:12px;">
+          <div class="row2">
+            <div class="field">
+              <label for="pcdTipo">Tipo de deficiência</label>
+              <select id="pcdTipo">
+                <option value="">Selecione…</option>
+                <option value="Física">Física</option>
+                <option value="Auditiva">Auditiva</option>
+                <option value="Visual">Visual</option>
+                <option value="Intelectual">Intelectual</option>
+                <option value="Transtorno do Espectro Autista (TEA)">Transtorno do Espectro Autista (TEA)</option>
+                <option value="Múltipla">Múltipla</option>
+                <option value="Outra">Outra</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="pcdEspecificacao">Especificação (opcional)</label>
+              <input type="text" id="pcdEspecificacao" placeholder="Ex.: baixa visão, surdez unilateral…">
+            </div>
+          </div>
+          <div class="pcd-base-legal">Categorias conforme Decreto Federal nº 3.298/1999, art. 4º (redação do Decreto nº 5.296/2004), e Lei nº 12.764/2012 (TEA equiparado a pessoa com deficiência).</div>
+        </div>
+      </div>
+
+      <div class="import-row">
+        <span class="count">Candidato fora da base? Use a aba <button class="link-btn" type="button" id="irParaCandidatos">Candidatos</button> para importar planilha ou cadastrar individualmente.</span>
+      </div>
+    </div>
+
+    <!-- Passo 2: Questionário -->
+    <div class="card no-print">
+      <div class="card-head">
+        <span class="card-step">2</span>
+        <h2>Questionário</h2>
+        <span class="hint">Marque de 1 a 5 conforme o preenchimento do candidato</span>
+      </div>
+      <div id="questionario"></div>
+
+      <div class="progresso-wrap">
+        <div class="progresso-barra"><div class="progresso-fill" id="progressoFill"></div></div>
+        <div class="progresso-txt" id="progressoTxt">0 de 10</div>
+      </div>
+    </div>
+
+    <!-- Passo 3: Relatório -->
+    <div class="card" id="cardRelatorio">
+      <div class="card-head no-print">
+        <span class="card-step">3</span>
+        <h2>Relatório</h2>
+      </div>
+
+      <div id="relatorioPlaceholder" class="report-placeholder no-print">
+        <strong>Aguardando dados</strong>
+        Selecione o candidato e responda as 10 perguntas para gerar o relatório.
+      </div>
+
+      <div id="relatorio" style="display:none"></div>
+
+      <div class="report-toolbar no-print" id="reportToolbar" style="display:none">
+        <button class="btn" type="button" id="btnNovaAvaliacao">Nova avaliação</button>
+        <button class="btn" type="button" id="btnSalvarHist">Salvar no histórico</button>
+        <button class="btn btn-primary" type="button" id="btnImprimir">Imprimir / Salvar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ABA: CANDIDATOS ===================== -->
+  <div class="tab-panel no-print" id="panel-candidatos">
+    <div class="card">
+      <div class="card-head">
+        <h2>Adicionar candidato</h2>
+        <span class="hint">Individual ou por planilha</span>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="addNome">Nome completo *</label><input type="text" id="addNome" placeholder="Nome do candidato"></div>
+        <div class="field"><label for="addCpf">CPF</label><input type="text" id="addCpf" placeholder="Somente números" inputmode="numeric" maxlength="14"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="addInsc">Nº de inscrição</label><input type="text" id="addInsc" placeholder="Opcional"></div>
+        <div class="field"><label for="addMun">Município *</label><input type="text" id="addMun" placeholder="Obrigatório"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="addNte">NTE *</label><input type="text" id="addNte" placeholder="Obrigatório"></div>
+        <div class="field"><label for="addFormacao">Formação</label><input type="text" id="addFormacao" placeholder="Opcional — ex.: ENSINO MÉDIO, ADMINISTRAÇÃO…"></div>
+      </div>
+      <div class="row2">
+        <div class="field" style="display:flex; align-items:flex-end;">
+          <button class="btn btn-primary btn-sm" type="button" id="btnAddCandidato">Adicionar à base</button>
+        </div>
+      </div>
+      <div class="field-erro" id="addErro" style="display:none"></div>
+
+      <div class="import-row">
+        <button class="btn btn-sm" type="button" id="btnImportar">Importar planilha (.xlsx / .csv)</button>
+        <input type="file" id="fileImportar" accept=".xlsx,.xls,.csv" style="display:none">
+        <span class="count" id="importStatus"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Backup e recuperação</h2>
+        <span class="hint">Avaliações gravadas apenas neste navegador (modo local)</span>
+      </div>
+      <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">
+        Se este computador já preencheu avaliações antes de o Firebase estar conectado, exporte-as aqui e depois importe o arquivo em qualquer máquina já conectada — sem digitar de novo.
+      </p>
+      <div class="row-actions">
+        <button class="btn btn-sm" type="button" id="btnExportarBackup">⬇ Exportar avaliações deste navegador</button>
+        <button class="btn btn-sm" type="button" id="btnImportarBackup">⬆ Importar backup (.json)</button>
+        <input type="file" id="fileImportarBackup" accept=".json" style="display:none">
+      </div>
+      <span class="count" id="backupStatus"></span>
+    </div>
+
+    <div class="card">
+      <div class="edit-banner no-print" id="dupBanner" style="display:none">
+        <span id="dupBannerTexto"></span>
+        <span class="row-actions">
+          <button class="link-btn" type="button" id="btnConfirmarDup">Remover duplicados agora</button>
+          <button class="link-btn" type="button" id="btnIgnorarDup">Ignorar</button>
+        </span>
+      </div>
+      <div class="hist-actions">
+        <h2 style="font-size:15px;">Base de candidatos <span id="candCountLabel"></span></h2>
+        <span class="row-actions">
+          <button class="btn btn-sm" type="button" id="btnAtualizarAgora" title="Forçar releitura dos dados">↻ Atualizar agora</button>
+          <button class="btn btn-sm" type="button" id="btnVerificarDup">Verificar duplicados</button>
+        </span>
+      </div>
+      <div class="field" style="max-width:340px;">
+        <input type="text" id="candBusca" placeholder="Buscar por nome, CPF ou inscrição…">
+      </div>
+      <div class="table-scroll">
+        <table class="hist" id="candTable">
+          <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Formação</th><th>Avaliação</th><th></th></tr></thead>
+          <tbody id="candBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ABA: RELATÓRIOS ===================== -->
+  <div class="tab-panel no-print" id="panel-relatorios">
+    <div class="card">
+      <div class="card-head">
+        <h2>Filtrar avaliações</h2>
+        <span class="hint" id="relCount"></span>
+      </div>
+      <div class="row3">
+        <div class="field">
+          <label for="filtroPerfil">Perfil</label>
+          <select id="filtroPerfil">
+            <option value="">Todos</option>
+            <option value="escola">Escola / Atendimento Direto</option>
+            <option value="gestao">Gestão / Unidade Administrativa</option>
+            <option value="hibrido">Perfil Coringa / Híbrido</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filtroMunicipio">Município</label>
+          <select id="filtroMunicipio"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+          <label for="filtroNte">NTE</label>
+          <select id="filtroNte"><option value="">Todos</option></select>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="hist" id="relTable">
+          <thead><tr>
+            <th><input type="checkbox" id="relSelAll"></th>
+            <th>Data</th><th>Candidato</th><th>Município</th><th>NTE</th><th>Perfil</th>
+          </tr></thead>
+          <tbody id="relBody"></tbody>
+        </table>
+      </div>
+      <div class="hist-empty" id="relEmpty">Nenhuma avaliação encontrada.</div>
+    </div>
+
+    <div class="report-toolbar no-print" style="justify-content:flex-start;">
+      <button class="btn btn-primary" type="button" id="btnImprimirLote" disabled>Imprimir selecionados (<span id="relSelCount">0</span>)</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="printStage"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore-compat.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ================= Dados embutidos (planilha "gabarito_convocacao_ensino_medio") ================= */
+  var CANDIDATOS_BASE = [{"insc":"2602077505","nome":"EDUARDO SILVA DOS REIS","cpf":"07339268510","mun":"SALVADOR","nte":"26","pne":"","formacao":"ANALISE E DESENVOLVIMENTO DE SISTEMAS"},{"insc":"2602099686","nome":"RAMON SILVA DOS SANTOS","cpf":"08306646533","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNICO EM LOGISTICA"},{"insc":"2602111629","nome":"VINICIUS DE SOUZA BORGES","cpf":"06503265557","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNOLOGO EM GESTAO PUBLICA"},{"insc":"2602029223","nome":"WILSON QUEIROZ DOS SANTOS","cpf":"01893976599","mun":"SALVADOR","nte":"26","pne":"","formacao":"ADMINISTRAÇAO"},{"insc":"2602079724","nome":"IGOR BRAGA BATISTA","cpf":"05720537546","mun":"SALVADOR","nte":"26","pne":"","formacao":"GESTAO DO TURISMO"},{"insc":"2602066402","nome":"ALISSON PRAZERES DA SILVA","cpf":"06503097581","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602091322","nome":"EMILLY JHENIFFER DE QUEIROZ FERREIRA","cpf":"09281044510","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602064386","nome":"CLARISSA FONSECA COSTA","cpf":"09521655542","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602057582","nome":"WILLIAM DAVID ARAUJO SILVA","cpf":"05440558535","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602079993","nome":"JOSIANE DA SILVA PERES","cpf":"08826997926","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602028006","nome":"MAIANE SANTOS CARVALHO","cpf":"04560585598","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602104018","nome":"GILSON BONFIM NEVES","cpf":"05556196567","mun":"SALVADOR","nte":"26","pne":"","formacao":""},{"insc":"2602077616","nome":"YSLLA MONYSE LAURENCO DE OLIVEIRA","cpf":"05609271509","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602042596","nome":"MARIA CLARA RICCIO TEIXEIRA ESPINOLA","cpf":"86088725524","mun":"SALVADOR","nte":"26","pne":"","formacao":"POS GRADUAÇÃO/ CONTABILIDADE"},{"insc":"2602117494","nome":"JULIA ALVES PESSOA DA SILVA","cpf":"05526160521","mun":"SALVADOR","nte":"26","pne":"","formacao":"HUMANIDADES"},{"insc":"2602115940","nome":"TAUAN BASTOS DE SOUZA SILVA","cpf":"09506356505","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602117371","nome":"ELEONORA MARIA CAMANDAROBA","cpf":"05314280523","mun":"SALVADOR","nte":"26","pne":"","formacao":"LICENCIADA EM BIOLOGIA/NAO QUER ATUAR COMO PROFESORA"},{"insc":"2602096865","nome":"FLAVIO CERQUEIRA SIMPLICIO","cpf":"02049828551","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602033994","nome":"JOSE RULEONSON GALDINO ROCHA DIAS","cpf":"08582574592","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602067159","nome":"FERNANDA DE SOUZA GOMES","cpf":"86357391590","mun":"SALVADOR","nte":"26","pne":"","formacao":"BACHARELADO INTERDISCIPLINAR EM HUMANIDADES"},{"insc":"2602097116","nome":"IVE DE SOUZA PITANGA DOS SANTOS","cpf":"07964776550","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602120667","nome":"RAMON DO ESPIRITO SANTO SILVA","cpf":"03023442509","mun":"SALVADOR","nte":"26","pne":"","formacao":""},{"insc":"2602080235","nome":"JOHN LENO LOPES DE SOUZA","cpf":"04114234527","mun":"SALVADOR","nte":"26","pne":"","formacao":"BACHAREL EM ENGENHARIA DE PRODUÇAO CIVIL"},{"insc":"2602004717","nome":"GABRIEL COSTA SANTOS","cpf":"06441940574","mun":"SALVADOR","nte":"26","pne":"","formacao":"GESTÃO FINANCEIRA"},{"insc":"2602019104","nome":"RICARDO OLIVEIRA DOS SANTOS","cpf":"02207066541","mun":"SALVADOR","nte":"26","pne":"","formacao":"CONTABILIDADE"},{"insc":"2602066198","nome":"DOSITE MOLEIRO ALVES FILHO","cpf":"85266280549","mun":"SALVADOR","nte":"26","pne":"","formacao":""},{"insc":"2602017158","nome":"RAILANE CRISTIANE GONCALVES DIAS","cpf":"84077484553","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602027474","nome":"JOSE LUCAS MAIA NERY","cpf":"05091095519","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602000282","nome":"LEONARDO EVANGELISTA SANTANA","cpf":"07507949508","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602087698","nome":"ARTHUR ATILAR DOS SANTOS SILVA","cpf":"05611632432","mun":"SALVADOR","nte":"26","pne":"","formacao":"ADMINISTRAÇÃO"},{"insc":"2602029847","nome":"LUCIANO VITOR GOMES DOS SANTOS","cpf":"09392129513","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602086297","nome":"ELLEN FERNANDA DA SILVA BRITO","cpf":"86537249589","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602041705","nome":"AGNES FRANCINE SANTANA LIMA DE CARVALHO","cpf":"85411108500","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602060143","nome":"MARCOS ADRYAN LIMA SANTANA","cpf":"85921633585","mun":"SALVADOR","nte":"26","pne":"","formacao":"CIENCIAS DA COMPUTAÇÃO"},{"insc":"2602025398","nome":"JURANDIR MONTEIRO DE SOUSA","cpf":"54558409591","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602059216","nome":"JEMIMA ALMEIDA SILVA","cpf":"83146130530","mun":"SALVADOR","nte":"26","pne":"","formacao":"ODONTOLOGIA"},{"insc":"2602084529","nome":"TAMAR MOREIRA DOS SANTOS","cpf":"05158391599","mun":"SALVADOR","nte":"26","pne":"","formacao":"BACHARELADO INTERDISCIPLINAR EM HUMANIDADES"},{"insc":"2602112740","nome":"MATEUS SALES DO CARMO NEGRAO","cpf":"04270259582","mun":"SALVADOR","nte":"26","pne":"","formacao":"CIENCIAS DE DADOS"},{"insc":"2602014896","nome":"SHALIMAR SANTOS DE JESUS","cpf":"04671964511","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602019402","nome":"LAIS GONCALVES DE CARVALHO","cpf":"06026845526","mun":"SALVADOR","nte":"26","pne":"","formacao":"RECURSOS HUMANOS"},{"insc":"2602093976","nome":"ATHILA SOUZA DO ESPIRITO SANTO","cpf":"04266580517","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602101436","nome":"JULIANA DE JESUS DOS SANTOS","cpf":"08966333575","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNICO EM QUIMICA- TECNICO EM ELETROTECNICA"},{"insc":"2602009117","nome":"REYNALDO SALES RIBEIRO","cpf":"12030407500","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602102578","nome":"FABRICIO OLIVEIRA SUZART SANTOS","cpf":"86680885566","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602054242","nome":"NATALY SANTANA ITAPARICA","cpf":"03933263573","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602099526","nome":"EMERSON SANTOS DE JESUS","cpf":"85831907554","mun":"SALVADOR","nte":"26","pne":"","formacao":"LICENCIATUARA EM LETRAS VERNACULAS"},{"insc":"2602090890","nome":"LUIS CEZAR FRANCA OLIVEIRA","cpf":"04844085506","mun":"SALVADOR","nte":"26","pne":"","formacao":"CIENCIA E TECNOLOGIA"},{"insc":"2602022455","nome":"ALLANA LUIZA GONCALVES REIS","cpf":"86715524548","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602073012","nome":"VAGNER CERQUEIRA DIAS","cpf":"09096557581","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602060021","nome":"NUBIA PEREIRA IZAIAS","cpf":"09266156531","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602092159","nome":"MARCELA SOARES DE ARAUJO","cpf":"01440356505","mun":"SALVADOR","nte":"26","pne":"","formacao":"ODONTOLOGIA- FONOAUDIOLOGIA"},{"insc":"2602072565","nome":"ROBSON GONCALVES DOS SANTOS","cpf":"03364338590","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNICO EM ELETROMECANICA"},{"insc":"2602100476","nome":"FRANKLIN SILVA SANTOS","cpf":"94930155568","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNICO EM CONTABILIDADE"},{"insc":"2602086541","nome":"BRUNO LEONARDO DO ESPIRITO SANTO","cpf":"79836518568","mun":"SALVADOR","nte":"26","pne":"","formacao":"PSICOLOGIA"},{"insc":"2602009754","nome":"GEOVANA FERREIRA DE OLIVEIRA","cpf":"05151505505","mun":"SALVADOR","nte":"26","pne":"","formacao":"LETRAS VERNACULAS"},{"insc":"2602122401","nome":"VICTOR CESAR BORGES FONSECA","cpf":"41994057807","mun":"SALVADOR","nte":"26","pne":"","formacao":"ARQUITETURA E URBANISMO"},{"insc":"2602055631","nome":"YASMIN SANTOS DA SILVA","cpf":"06715057508","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO/ ARQUITETURA E URBAMISMO"},{"insc":"2602121589","nome":"LEIA SANTOS DE SOUZA","cpf":"06742575530","mun":"SALVADOR","nte":"26","pne":"1º","formacao":"ENSINO MEDIO"},{"insc":"2602023532","nome":"BRUNA MACHADO ARAUJO SANTANA","cpf":"06338831580","mun":"SALVADOR","nte":"26","pne":"2º","formacao":"PSICOLOGIA"},{"insc":"2602095588","nome":"MAXIMIANO PEIXOTO PIRES","cpf":"83545530515","mun":"SALVADOR","nte":"26","pne":"3º","formacao":""}];
+
+  /* ================================================================
+     CONFIGURAÇÃO DO FIREBASE
+     Preencha com os dados do SEU projeto (Firebase Console > Configurações
+     do projeto > Seus apps > SDK do Firebase > Config). Enquanto os valores
+     abaixo estiverem com "SUA_" o app funciona normalmente em modo local
+     (os dados ficam salvos só neste navegador). Depois de colar a config
+     real e publicar no GitHub/Vercel, avaliações e candidatos importados
+     passam a ser compartilhados entre todas as estações automaticamente.
+     ================================================================ */
+  var firebaseConfig = {
+    apiKey: "AIzaSyBom1rkf4r-QYI0f7eOm3slsL48kQdi83w",
+    authDomain: "avaliacoes-cand-cpm.firebaseapp.com",
+    projectId: "avaliacoes-cand-cpm",
+    storageBucket: "avaliacoes-cand-cpm.firebasestorage.app",
+    messagingSenderId: "648805844686",
+    appId: "1:648805844686:web:18469bd24d9419fcd6f29f"
+  };
+
+  /* ================= Perguntas (gabarito Técnico de Nível Médio) ================= */
+  var BLOCOS = [
+    {id:1, titulo:"Bloco 1: Rotina, Imprevistos e Dinâmica de Trabalho"},
+    {id:2, titulo:"Bloco 2: Relacionamento, Atendimento e Mediação"},
+    {id:3, titulo:"Bloco 3: Visão de Impacto e Resolução de Problemas"}
+  ];
+  var PERGUNTAS = [
+    {n:1, bloco:1, dim:"E", texto:"Sinto-me motivado(a) em ambientes dinâmicos, onde preciso lidar com diversidade de situações e resolver problemas interpessoais imediatamente."},
+    {n:2, bloco:1, dim:"G", texto:"Prefiro uma rotina estruturada, focada em metas de médio e longo prazo, com tempo para analisar dados e documentos antes de tomar decisões."},
+    {n:3, bloco:1, dim:"E", texto:"Mudar meu planejamento do dia para atender a uma emergência de última hora de um estudante ou familiar é algo que lido de forma natural e sem frustração."},
+    {n:4, bloco:1, dim:"G", texto:"Produzo melhor quando posso trabalhar de forma concentrada, revisando processos, relatórios ou planilhas sem interrupções do público externo."},
+    {n:5, bloco:2, dim:"E", texto:"Tenho grande paciência e empatia para acolher pessoas que chegam alteradas ou emocionalmente fragilizadas, buscando acalmá-las presencialmente."},
+    {n:6, bloco:2, dim:"G", texto:"Gosto de atuar na formulação ou interpretação de diretrizes, regulamentos e normas que sirvam para padronizar o trabalho de toda uma rede de ensino."},
+    {n:7, bloco:2, dim:"E", texto:"Sinto satisfação pessoal ao ver o impacto direto e imediato da minha ajuda na vida diária de um estudante, responsável ou professor."},
+    {n:8, bloco:2, dim:"G", texto:"Prefiro negociar e resolver demandas técnico-administrativas com fornecedores, órgãos de controle ou equipes gestoras do que atender ao público em geral."},
+    {n:9, bloco:3, dim:"E", texto:"Considero fácil adequar regras rígidas quando a situação humana individual exige uma solução mais flexível e acolhedora no ambiente escolar."},
+    {n:10, bloco:3, dim:"G", texto:"Priorizo rigorosamente a conformidade com leis, decretos e prazos regimentais, garantindo a segurança jurídica das operações do órgão."}
+  ];
+
+  var DIAGNOSTICOS = {
+    escola:  {
+      perfil:"Escola / Atendimento Direto",
+      tipo:"Vocação Relacional",
+      texto:"O candidato possui alta tolerância a ambientes ruidosos e dinâmicos, facilidade para mediação imediata de conflitos, empatia e foco no acolhimento humano. Deve atuar em Secretarias Escolares, Orientação/Inspetoria ou Apoio à Comunidade."
+    },
+    gestao:  {
+      perfil:"Gestão / Unidade Administrativa",
+      tipo:"Vocação Analítica/Processual",
+      texto:"O candidato demonstra perfil analítico, apego a normas, foco em planejamento estratégico e necessidade de ambiente focado. Deve atuar na Secretaria Central de Educação (Planejamento, RH, Finanças, Normatização ou Auditoria)."
+    },
+    hibrido: {
+      perfil:"Perfil Coringa / Híbrido",
+      tipo:"Equilíbrio Operacional",
+      texto:"O candidato transita bem entre processos e pessoas. Pode atuar na Gestão Administrativa de Escolas de Grande Porte (onde é preciso organizar papéis e atender pessoas) ou na Supervisão de Ensino/Articulação da Secretaria com as Escolas."
+    }
+  };
+
+  /* ================= Estado ================= */
+  var state = {
+    candidato: null,          // {insc,nome,cpf,mun,nte,manual}
+    respostas: {},             // {1: 4, 2: 3, ...}
+    candidatosExtra: [],
+    historico: [],
+    deficiencia: {possui:false, tipo:"", especificacao:""},
+    editandoId: null,
+    ativeTab: "nova"
+  };
+  var firebaseAtivo = false;
+  var db = null;
+
+  /* ================= Utilidades ================= */
+  function normaliza(s){
+    return (s||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  }
+  function digits(s){ return (s||"").toString().replace(/\D/g,""); }
+  function maskCPF(cpf){
+    var d = digits(cpf).padStart(11,"0");
+    if(d.length!==11) return cpf||"—";
+    return d.slice(0,3)+"."+d.slice(3,6)+"."+d.slice(6,9)+"-"+d.slice(9,11);
+  }
+  function fmtDataBR(iso){
+    if(!iso) return "—";
+    var p = iso.split("-");
+    if(p.length!==3) return iso;
+    return p[2]+"/"+p[1]+"/"+p[0];
+  }
+  function hojeISO(){
+    var d = new Date();
+    var m = String(d.getMonth()+1).padStart(2,"0");
+    var day = String(d.getDate()).padStart(2,"0");
+    return d.getFullYear()+"-"+m+"-"+day;
+  }
+  function storageGet(key, fallback){
+    try{
+      var raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    }catch(e){ return fallback; }
+  }
+  function storageSet(key, value){
+    try{ window.localStorage.setItem(key, JSON.stringify(value)); }catch(e){ /* silencioso */ }
+  }
+  function uid(){ return "av_"+Date.now()+"_"+Math.floor(Math.random()*1000); }
+  function escapeHtml(s){
+    return (s==null?"":String(s)).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function todosCandidatos(){
+    return CANDIDATOS_BASE.concat(state.candidatosExtra);
+  }
+
+  /* ================= Classificação (gabarito) ================= */
+  // Regra do gabarito: |E-G| >= 3 decide Escola/Gestão; diferenças de 0 a 2 pontos
+  // caem em "Próximos" (Híbrido). O documento original descreve as duas faixas com
+  // limites levemente sobrepostos ("≥3" e "<4"); aqui a faixa ">=3" tem prioridade,
+  // de modo que toda diferença igual a 3 é classificada por quem é maior.
+  function classificar(E, G){
+    var diff = E - G;
+    var abs = Math.abs(diff);
+    if(abs >= 3){
+      return diff > 0 ? "escola" : "gestao";
+    }
+    return "hibrido";
+  }
+
+  /* ================= Renderização: Questionário ================= */
+  function renderQuestionario(){
+    var html = "";
+    BLOCOS.forEach(function(bloco){
+      var perguntasBloco = PERGUNTAS.filter(function(p){ return p.bloco===bloco.id; });
+      html += '<div class="bloco"><div class="bloco-title">'+escapeHtml(bloco.titulo)+'</div>';
+      perguntasBloco.forEach(function(p){
+        html += '<div class="pergunta">';
+        html += '  <div class="pergunta-texto"><span class="pergunta-num">'+p.n+'.</span><span>'+escapeHtml(p.texto)+'</span></div>';
+        html += '  <div class="escala" role="group" aria-label="Pergunta '+p.n+', escala de 1 a 5" data-q="'+p.n+'">';
+        for(var v=1; v<=5; v++){
+          html += '<button type="button" data-q="'+p.n+'" data-v="'+v+'" aria-pressed="false">'+v+'</button>';
+        }
+        html += '  </div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    document.getElementById("questionario").innerHTML = html;
+
+    document.querySelectorAll(".escala button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var q = parseInt(btn.getAttribute("data-q"),10);
+        var v = parseInt(btn.getAttribute("data-v"),10);
+        state.respostas[q] = v;
+        document.querySelectorAll('.escala[data-q="'+q+'"] button').forEach(function(b){
+          var on = parseInt(b.getAttribute("data-v"),10) === v;
+          b.classList.toggle("on", on);
+          b.setAttribute("aria-pressed", on ? "true":"false");
+        });
+        atualizarProgresso();
+        atualizarRelatorio();
+      });
+    });
+  }
+
+  function respostasCompletas(){
+    return PERGUNTAS.every(function(p){ return state.respostas[p.n] != null; });
+  }
+
+  function atualizarProgresso(){
+    var n = Object.keys(state.respostas).filter(function(k){ return state.respostas[k]!=null; }).length;
+    document.getElementById("progressoFill").style.width = (n/10*100)+"%";
+    document.getElementById("progressoTxt").textContent = n+" de 10";
+  }
+
+  /* ================= Busca de candidato ================= */
+  var buscaInput = document.getElementById("buscaInput");
+  var buscaResultados = document.getElementById("buscaResultados");
+
+  buscaInput.addEventListener("input", function(){
+    var q = normaliza(buscaInput.value);
+    if(q.length < 2){ buscaResultados.classList.remove("show"); buscaResultados.innerHTML=""; return; }
+    var qDigits = digits(buscaInput.value);
+    var lista = todosCandidatos().filter(function(c){
+      var matchNome = normaliza(c.nome).indexOf(q) !== -1;
+      var matchCpf = qDigits.length>=3 && digits(c.cpf).indexOf(qDigits) !== -1;
+      var matchInsc = qDigits.length>=3 && (c.insc||"").indexOf(qDigits) !== -1;
+      return matchNome || matchCpf || matchInsc;
+    }).slice(0,8);
+
+    if(lista.length===0){
+      buscaResultados.innerHTML = '<div class="search-empty">Nenhum candidato encontrado na base.</div>';
+    }else{
+      buscaResultados.innerHTML = lista.map(function(c, i){
+        return '<div class="search-item" data-idx="'+i+'">'+
+               '  <div class="nome">'+escapeHtml(c.nome)+'</div>'+
+               '  <div class="meta">'+maskCPF(c.cpf)+' · Insc. '+escapeHtml(c.insc||"—")+' · '+escapeHtml(c.mun||"")+'</div>'+
+               '</div>';
+      }).join("");
+      buscaResultados.querySelectorAll(".search-item").forEach(function(el, i){
+        el.addEventListener("click", function(){ iniciarAvaliacao(lista[i]); });
+      });
+    }
+    buscaResultados.classList.add("show");
+  });
+  document.addEventListener("click", function(e){
+    if(!buscaResultados.contains(e.target) && e.target!==buscaInput){
+      buscaResultados.classList.remove("show");
+    }
+  });
+
+  /* ================= PcD (pessoa com deficiência) ================= */
+  function setPcdUI(possui, tipo, especificacao, nota){
+    state.deficiencia.possui = possui;
+    state.deficiencia.tipo = tipo || "";
+    state.deficiencia.especificacao = especificacao || "";
+
+    document.querySelectorAll("#pcdToggle .seg-btn").forEach(function(b){
+      var isSim = b.getAttribute("data-pcd") === "sim";
+      b.classList.toggle("on", isSim === possui);
+    });
+    document.getElementById("pcdTipoBox").style.display = possui ? "block" : "none";
+    document.getElementById("pcdTipo").value = tipo || "";
+    document.getElementById("pcdEspecificacao").value = especificacao || "";
+
+    var notaEl = document.getElementById("pcdNota");
+    if(nota){ notaEl.textContent = nota; notaEl.style.display = "block"; }
+    else{ notaEl.style.display = "none"; notaEl.textContent = ""; }
+  }
+  document.querySelectorAll("#pcdToggle .seg-btn").forEach(function(b){
+    b.addEventListener("click", function(){
+      var possui = b.getAttribute("data-pcd") === "sim";
+      setPcdUI(possui, state.deficiencia.tipo, state.deficiencia.especificacao, null);
+      atualizarRelatorio();
+    });
+  });
+  document.getElementById("pcdTipo").addEventListener("change", function(){
+    state.deficiencia.tipo = this.value;
+    atualizarRelatorio();
+  });
+  document.getElementById("pcdEspecificacao").addEventListener("input", function(){
+    state.deficiencia.especificacao = this.value;
+    atualizarRelatorio();
+  });
+
+  function selecionarCandidato(c){
+    state.candidato = c;
+    if(c.pne){
+      setPcdUI(true, "", "", "Classificado(a) na lista de convocação com ranking PcD ("+c.pne+"). Confirme o tipo de deficiência abaixo.");
+    }else{
+      setPcdUI(false, "", "", null);
+    }
+    buscaInput.value = "";
+    buscaResultados.classList.remove("show");
+    buscaResultados.innerHTML = "";
+    document.getElementById("buscaBox").style.display = "none";
+    document.getElementById("manualBox").style.display = "none";
+    document.querySelector(".manual-toggle-row").style.display = "none";
+
+    var box = document.getElementById("candidatoSelecionado");
+    box.style.display = "block";
+    box.innerHTML =
+      '<div class="candidato-chip">'+
+      '  <div class="info">'+
+      '    <div class="nome">'+escapeHtml(c.nome)+'</div>'+
+      '    <div class="meta">'+maskCPF(c.cpf)+(c.insc? ' · Insc. '+escapeHtml(c.insc):'')+(c.mun? ' · '+escapeHtml(c.mun):'')+'</div>'+
+      '  </div>'+
+      '  <button class="chip-x" type="button" id="btnTrocarCandidato" title="Trocar candidato" aria-label="Trocar candidato">✕</button>'+
+      '</div>';
+    document.getElementById("btnTrocarCandidato").addEventListener("click", limparCandidato);
+    atualizarRelatorio();
+  }
+
+  function limparCandidato(){
+    state.candidato = null;
+    document.getElementById("candidatoSelecionado").style.display = "none";
+    document.getElementById("candidatoSelecionado").innerHTML = "";
+    document.getElementById("buscaBox").style.display = "block";
+    document.querySelector(".manual-toggle-row").style.display = "flex";
+    document.getElementById("manualBox").style.display = "none";
+    document.getElementById("manNome").value = "";
+    document.getElementById("manCpf").value = "";
+    document.getElementById("manInsc").value = "";
+    document.getElementById("manMun").value = "";
+    setPcdUI(false, "", "", null);
+    atualizarRelatorio();
+  }
+
+  document.getElementById("btnManual").addEventListener("click", function(){
+    document.getElementById("manualBox").style.display = "block";
+  });
+  document.getElementById("btnUsarManual").addEventListener("click", function(){
+    var nome = document.getElementById("manNome").value.trim();
+    if(!nome){ document.getElementById("manNome").focus(); return; }
+    iniciarAvaliacao({
+      nome:nome,
+      cpf:document.getElementById("manCpf").value.trim(),
+      insc:document.getElementById("manInsc").value.trim(),
+      mun:document.getElementById("manMun").value.trim(),
+      nte:"", manual:true
+    });
+  });
+
+  /* Ponto único de entrada para começar a avaliar alguém: se já existe avaliação
+     para esse candidato (por CPF, ou por inscrição quando não há CPF), abre a
+     avaliação existente em modo de edição em vez de permitir uma nova (evita duplicidade). */
+  function iniciarAvaliacao(c){
+    var registro = avaliacaoMaisRecente(c);
+    if(registro){
+      carregarAvaliacaoNoFormulario(registro, true);
+      window.scrollTo({top:0, behavior:"smooth"});
+      return;
+    }
+    selecionarCandidato(c);
+  }
+
+  /* ================= Importar planilha ================= */
+  document.getElementById("btnImportar").addEventListener("click", function(){
+    document.getElementById("fileImportar").click();
+  });
+  document.getElementById("fileImportar").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        var wb = XLSX.read(evt.target.result, {type:"array"});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+        var importados = rows.map(function(r){
+          var keys = Object.keys(r);
+          function pick(nomes){
+            for(var i=0;i<keys.length;i++){
+              var kn = normaliza(keys[i]);
+              for(var j=0;j<nomes.length;j++){
+                if(kn.indexOf(nomes[j]) !== -1) return r[keys[i]];
+              }
+            }
+            return "";
+          }
+          return {
+            insc: String(pick(["inscricao","nº da inscricao","no da inscricao"])||"").trim(),
+            nome: String(pick(["nome"])||"").trim(),
+            cpf:  String(pick(["cpf"])||"").trim(),
+            mun:  String(pick(["municipio"])||"").trim(),
+            nte:  String(pick(["nte"])||"").trim(),
+            pne:  String(pick(["pne","class. pne","classificacao pne"])||"").trim(),
+            formacao: String(pick(["formacao","formação"])||"").trim()
+          };
+        }).filter(function(c){ return c.nome; });
+
+        if(importados.length===0){
+          document.getElementById("importStatus").textContent = "Nenhum candidato reconhecido no arquivo.";
+          return;
+        }
+
+        if(firebaseAtivo && db){
+          var batch = db.batch();
+          importados.forEach(function(c){
+            batch.set(db.collection("candidatosExtra").doc(), c);
+          });
+          batch.commit().then(function(){
+            document.getElementById("importStatus").textContent = importados.length+" candidato(s) adicionado(s) e sincronizado(s) via Firebase.";
+          }).catch(function(err){
+            console.error("Firestore (importar):", err);
+            document.getElementById("importStatus").textContent = "Não foi possível sincronizar com o Firebase.";
+          });
+        }else{
+          state.candidatosExtra = state.candidatosExtra.concat(importados);
+          storageSet("gpv_candidatos_extra", state.candidatosExtra);
+          atualizarContadorBase();
+          document.getElementById("importStatus").textContent = importados.length+" candidato(s) adicionado(s) (salvos neste navegador).";
+        }
+      }catch(err){
+        document.getElementById("importStatus").textContent = "Não foi possível ler este arquivo.";
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  });
+
+  function atualizarContadorBase(){
+    var n = todosCandidatos().length;
+    document.getElementById("baseCount").textContent = n+" candidatos na base";
+    document.getElementById("candCount").textContent = "("+n+")";
+    document.getElementById("candCountLabel").textContent = "("+n+")";
+    renderCandidatos();
+  }
+
+  /* ================= Aba Candidatos ================= */
+  function registrosDoCandidato(c){
+    var cpfC = digits(c.cpf), inscC = (c.insc||"").trim();
+    var achados = (state.historico||[]).filter(function(h){
+      var hc = h.candidato||{};
+      if(cpfC && digits(hc.cpf)===cpfC) return true;
+      if(!cpfC && inscC && (hc.insc||"").trim()===inscC) return true;
+      return false;
+    });
+    achados.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
+    return achados;
+  }
+  function avaliacaoMaisRecente(c){
+    var r = registrosDoCandidato(c);
+    return r.length ? r[0] : null;
+  }
+  function avaliadoInfo(c){
+    var r = registrosDoCandidato(c);
+    if(r.length===0) return {avaliado:false};
+    return {avaliado:true, data:r[0].data, total:r.length};
+  }
+
+  function renderCandidatos(){
+    var tbody = document.getElementById("candBody");
+    if(!tbody) return;
+    var termo = normaliza(document.getElementById("candBusca").value);
+    var termoDig = digits(document.getElementById("candBusca").value);
+    var lista = todosCandidatos().filter(function(c){
+      if(!termo) return true;
+      var matchNome = normaliza(c.nome).indexOf(termo) !== -1;
+      var matchCpf = termoDig.length>=3 && digits(c.cpf).indexOf(termoDig) !== -1;
+      var matchInsc = termoDig.length>=3 && (c.insc||"").indexOf(termoDig) !== -1;
+      var matchFormacao = normaliza(c.formacao).indexOf(termo) !== -1;
+      return matchNome || matchCpf || matchInsc || matchFormacao;
+    });
+
+    tbody.innerHTML = lista.map(function(c, i){
+      var av = avaliadoInfo(c);
+      var statusHtml = av.avaliado
+        ? '<span class="status-pill ok" title="'+av.total+' avaliação(ões) — última em '+fmtDataBR(av.data)+'">✓ Avaliado ('+fmtDataBR(av.data)+')</span>'
+        : '<span class="status-pill pend">— Pendente</span>';
+      var acaoHtml = av.avaliado
+        ? '<span class="row-actions">'+
+          '<button class="btn btn-sm" type="button" data-editar="'+i+'">Editar</button>'+
+          '<button class="btn btn-sm" type="button" data-imprimir="'+i+'">Imprimir</button>'+
+          '<button class="btn-icon" type="button" data-excluir="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'+
+          '</span>'
+        : '<button class="btn btn-sm" type="button" data-avaliar="'+i+'">Avaliar</button>';
+      return '<tr>'+
+        '<td>'+escapeHtml(c.nome)+'</td>'+
+        '<td>'+(c.cpf?maskCPF(c.cpf):'—')+'</td>'+
+        '<td>'+escapeHtml(c.insc||"—")+'</td>'+
+        '<td>'+escapeHtml(c.mun||"—")+'</td>'+
+        '<td>'+escapeHtml(c.formacao||"—")+'</td>'+
+        '<td>'+statusHtml+'</td>'+
+        '<td>'+acaoHtml+'</td>'+
+        '</tr>';
+    }).join("");
+
+    tbody.querySelectorAll("[data-avaliar]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var c = lista[parseInt(btn.getAttribute("data-avaliar"),10)];
+        ativarAba("nova");
+        iniciarAvaliacao(c);
+        window.scrollTo({top:0, behavior:"smooth"});
+      });
+    });
+    tbody.querySelectorAll("[data-editar]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var c = lista[parseInt(btn.getAttribute("data-editar"),10)];
+        var reg = avaliacaoMaisRecente(c);
+        if(!reg) return;
+        ativarAba("nova");
+        carregarAvaliacaoNoFormulario(reg, true);
+        window.scrollTo({top:0, behavior:"smooth"});
+      });
+    });
+    tbody.querySelectorAll("[data-imprimir]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var c = lista[parseInt(btn.getAttribute("data-imprimir"),10)];
+        var reg = avaliacaoMaisRecente(c);
+        if(!reg) return;
+        imprimirRelatorios([reg]);
+      });
+    });
+    tbody.querySelectorAll("[data-excluir]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var c = lista[parseInt(btn.getAttribute("data-excluir"),10)];
+        var reg = avaliacaoMaisRecente(c);
+        if(!reg) return;
+        if(!confirm("Excluir a avaliação de "+c.nome+"? Esta ação não pode ser desfeita.")) return;
+        excluirAvaliacao(reg.id);
+      });
+    });
+  }
+  document.getElementById("candBusca").addEventListener("input", renderCandidatos);
+  document.getElementById("irParaCandidatos").addEventListener("click", function(){ ativarAba("candidatos"); });
+  document.getElementById("btnAtualizarAgora").addEventListener("click", function(){
+    if(firebaseAtivo && db){
+      reconectarFirebase();
+    }else{
+      carregarDadosLocais();
+    }
+  });
+
+  document.getElementById("btnAddCandidato").addEventListener("click", function(){
+    var erroEl = document.getElementById("addErro");
+    var nome = document.getElementById("addNome").value.trim();
+    var mun = document.getElementById("addMun").value.trim();
+    var nte = document.getElementById("addNte").value.trim();
+    var faltando = [];
+    if(!nome) faltando.push("Nome completo");
+    if(!mun) faltando.push("Município");
+    if(!nte) faltando.push("NTE");
+    if(faltando.length){
+      erroEl.textContent = "Preencha: "+faltando.join(", ")+".";
+      erroEl.style.display = "block";
+      document.getElementById(!nome?"addNome":(!mun?"addMun":"addNte")).focus();
+      return;
+    }
+    erroEl.style.display = "none";
+    var novo = {
+      nome: nome,
+      cpf: document.getElementById("addCpf").value.trim(),
+      insc: document.getElementById("addInsc").value.trim(),
+      mun: mun,
+      nte: nte,
+      pne: "",
+      formacao: document.getElementById("addFormacao").value.trim()
+    };
+    function limparForm(){
+      document.getElementById("addNome").value = "";
+      document.getElementById("addCpf").value = "";
+      document.getElementById("addInsc").value = "";
+      document.getElementById("addMun").value = "";
+      document.getElementById("addNte").value = "";
+      document.getElementById("addFormacao").value = "";
+    }
+    if(firebaseAtivo && db){
+      db.collection("candidatosExtra").add(novo).then(limparForm).catch(function(err){
+        console.error("Firestore (adicionar candidato):", err);
+        erroEl.textContent = "Não foi possível adicionar o candidato ao Firebase.";
+        erroEl.style.display = "block";
+      });
+    }else{
+      state.candidatosExtra.push(novo);
+      storageSet("gpv_candidatos_extra", state.candidatosExtra);
+      atualizarContadorBase();
+      limparForm();
+    }
+  });
+
+  /* ---- Duplicidades: mesma pessoa (CPF) com mais de uma avaliação salva ---- */
+  function detectarDuplicados(){
+    var porCpf = {};
+    (state.historico||[]).forEach(function(h){
+      var cpf = digits(h.candidato && h.candidato.cpf);
+      if(!cpf) return;
+      (porCpf[cpf] = porCpf[cpf] || []).push(h);
+    });
+    var grupos = [];
+    Object.keys(porCpf).forEach(function(cpf){
+      var lista = porCpf[cpf];
+      if(lista.length > 1){
+        lista.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
+        grupos.push(lista);
+      }
+    });
+    return grupos;
+  }
+  document.getElementById("btnVerificarDup").addEventListener("click", function(){
+    var grupos = detectarDuplicados();
+    var banner = document.getElementById("dupBanner");
+    if(grupos.length===0){
+      document.getElementById("dupBannerTexto").textContent = "Nenhuma duplicidade encontrada.";
+      document.getElementById("btnConfirmarDup").style.display = "none";
+      banner.style.display = "flex";
+      setTimeout(function(){ banner.style.display="none"; document.getElementById("btnConfirmarDup").style.display=""; }, 3000);
+      return;
+    }
+    var totalRemover = grupos.reduce(function(s,g){ return s+(g.length-1); }, 0);
+    document.getElementById("dupBannerTexto").textContent =
+      grupos.length+" candidato(s) com avaliação duplicada — "+totalRemover+" registro(s) mais antigo(s) serão removidos, mantendo sempre o mais recente de cada um.";
+    banner.style.display = "flex";
+    banner.dataset.grupos = "1";
+    window._gpvDuplicados = grupos;
+  });
+  document.getElementById("btnIgnorarDup").addEventListener("click", function(){
+    document.getElementById("dupBanner").style.display = "none";
+  });
+  document.getElementById("btnConfirmarDup").addEventListener("click", function(){
+    var grupos = window._gpvDuplicados || [];
+    var idsRemover = [];
+    grupos.forEach(function(g){ g.slice(1).forEach(function(h){ idsRemover.push(h.id); }); });
+    if(idsRemover.length===0){ document.getElementById("dupBanner").style.display="none"; return; }
+    if(firebaseAtivo && db){
+      var batch = db.batch();
+      idsRemover.forEach(function(id){ batch.delete(db.collection("avaliacoes").doc(id)); });
+      batch.commit().catch(function(err){ console.error("Firestore (remover duplicados):", err); alert("Não foi possível remover todas as duplicidades."); });
+    }else{
+      state.historico = state.historico.filter(function(h){ return idsRemover.indexOf(h.id)===-1; });
+      storageSet("gpv_historico", state.historico);
+      renderCandidatos();
+      renderRelatorios();
+    }
+    document.getElementById("dupBanner").style.display = "none";
+  });
+
+  /* ================= Backup local (exportar/importar) ================= */
+  document.getElementById("btnExportarBackup").addEventListener("click", function(){
+    var dados = storageGet("gpv_historico", []);
+    var statusEl = document.getElementById("backupStatus");
+    if(dados.length===0){
+      statusEl.textContent = "Não há avaliações gravadas localmente neste navegador para exportar.";
+      return;
+    }
+    var payload = {
+      origem: "avaliacao-perfil-vocacional",
+      exportadoEm: new Date().toISOString(),
+      avaliacoes: dados
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    var url = URL.createObjectURL(blob);
+    var ts = new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "backup-avaliacoes-"+ts+".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    statusEl.textContent = dados.length+" avaliação(ões) exportada(s) neste arquivo.";
+  });
+
+  document.getElementById("btnImportarBackup").addEventListener("click", function(){
+    document.getElementById("fileImportarBackup").click();
+  });
+  document.getElementById("fileImportarBackup").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var statusEl = document.getElementById("backupStatus");
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      var lista;
+      try{
+        var payload = JSON.parse(evt.target.result);
+        lista = Array.isArray(payload) ? payload : (payload.avaliacoes || []);
+      }catch(err){
+        statusEl.textContent = "Não foi possível ler este arquivo de backup.";
+        return;
+      }
+      if(!Array.isArray(lista) || lista.length===0){
+        statusEl.textContent = "Nenhuma avaliação encontrada neste arquivo.";
+        return;
+      }
+      if(firebaseAtivo && db){
+        var batch = db.batch();
+        lista.forEach(function(h){
+          var registro = {
+            data: h.data, candidato: h.candidato, respostas: h.respostas,
+            E: h.E, G: h.G, diff: h.diff, chave: h.chave,
+            deficiencia: h.deficiencia || {possui:false, tipo:"", especificacao:""},
+            criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          batch.set(db.collection("avaliacoes").doc(), registro);
+        });
+        batch.commit().then(function(){
+          statusEl.textContent = lista.length+' avaliação(ões) importada(s) para o Firebase — todas as máquinas conectadas já veem os dados. Use "Verificar duplicados" se a mesma pessoa aparecer em mais de um backup.';
+        }).catch(function(err){
+          console.error("Firestore (importar backup):", err);
+          statusEl.textContent = "Erro ao importar para o Firebase — veja o console (F12).";
+        });
+      }else{
+        lista.forEach(function(h){
+          var copia = {};
+          for(var k in h){ copia[k]=h[k]; }
+          copia.id = uid();
+          state.historico.unshift(copia);
+        });
+        storageSet("gpv_historico", state.historico);
+        renderCandidatos();
+        renderRelatorios();
+        statusEl.textContent = lista.length+" avaliação(ões) importada(s) (salvas apenas neste navegador — Firebase ainda não conectado).";
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  /* ================= Relatório ================= */
+  function atualizarRelatorio(){
+    var pronto = state.candidato && respostasCompletas();
+    document.getElementById("relatorioPlaceholder").style.display = pronto ? "none" : "block";
+    document.getElementById("relatorio").style.display = pronto ? "block" : "none";
+    document.getElementById("reportToolbar").style.display = pronto ? "flex" : "none";
+    if(!pronto) return;
+
+    var dados = montarResultado();
+    document.getElementById("relatorio").innerHTML = renderRelatorioHTML(dados);
+  }
+
+  function montarResultado(){
+    var E=0, G=0;
+    PERGUNTAS.forEach(function(p){
+      var v = state.respostas[p.n]||0;
+      if(p.dim==="E") E+=v; else G+=v;
+    });
+    var chave = classificar(E,G);
+    return {
+      candidato: state.candidato,
+      data: document.getElementById("dataAvaliacao").value || hojeISO(),
+      respostas: Object.assign({}, state.respostas),
+      E:E, G:G, diff:Math.abs(E-G),
+      chave: chave,
+      diagnostico: DIAGNOSTICOS[chave],
+      deficiencia: Object.assign({}, state.deficiencia)
+    };
+  }
+
+  function linhasDimensao(dim, respostas){
+    return PERGUNTAS.filter(function(p){ return p.dim===dim; }).map(function(p){
+      return '<div class="rep-dim-linha"><span>Questão '+p.n+'</span><span>'+(respostas[p.n]!=null?respostas[p.n]:"—")+'</span></div>';
+    }).join("");
+  }
+
+  function textoPcdResumo(def){
+    if(!def || !def.possui) return "Não";
+    var t = def.tipo ? def.tipo : "tipo não informado";
+    return "Sim — "+t;
+  }
+
+  function renderRelatorioHTML(d){
+    var c = d.candidato;
+    return ''+
+    '<div class="rep-head">'+
+    '  <div class="rep-orgao">Secretaria da Educação do Estado da Bahia — Coordenação de Provimento e Movimentação (CPM)</div>'+
+    '  <div class="rep-titulo">Relatório de Avaliação de Perfil Vocacional</div>'+
+    '  <div class="rep-sub">Técnico de Nível Médio — Convocação Ensino Médio</div>'+
+    '</div>'+
+    '<div class="rep-divider"></div>'+
+    '<dl class="rep-dados">'+
+    '  <div><dt>Nome</dt><dd>'+escapeHtml(c.nome)+'</dd></div>'+
+    '  <div><dt>CPF</dt><dd>'+maskCPF(c.cpf)+'</dd></div>'+
+    '  <div><dt>Nº de inscrição</dt><dd>'+escapeHtml(c.insc||"—")+'</dd></div>'+
+    '  <div><dt>Município / NTE</dt><dd>'+escapeHtml(c.mun||"—")+(c.nte? ' · NTE '+escapeHtml(c.nte):'')+'</dd></div>'+
+    (c.formacao ? '  <div class="full"><dt>Formação</dt><dd>'+escapeHtml(c.formacao)+'</dd></div>' : '')+
+    '  <div><dt>Data da avaliação</dt><dd>'+fmtDataBR(d.data)+'</dd></div>'+
+    '  <div><dt>Pessoa com deficiência (PcD)</dt><dd>'+textoPcdResumo(d.deficiencia)+'</dd></div>'+
+    (d.deficiencia && d.deficiencia.possui && d.deficiencia.especificacao ?
+      '  <div class="full"><dt>Especificação</dt><dd style="font-weight:500;">'+escapeHtml(d.deficiencia.especificacao)+'</dd></div>' : '')+
+    '</dl>'+
+    '<div class="rep-calc">'+
+    '  <div>'+
+    '    <div class="rep-dim-titulo e">Dimensão Escola — E (questões ímpares)</div>'+
+    linhasDimensao("E", d.respostas)+
+    '    <div class="rep-dim-total"><span>Total E</span><span>'+d.E+'</span></div>'+
+    '  </div>'+
+    '  <div>'+
+    '    <div class="rep-dim-titulo g">Dimensão Gestão — G (questões pares)</div>'+
+    linhasDimensao("G", d.respostas)+
+    '    <div class="rep-dim-total"><span>Total G</span><span>'+d.G+'</span></div>'+
+    '  </div>'+
+    '</div>'+
+    '<div class="rep-resultado '+d.chave+'">'+
+    '  <div class="diff">Diferença |E − G| = '+d.diff+' ponto(s)</div>'+
+    '  <div class="perfil">Perfil indicado: '+d.diagnostico.perfil+'</div>'+
+    '  <div class="tipo">'+d.diagnostico.tipo+'</div>'+
+    '  <div class="texto">'+d.diagnostico.texto+'</div>'+
+    '</div>';
+  }
+
+  /* ================= Ações do relatório / impressão ================= */
+  function prepararRegistro(h){
+    var d = {};
+    for(var k in h){ d[k] = h[k]; }
+    if(!d.diagnostico) d.diagnostico = DIAGNOSTICOS[d.chave];
+    if(!d.deficiencia) d.deficiencia = {possui:false, tipo:"", especificacao:""};
+    return d;
+  }
+  function imprimirRelatorios(lista){
+    var stage = document.getElementById("printStage");
+    stage.innerHTML = lista.map(function(h){
+      return '<div class="print-page">'+renderRelatorioHTML(prepararRegistro(h))+'</div>';
+    }).join("");
+    setTimeout(function(){ window.print(); }, 60);
+  }
+  document.getElementById("btnImprimir").addEventListener("click", function(){
+    imprimirRelatorios([montarResultado()]);
+  });
+
+  function carregarAvaliacaoNoFormulario(item, modoEdicao){
+    ativarAba("nova");
+    selecionarCandidato(item.candidato);
+    state.respostas = Object.assign({}, item.respostas);
+    document.getElementById("dataAvaliacao").value = item.data;
+    renderQuestionario();
+    setPcdUI(
+      item.deficiencia ? !!item.deficiencia.possui : false,
+      item.deficiencia ? item.deficiencia.tipo : "",
+      item.deficiencia ? item.deficiencia.especificacao : "",
+      null
+    );
+    Object.keys(state.respostas).forEach(function(q){
+      var v = state.respostas[q];
+      document.querySelectorAll('.escala[data-q="'+q+'"] button').forEach(function(b){
+        var on = parseInt(b.getAttribute("data-v"),10)===v;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", on?"true":"false");
+      });
+    });
+    atualizarProgresso();
+    atualizarRelatorio();
+    if(modoEdicao){ entrarModoEdicao(item.id, item.candidato.nome); }
+    else{ sairModoEdicao(); }
+  }
+
+  function resetFormulario(){
+    sairModoEdicao();
+    limparCandidato();
+    state.respostas = {};
+    document.getElementById("dataAvaliacao").value = hojeISO();
+    renderQuestionario();
+    atualizarProgresso();
+    atualizarRelatorio();
+  }
+  document.getElementById("btnNovaAvaliacao").addEventListener("click", function(){
+    resetFormulario();
+    window.scrollTo({top:0, behavior:"smooth"});
+  });
+
+  document.getElementById("btnSalvarHist").addEventListener("click", function(){
+    var d = montarResultado();
+    var registro = {
+      data: d.data,
+      candidato: d.candidato,
+      respostas: d.respostas,
+      E: d.E, G: d.G, diff: d.diff, chave: d.chave,
+      deficiencia: d.deficiencia
+    };
+    var btn = document.getElementById("btnSalvarHist");
+    var modoEdicao = !!state.editandoId;
+    function marcarFeito(msg){
+      btn.textContent = msg;
+      setTimeout(function(){ btn.textContent = state.editandoId ? "Atualizar avaliação" : "Salvar no histórico"; }, 1600);
+    }
+    function marcarErro(){
+      btn.textContent = "Erro ao salvar";
+      setTimeout(function(){ btn.textContent = modoEdicao ? "Atualizar avaliação" : "Salvar no histórico"; }, 2000);
+    }
+
+    if(modoEdicao){
+      var id = state.editandoId;
+      if(firebaseAtivo && db){
+        db.collection("avaliacoes").doc(id).update(registro).then(function(){
+          marcarFeito("Atualizado ✓");
+          sairModoEdicao();
+        }).catch(function(err){ console.error("Firestore (atualizar avaliacao):", err); marcarErro(); });
+      }else{
+        var idx = state.historico.findIndex(function(h){ return h.id===id; });
+        if(idx>-1){
+          registro.id = id;
+          state.historico[idx] = registro;
+          storageSet("gpv_historico", state.historico);
+        }
+        marcarFeito("Atualizado ✓");
+        sairModoEdicao();
+        renderCandidatos();
+        renderRelatorios();
+      }
+    }else{
+      if(firebaseAtivo && db){
+        registro.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
+        db.collection("avaliacoes").add(registro).then(function(){ marcarFeito("Salvo ✓"); }).catch(function(err){
+          console.error("Firestore (salvar avaliacao):", err);
+          marcarErro();
+        });
+      }else{
+        registro.id = uid();
+        state.historico.unshift(registro);
+        storageSet("gpv_historico", state.historico);
+        renderCandidatos();
+        renderRelatorios();
+        marcarFeito("Salvo ✓");
+      }
+    }
+  });
+
+  /* ================= Edição / exclusão de avaliações ================= */
+  function entrarModoEdicao(id, nomeCandidato){
+    state.editandoId = id;
+    document.getElementById("editBanner").style.display = "flex";
+    document.getElementById("editBannerTexto").textContent = "Editando avaliação de "+nomeCandidato+".";
+    document.getElementById("btnSalvarHist").textContent = "Atualizar avaliação";
+  }
+  function sairModoEdicao(){
+    state.editandoId = null;
+    document.getElementById("editBanner").style.display = "none";
+    document.getElementById("btnSalvarHist").textContent = "Salvar no histórico";
+  }
+  document.getElementById("btnCancelarEdicao").addEventListener("click", function(){
+    resetFormulario();
+    window.scrollTo({top:0, behavior:"smooth"});
+  });
+
+  function excluirAvaliacao(id){
+    if(firebaseAtivo && db){
+      db.collection("avaliacoes").doc(id).delete().catch(function(err){
+        console.error("Firestore (excluir):", err);
+        alert("Não foi possível excluir esta avaliação.");
+      });
+    }else{
+      state.historico = state.historico.filter(function(h){ return h.id!==id; });
+      storageSet("gpv_historico", state.historico);
+      renderCandidatos();
+      renderRelatorios();
+    }
+    if(state.editandoId===id) sairModoEdicao();
+  }
+
+  /* ================= Aba Relatórios (filtro + impressão em lote) ================= */
+  function preencherFiltro(id, valores){
+    var sel = document.getElementById(id);
+    var atual = sel.value;
+    sel.innerHTML = '<option value="">Todos</option>'+valores.map(function(v){
+      return '<option value="'+escapeHtml(v)+'">'+escapeHtml(v)+'</option>';
+    }).join("");
+    if(valores.indexOf(atual)!==-1) sel.value = atual;
+  }
+  function renderRelatorios(){
+    var body = document.getElementById("relBody");
+    if(!body) return;
+    var todos = state.historico || [];
+
+    var municipios = Array.from(new Set(todos.map(function(h){ return (h.candidato&&h.candidato.mun)||""; }).filter(Boolean))).sort();
+    var ntes = Array.from(new Set(todos.map(function(h){ return (h.candidato&&h.candidato.nte)||""; }).filter(Boolean))).sort();
+    preencherFiltro("filtroMunicipio", municipios);
+    preencherFiltro("filtroNte", ntes);
+
+    var fPerfil = document.getElementById("filtroPerfil").value;
+    var fMun = document.getElementById("filtroMunicipio").value;
+    var fNte = document.getElementById("filtroNte").value;
+
+    var lista = todos.filter(function(h){
+      if(fPerfil && h.chave!==fPerfil) return false;
+      if(fMun && (h.candidato&&h.candidato.mun)!==fMun) return false;
+      if(fNte && (h.candidato&&h.candidato.nte)!==fNte) return false;
+      return true;
+    });
+
+    document.getElementById("relCount").textContent = lista.length+" de "+todos.length+" avaliação(ões)";
+    var table = document.getElementById("relTable");
+    var empty = document.getElementById("relEmpty");
+    if(lista.length===0){
+      table.style.display="none"; body.innerHTML=""; empty.style.display="block";
+      atualizarSelecaoLote();
+      return;
+    }
+    table.style.display="table"; empty.style.display="none";
+
+    body.innerHTML = lista.map(function(h){
+      var diag = DIAGNOSTICOS[h.chave];
+      return '<tr>'+
+        '<td><input type="checkbox" class="rel-check" data-id="'+h.id+'"></td>'+
+        '<td>'+fmtDataBR(h.data)+'</td>'+
+        '<td>'+escapeHtml(h.candidato.nome)+'</td>'+
+        '<td>'+escapeHtml((h.candidato&&h.candidato.mun)||"—")+'</td>'+
+        '<td>'+escapeHtml((h.candidato&&h.candidato.nte)||"—")+'</td>'+
+        '<td><span class="badge '+h.chave+'">'+diag.perfil+'</span></td>'+
+        '</tr>';
+    }).join("");
+
+    document.getElementById("relSelAll").checked = false;
+    body.querySelectorAll(".rel-check").forEach(function(cb){
+      cb.addEventListener("change", atualizarSelecaoLote);
+    });
+    atualizarSelecaoLote();
+  }
+  function atualizarSelecaoLote(){
+    var marcados = document.querySelectorAll("#relBody .rel-check:checked");
+    document.getElementById("relSelCount").textContent = marcados.length;
+    document.getElementById("btnImprimirLote").disabled = marcados.length===0;
+  }
+  document.getElementById("filtroPerfil").addEventListener("change", renderRelatorios);
+  document.getElementById("filtroMunicipio").addEventListener("change", renderRelatorios);
+  document.getElementById("filtroNte").addEventListener("change", renderRelatorios);
+  document.getElementById("relSelAll").addEventListener("change", function(){
+    var marcar = this.checked;
+    document.querySelectorAll("#relBody .rel-check").forEach(function(cb){ cb.checked = marcar; });
+    atualizarSelecaoLote();
+  });
+  document.getElementById("btnImprimirLote").addEventListener("click", function(){
+    var ids = Array.from(document.querySelectorAll("#relBody .rel-check:checked")).map(function(cb){ return cb.getAttribute("data-id"); });
+    var lista = (state.historico||[]).filter(function(h){ return ids.indexOf(h.id)!==-1; });
+    if(lista.length===0) return;
+    imprimirRelatorios(lista);
+  });
+
+  /* ================= Abas ================= */
+  function ativarAba(nome){
+    document.querySelectorAll(".tab-btn").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-tab")===nome);
+    });
+    document.getElementById("panel-nova").classList.toggle("active", nome==="nova");
+    document.getElementById("panel-candidatos").classList.toggle("active", nome==="candidatos");
+    document.getElementById("panel-relatorios").classList.toggle("active", nome==="relatorios");
+    state.ativeTab = nome;
+    if(nome==="candidatos") renderCandidatos();
+    if(nome==="relatorios") renderRelatorios();
+  }
+  document.querySelectorAll(".tab-btn").forEach(function(b){
+    b.addEventListener("click", function(){ ativarAba(b.getAttribute("data-tab")); });
+  });
+
+  /* ================= Firebase (opcional — veja firebaseConfig no topo) ================= */
+  function isFirebaseConfigurado(){
+    return !!(firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf("SUA_") !== 0);
+  }
+  function atualizarStatusConexao(estado){
+    var el = document.getElementById("connStatus");
+    if(!el) return;
+    if(estado==="on"){
+      el.className = "conn-status on";
+      el.innerHTML = '<span class="dot"></span>Sincronizado (Firebase)';
+    }else if(estado==="erro"){
+      el.className = "conn-status off";
+      el.innerHTML = '<span class="dot"></span>Reconectando…';
+    }else{
+      el.className = "conn-status off";
+      el.innerHTML = '<span class="dot"></span>Modo local';
+    }
+  }
+  function carregarDadosLocais(){
+    state.historico = storageGet("gpv_historico", []);
+    state.candidatosExtra = storageGet("gpv_candidatos_extra", []);
+    atualizarContadorBase();
+    renderCandidatos();
+    renderRelatorios();
+  }
+
+  var _unsubAvaliacoes = null, _unsubCandidatos = null;
+  var _tentativasReconexao = 0;
+  function pararListeners(){
+    if(_unsubAvaliacoes){ try{ _unsubAvaliacoes(); }catch(e){} _unsubAvaliacoes = null; }
+    if(_unsubCandidatos){ try{ _unsubCandidatos(); }catch(e){} _unsubCandidatos = null; }
+  }
+  function iniciarListeners(){
+    pararListeners();
+    _unsubAvaliacoes = db.collection("avaliacoes").limit(1000).onSnapshot(function(snap){
+      _tentativasReconexao = 0;
+      atualizarStatusConexao("on");
+      state.historico = snap.docs.map(function(doc){
+        var x = doc.data(); x.id = doc.id; return x;
+      });
+      state.historico.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
+      renderCandidatos();
+      renderRelatorios();
+    }, function(err){
+      console.error("Firestore (avaliacoes):", err);
+      agendarReconexao();
+    });
+    _unsubCandidatos = db.collection("candidatosExtra").onSnapshot(function(snap){
+      state.candidatosExtra = snap.docs.map(function(doc){ return doc.data(); });
+      atualizarContadorBase();
+    }, function(err){
+      console.error("Firestore (candidatosExtra):", err);
+      agendarReconexao();
+    });
+  }
+  function agendarReconexao(){
+    atualizarStatusConexao("erro");
+    pararListeners();
+    _tentativasReconexao++;
+    var espera = Math.min(5000 * _tentativasReconexao, 30000);
+    setTimeout(function(){
+      if(firebaseAtivo) iniciarListeners();
+    }, espera);
+  }
+  function reconectarFirebase(){
+    _tentativasReconexao = 0;
+    if(firebaseAtivo && db){ iniciarListeners(); }
+    else{ initFirebase(); }
+  }
+
+  function initFirebase(){
+    if(typeof firebase === "undefined" || !isFirebaseConfigurado()){
+      atualizarStatusConexao("off");
+      carregarDadosLocais();
+      return;
+    }
+    try{
+      if(!firebase.apps || !firebase.apps.length){ firebase.initializeApp(firebaseConfig); }
+      db = firebase.firestore();
+      firebaseAtivo = true;
+      atualizarStatusConexao("on");
+      iniciarListeners();
+    }catch(e){
+      console.error("Firebase init:", e);
+      firebaseAtivo = false;
+      atualizarStatusConexao("erro");
+      carregarDadosLocais();
+    }
+  }
+
+  /* ================= Inicialização ================= */
+  function init(){
+    document.getElementById("dataAvaliacao").value = hojeISO();
+    renderQuestionario();
+    atualizarProgresso();
+    atualizarRelatorio();
+    initFirebase();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
