@@ -108,6 +108,9 @@
   .field{ margin-bottom:14px; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:600px){ .row2{ grid-template-columns:1fr; } }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+  @media (max-width:700px){ .row3{ grid-template-columns:1fr; } }
+  .field-erro{ font-size:12px; color:var(--danger); margin-top:6px; }
 
   .search-wrap{ position:relative; }
   .search-results{
@@ -285,24 +288,22 @@
   .row-actions{ display:flex; gap:6px; }
 
   /* ---------- Impressão ---------- */
+  #printStage{ display:none; }
   @media print{
     @page{ size:A4; margin:15mm 16mm; }
     html, body{ background:#fff !important; height:auto !important; }
-    .no-print{ display:none !important; }
-    .wrap{ max-width:none !important; margin:0 !important; padding:0 !important; }
-    #cardRelatorio{
-      box-shadow:none !important; border:none !important; padding:0 !important; margin:0 !important;
-      background:#fff !important;
-    }
-    #relatorio{
+    .topbar, .wrap{ display:none !important; }
+    #printStage{
       display:block !important; width:100%; margin:0; padding:0;
       font-family: Arial, Helvetica, sans-serif !important; color:#111 !important;
     }
-    #relatorio .rep-titulo{ color:#1F3864 !important; }
-    #relatorio .rep-resultado{ background:#F5F5F5 !important; border-color:#ccc !important; }
-    #relatorio .rep-resultado.escola{ border-left-color:#1F7A5C !important; }
-    #relatorio .rep-resultado.gestao{ border-left-color:#2E5395 !important; }
-    #relatorio .rep-resultado.hibrido{ border-left-color:#966017 !important; }
+    #printStage .print-page{ page-break-after:always; }
+    #printStage .print-page:last-child{ page-break-after:auto; }
+    #printStage .rep-titulo{ color:#1F3864 !important; }
+    #printStage .rep-resultado{ background:#F5F5F5 !important; border-color:#ccc !important; }
+    #printStage .rep-resultado.escola{ border-left-color:#1F7A5C !important; }
+    #printStage .rep-resultado.gestao{ border-left-color:#2E5395 !important; }
+    #printStage .rep-resultado.hibrido{ border-left-color:#966017 !important; }
   }
 </style>
 </head>
@@ -331,7 +332,7 @@
   <div class="tabs no-print">
     <button class="tab-btn active" data-tab="nova" type="button">Nova avaliação</button>
     <button class="tab-btn" data-tab="candidatos" type="button">Candidatos <span id="candCount"></span></button>
-    <button class="tab-btn" data-tab="historico" type="button">Histórico <span id="histCount"></span></button>
+    <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
   </div>
 
   <!-- ===================== ABA: NOVA AVALIAÇÃO ===================== -->
@@ -457,26 +458,6 @@
     </div>
   </div>
 
-  <!-- ===================== ABA: HISTÓRICO ===================== -->
-  <div class="tab-panel no-print" id="panel-historico">
-    <div class="card">
-      <div class="hist-actions">
-        <h2 style="font-size:15px;">Avaliações salvas</h2>
-        <button class="btn btn-sm" type="button" id="btnLimparHist">Limpar histórico</button>
-      </div>
-      <div class="field" style="max-width:340px;">
-        <input type="text" id="histBusca" placeholder="Buscar por nome ou CPF…">
-      </div>
-      <div class="table-scroll">
-        <table class="hist" id="histTable" style="display:none">
-          <thead><tr><th>Data</th><th>Candidato</th><th>E</th><th>G</th><th>Perfil</th><th></th><th></th></tr></thead>
-          <tbody id="histBody"></tbody>
-        </table>
-      </div>
-      <div class="hist-empty" id="histEmpty">Nenhuma avaliação salva ainda.</div>
-    </div>
-  </div>
-
   <!-- ===================== ABA: CANDIDATOS ===================== -->
   <div class="tab-panel no-print" id="panel-candidatos">
     <div class="card">
@@ -490,14 +471,15 @@
       </div>
       <div class="row2">
         <div class="field"><label for="addInsc">Nº de inscrição</label><input type="text" id="addInsc" placeholder="Opcional"></div>
-        <div class="field"><label for="addMun">Município</label><input type="text" id="addMun" placeholder="Opcional"></div>
+        <div class="field"><label for="addMun">Município *</label><input type="text" id="addMun" placeholder="Obrigatório"></div>
       </div>
       <div class="row2">
-        <div class="field"><label for="addNte">NTE</label><input type="text" id="addNte" placeholder="Opcional"></div>
+        <div class="field"><label for="addNte">NTE *</label><input type="text" id="addNte" placeholder="Obrigatório"></div>
         <div class="field" style="display:flex; align-items:flex-end;">
           <button class="btn btn-primary btn-sm" type="button" id="btnAddCandidato">Adicionar à base</button>
         </div>
       </div>
+      <div class="field-erro" id="addErro" style="display:none"></div>
 
       <div class="import-row">
         <button class="btn btn-sm" type="button" id="btnImportar">Importar planilha (.xlsx / .csv)</button>
@@ -507,8 +489,19 @@
     </div>
 
     <div class="card">
+      <div class="edit-banner no-print" id="dupBanner" style="display:none">
+        <span id="dupBannerTexto"></span>
+        <span class="row-actions">
+          <button class="link-btn" type="button" id="btnConfirmarDup">Remover duplicados agora</button>
+          <button class="link-btn" type="button" id="btnIgnorarDup">Ignorar</button>
+        </span>
+      </div>
       <div class="hist-actions">
         <h2 style="font-size:15px;">Base de candidatos <span id="candCountLabel"></span></h2>
+        <span class="row-actions">
+          <button class="btn btn-sm" type="button" id="btnAtualizarAgora" title="Forçar releitura dos dados">↻ Atualizar agora</button>
+          <button class="btn btn-sm" type="button" id="btnVerificarDup">Verificar duplicados</button>
+        </span>
       </div>
       <div class="field" style="max-width:340px;">
         <input type="text" id="candBusca" placeholder="Buscar por nome, CPF ou inscrição…">
@@ -522,7 +515,52 @@
     </div>
   </div>
 
+  <!-- ===================== ABA: RELATÓRIOS ===================== -->
+  <div class="tab-panel no-print" id="panel-relatorios">
+    <div class="card">
+      <div class="card-head">
+        <h2>Filtrar avaliações</h2>
+        <span class="hint" id="relCount"></span>
+      </div>
+      <div class="row3">
+        <div class="field">
+          <label for="filtroPerfil">Perfil</label>
+          <select id="filtroPerfil">
+            <option value="">Todos</option>
+            <option value="escola">Escola / Atendimento Direto</option>
+            <option value="gestao">Gestão / Unidade Administrativa</option>
+            <option value="hibrido">Perfil Coringa / Híbrido</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filtroMunicipio">Município</label>
+          <select id="filtroMunicipio"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+          <label for="filtroNte">NTE</label>
+          <select id="filtroNte"><option value="">Todos</option></select>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="hist" id="relTable">
+          <thead><tr>
+            <th><input type="checkbox" id="relSelAll"></th>
+            <th>Data</th><th>Candidato</th><th>Município</th><th>NTE</th><th>Perfil</th>
+          </tr></thead>
+          <tbody id="relBody"></tbody>
+        </table>
+      </div>
+      <div class="hist-empty" id="relEmpty">Nenhuma avaliação encontrada.</div>
+    </div>
+
+    <div class="report-toolbar no-print" style="justify-content:flex-start;">
+      <button class="btn btn-primary" type="button" id="btnImprimirLote" disabled>Imprimir selecionados (<span id="relSelCount">0</span>)</button>
+    </div>
+  </div>
+
 </div>
+
+<div id="printStage"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
@@ -729,7 +767,7 @@
                '</div>';
       }).join("");
       buscaResultados.querySelectorAll(".search-item").forEach(function(el, i){
-        el.addEventListener("click", function(){ selecionarCandidato(lista[i]); });
+        el.addEventListener("click", function(){ iniciarAvaliacao(lista[i]); });
       });
     }
     buscaResultados.classList.add("show");
@@ -823,7 +861,7 @@
   document.getElementById("btnUsarManual").addEventListener("click", function(){
     var nome = document.getElementById("manNome").value.trim();
     if(!nome){ document.getElementById("manNome").focus(); return; }
-    selecionarCandidato({
+    iniciarAvaliacao({
       nome:nome,
       cpf:document.getElementById("manCpf").value.trim(),
       insc:document.getElementById("manInsc").value.trim(),
@@ -831,6 +869,19 @@
       nte:"", manual:true
     });
   });
+
+  /* Ponto único de entrada para começar a avaliar alguém: se já existe avaliação
+     para esse candidato (por CPF, ou por inscrição quando não há CPF), abre a
+     avaliação existente em modo de edição em vez de permitir uma nova (evita duplicidade). */
+  function iniciarAvaliacao(c){
+    var registro = avaliacaoMaisRecente(c);
+    if(registro){
+      carregarAvaliacaoNoFormulario(registro, true);
+      window.scrollTo({top:0, behavior:"smooth"});
+      return;
+    }
+    selecionarCandidato(c);
+  }
 
   /* ================= Importar planilha ================= */
   document.getElementById("btnImportar").addEventListener("click", function(){
@@ -905,7 +956,7 @@
   }
 
   /* ================= Aba Candidatos ================= */
-  function avaliadoInfo(c){
+  function registrosDoCandidato(c){
     var cpfC = digits(c.cpf), inscC = (c.insc||"").trim();
     var achados = (state.historico||[]).filter(function(h){
       var hc = h.candidato||{};
@@ -913,9 +964,17 @@
       if(!cpfC && inscC && (hc.insc||"").trim()===inscC) return true;
       return false;
     });
-    if(achados.length===0) return {avaliado:false};
     achados.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
-    return {avaliado:true, data:achados[0].data, total:achados.length};
+    return achados;
+  }
+  function avaliacaoMaisRecente(c){
+    var r = registrosDoCandidato(c);
+    return r.length ? r[0] : null;
+  }
+  function avaliadoInfo(c){
+    var r = registrosDoCandidato(c);
+    if(r.length===0) return {avaliado:false};
+    return {avaliado:true, data:r[0].data, total:r.length};
   }
 
   function renderCandidatos(){
@@ -936,13 +995,20 @@
       var statusHtml = av.avaliado
         ? '<span class="status-pill ok" title="'+av.total+' avaliação(ões) — última em '+fmtDataBR(av.data)+'">✓ Avaliado ('+fmtDataBR(av.data)+')</span>'
         : '<span class="status-pill pend">— Pendente</span>';
+      var acaoHtml = av.avaliado
+        ? '<span class="row-actions">'+
+          '<button class="btn btn-sm" type="button" data-editar="'+i+'">Editar</button>'+
+          '<button class="btn btn-sm" type="button" data-imprimir="'+i+'">Imprimir</button>'+
+          '<button class="btn-icon" type="button" data-excluir="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'+
+          '</span>'
+        : '<button class="btn btn-sm" type="button" data-avaliar="'+i+'">Avaliar</button>';
       return '<tr>'+
         '<td>'+escapeHtml(c.nome)+'</td>'+
         '<td>'+(c.cpf?maskCPF(c.cpf):'—')+'</td>'+
         '<td>'+escapeHtml(c.insc||"—")+'</td>'+
         '<td>'+escapeHtml(c.mun||"—")+'</td>'+
         '<td>'+statusHtml+'</td>'+
-        '<td><button class="btn btn-sm" type="button" data-avaliar="'+i+'">Avaliar</button></td>'+
+        '<td>'+acaoHtml+'</td>'+
         '</tr>';
     }).join("");
 
@@ -950,23 +1016,70 @@
       btn.addEventListener("click", function(){
         var c = lista[parseInt(btn.getAttribute("data-avaliar"),10)];
         ativarAba("nova");
-        selecionarCandidato(c);
+        iniciarAvaliacao(c);
         window.scrollTo({top:0, behavior:"smooth"});
+      });
+    });
+    tbody.querySelectorAll("[data-editar]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var c = lista[parseInt(btn.getAttribute("data-editar"),10)];
+        var reg = avaliacaoMaisRecente(c);
+        if(!reg) return;
+        ativarAba("nova");
+        carregarAvaliacaoNoFormulario(reg, true);
+        window.scrollTo({top:0, behavior:"smooth"});
+      });
+    });
+    tbody.querySelectorAll("[data-imprimir]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var c = lista[parseInt(btn.getAttribute("data-imprimir"),10)];
+        var reg = avaliacaoMaisRecente(c);
+        if(!reg) return;
+        imprimirRelatorios([reg]);
+      });
+    });
+    tbody.querySelectorAll("[data-excluir]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var c = lista[parseInt(btn.getAttribute("data-excluir"),10)];
+        var reg = avaliacaoMaisRecente(c);
+        if(!reg) return;
+        if(!confirm("Excluir a avaliação de "+c.nome+"? Esta ação não pode ser desfeita.")) return;
+        excluirAvaliacao(reg.id);
       });
     });
   }
   document.getElementById("candBusca").addEventListener("input", renderCandidatos);
   document.getElementById("irParaCandidatos").addEventListener("click", function(){ ativarAba("candidatos"); });
+  document.getElementById("btnAtualizarAgora").addEventListener("click", function(){
+    if(firebaseAtivo && db){
+      reconectarFirebase();
+    }else{
+      carregarDadosLocais();
+    }
+  });
 
   document.getElementById("btnAddCandidato").addEventListener("click", function(){
+    var erroEl = document.getElementById("addErro");
     var nome = document.getElementById("addNome").value.trim();
-    if(!nome){ document.getElementById("addNome").focus(); return; }
+    var mun = document.getElementById("addMun").value.trim();
+    var nte = document.getElementById("addNte").value.trim();
+    var faltando = [];
+    if(!nome) faltando.push("Nome completo");
+    if(!mun) faltando.push("Município");
+    if(!nte) faltando.push("NTE");
+    if(faltando.length){
+      erroEl.textContent = "Preencha: "+faltando.join(", ")+".";
+      erroEl.style.display = "block";
+      document.getElementById(!nome?"addNome":(!mun?"addMun":"addNte")).focus();
+      return;
+    }
+    erroEl.style.display = "none";
     var novo = {
       nome: nome,
       cpf: document.getElementById("addCpf").value.trim(),
       insc: document.getElementById("addInsc").value.trim(),
-      mun: document.getElementById("addMun").value.trim(),
-      nte: document.getElementById("addNte").value.trim(),
+      mun: mun,
+      nte: nte,
       pne: ""
     };
     function limparForm(){
@@ -979,7 +1092,8 @@
     if(firebaseAtivo && db){
       db.collection("candidatosExtra").add(novo).then(limparForm).catch(function(err){
         console.error("Firestore (adicionar candidato):", err);
-        alert("Não foi possível adicionar o candidato ao Firebase.");
+        erroEl.textContent = "Não foi possível adicionar o candidato ao Firebase.";
+        erroEl.style.display = "block";
       });
     }else{
       state.candidatosExtra.push(novo);
@@ -988,6 +1102,63 @@
       limparForm();
     }
   });
+
+  /* ---- Duplicidades: mesma pessoa (CPF) com mais de uma avaliação salva ---- */
+  function detectarDuplicados(){
+    var porCpf = {};
+    (state.historico||[]).forEach(function(h){
+      var cpf = digits(h.candidato && h.candidato.cpf);
+      if(!cpf) return;
+      (porCpf[cpf] = porCpf[cpf] || []).push(h);
+    });
+    var grupos = [];
+    Object.keys(porCpf).forEach(function(cpf){
+      var lista = porCpf[cpf];
+      if(lista.length > 1){
+        lista.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
+        grupos.push(lista);
+      }
+    });
+    return grupos;
+  }
+  document.getElementById("btnVerificarDup").addEventListener("click", function(){
+    var grupos = detectarDuplicados();
+    var banner = document.getElementById("dupBanner");
+    if(grupos.length===0){
+      document.getElementById("dupBannerTexto").textContent = "Nenhuma duplicidade encontrada.";
+      document.getElementById("btnConfirmarDup").style.display = "none";
+      banner.style.display = "flex";
+      setTimeout(function(){ banner.style.display="none"; document.getElementById("btnConfirmarDup").style.display=""; }, 3000);
+      return;
+    }
+    var totalRemover = grupos.reduce(function(s,g){ return s+(g.length-1); }, 0);
+    document.getElementById("dupBannerTexto").textContent =
+      grupos.length+" candidato(s) com avaliação duplicada — "+totalRemover+" registro(s) mais antigo(s) serão removidos, mantendo sempre o mais recente de cada um.";
+    banner.style.display = "flex";
+    banner.dataset.grupos = "1";
+    window._gpvDuplicados = grupos;
+  });
+  document.getElementById("btnIgnorarDup").addEventListener("click", function(){
+    document.getElementById("dupBanner").style.display = "none";
+  });
+  document.getElementById("btnConfirmarDup").addEventListener("click", function(){
+    var grupos = window._gpvDuplicados || [];
+    var idsRemover = [];
+    grupos.forEach(function(g){ g.slice(1).forEach(function(h){ idsRemover.push(h.id); }); });
+    if(idsRemover.length===0){ document.getElementById("dupBanner").style.display="none"; return; }
+    if(firebaseAtivo && db){
+      var batch = db.batch();
+      idsRemover.forEach(function(id){ batch.delete(db.collection("avaliacoes").doc(id)); });
+      batch.commit().catch(function(err){ console.error("Firestore (remover duplicados):", err); alert("Não foi possível remover todas as duplicidades."); });
+    }else{
+      state.historico = state.historico.filter(function(h){ return idsRemover.indexOf(h.id)===-1; });
+      storageSet("gpv_historico", state.historico);
+      renderCandidatos();
+      renderRelatorios();
+    }
+    document.getElementById("dupBanner").style.display = "none";
+  });
+
 
   /* ================= Relatório ================= */
   function atualizarRelatorio(){
@@ -1019,9 +1190,9 @@
     };
   }
 
-  function linhasDimensao(dim){
+  function linhasDimensao(dim, respostas){
     return PERGUNTAS.filter(function(p){ return p.dim===dim; }).map(function(p){
-      return '<div class="rep-dim-linha"><span>Questão '+p.n+'</span><span>'+(state.respostas[p.n]!=null?state.respostas[p.n]:"—")+'</span></div>';
+      return '<div class="rep-dim-linha"><span>Questão '+p.n+'</span><span>'+(respostas[p.n]!=null?respostas[p.n]:"—")+'</span></div>';
     }).join("");
   }
 
@@ -1053,12 +1224,12 @@
     '<div class="rep-calc">'+
     '  <div>'+
     '    <div class="rep-dim-titulo e">Dimensão Escola — E (questões ímpares)</div>'+
-    linhasDimensao("E")+
+    linhasDimensao("E", d.respostas)+
     '    <div class="rep-dim-total"><span>Total E</span><span>'+d.E+'</span></div>'+
     '  </div>'+
     '  <div>'+
     '    <div class="rep-dim-titulo g">Dimensão Gestão — G (questões pares)</div>'+
-    linhasDimensao("G")+
+    linhasDimensao("G", d.respostas)+
     '    <div class="rep-dim-total"><span>Total G</span><span>'+d.G+'</span></div>'+
     '  </div>'+
     '</div>'+
@@ -1070,8 +1241,50 @@
     '</div>';
   }
 
-  /* ================= Ações do relatório ================= */
-  document.getElementById("btnImprimir").addEventListener("click", function(){ window.print(); });
+  /* ================= Ações do relatório / impressão ================= */
+  function prepararRegistro(h){
+    var d = {};
+    for(var k in h){ d[k] = h[k]; }
+    if(!d.diagnostico) d.diagnostico = DIAGNOSTICOS[d.chave];
+    if(!d.deficiencia) d.deficiencia = {possui:false, tipo:"", especificacao:""};
+    return d;
+  }
+  function imprimirRelatorios(lista){
+    var stage = document.getElementById("printStage");
+    stage.innerHTML = lista.map(function(h){
+      return '<div class="print-page">'+renderRelatorioHTML(prepararRegistro(h))+'</div>';
+    }).join("");
+    setTimeout(function(){ window.print(); }, 60);
+  }
+  document.getElementById("btnImprimir").addEventListener("click", function(){
+    imprimirRelatorios([montarResultado()]);
+  });
+
+  function carregarAvaliacaoNoFormulario(item, modoEdicao){
+    ativarAba("nova");
+    selecionarCandidato(item.candidato);
+    state.respostas = Object.assign({}, item.respostas);
+    document.getElementById("dataAvaliacao").value = item.data;
+    renderQuestionario();
+    setPcdUI(
+      item.deficiencia ? !!item.deficiencia.possui : false,
+      item.deficiencia ? item.deficiencia.tipo : "",
+      item.deficiencia ? item.deficiencia.especificacao : "",
+      null
+    );
+    Object.keys(state.respostas).forEach(function(q){
+      var v = state.respostas[q];
+      document.querySelectorAll('.escala[data-q="'+q+'"] button').forEach(function(b){
+        var on = parseInt(b.getAttribute("data-v"),10)===v;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", on?"true":"false");
+      });
+    });
+    atualizarProgresso();
+    atualizarRelatorio();
+    if(modoEdicao){ entrarModoEdicao(item.id, item.candidato.nome); }
+    else{ sairModoEdicao(); }
+  }
 
   function resetFormulario(){
     sairModoEdicao();
@@ -1123,7 +1336,8 @@
         }
         marcarFeito("Atualizado ✓");
         sairModoEdicao();
-        renderHistorico();
+        renderCandidatos();
+        renderRelatorios();
       }
     }else{
       if(firebaseAtivo && db){
@@ -1136,13 +1350,14 @@
         registro.id = uid();
         state.historico.unshift(registro);
         storageSet("gpv_historico", state.historico);
-        renderHistorico();
+        renderCandidatos();
+        renderRelatorios();
         marcarFeito("Salvo ✓");
       }
     }
   });
 
-  /* ================= Histórico ================= */
+  /* ================= Edição / exclusão de avaliações ================= */
   function entrarModoEdicao(id, nomeCandidato){
     state.editandoId = id;
     document.getElementById("editBanner").style.display = "flex";
@@ -1168,112 +1383,88 @@
     }else{
       state.historico = state.historico.filter(function(h){ return h.id!==id; });
       storageSet("gpv_historico", state.historico);
-      renderHistorico();
+      renderCandidatos();
+      renderRelatorios();
     }
     if(state.editandoId===id) sairModoEdicao();
   }
 
-  function renderHistorico(){
+  /* ================= Aba Relatórios (filtro + impressão em lote) ================= */
+  function preencherFiltro(id, valores){
+    var sel = document.getElementById(id);
+    var atual = sel.value;
+    sel.innerHTML = '<option value="">Todos</option>'+valores.map(function(v){
+      return '<option value="'+escapeHtml(v)+'">'+escapeHtml(v)+'</option>';
+    }).join("");
+    if(valores.indexOf(atual)!==-1) sel.value = atual;
+  }
+  function renderRelatorios(){
+    var body = document.getElementById("relBody");
+    if(!body) return;
     var todos = state.historico || [];
-    var termo = normaliza(document.getElementById("histBusca").value);
-    var termoDig = digits(document.getElementById("histBusca").value);
-    var historico = todos.filter(function(h){
-      if(!termo) return true;
-      var nome = normaliza(h.candidato && h.candidato.nome);
-      var cpf = digits(h.candidato && h.candidato.cpf);
-      return nome.indexOf(termo)!==-1 || (termoDig.length>=3 && cpf.indexOf(termoDig)!==-1);
+
+    var municipios = Array.from(new Set(todos.map(function(h){ return (h.candidato&&h.candidato.mun)||""; }).filter(Boolean))).sort();
+    var ntes = Array.from(new Set(todos.map(function(h){ return (h.candidato&&h.candidato.nte)||""; }).filter(Boolean))).sort();
+    preencherFiltro("filtroMunicipio", municipios);
+    preencherFiltro("filtroNte", ntes);
+
+    var fPerfil = document.getElementById("filtroPerfil").value;
+    var fMun = document.getElementById("filtroMunicipio").value;
+    var fNte = document.getElementById("filtroNte").value;
+
+    var lista = todos.filter(function(h){
+      if(fPerfil && h.chave!==fPerfil) return false;
+      if(fMun && (h.candidato&&h.candidato.mun)!==fMun) return false;
+      if(fNte && (h.candidato&&h.candidato.nte)!==fNte) return false;
+      return true;
     });
 
-    var body = document.getElementById("histBody");
-    var table = document.getElementById("histTable");
-    var empty = document.getElementById("histEmpty");
-    var countEl = document.getElementById("histCount");
-    countEl.textContent = todos.length ? "("+todos.length+")" : "";
-
-    if(historico.length===0){
-      table.style.display="none";
-      body.innerHTML="";
-      empty.style.display="block";
-      empty.textContent = todos.length===0 ? "Nenhuma avaliação salva ainda." : "Nenhum resultado para essa busca.";
-      renderCandidatos();
+    document.getElementById("relCount").textContent = lista.length+" de "+todos.length+" avaliação(ões)";
+    var table = document.getElementById("relTable");
+    var empty = document.getElementById("relEmpty");
+    if(lista.length===0){
+      table.style.display="none"; body.innerHTML=""; empty.style.display="block";
+      atualizarSelecaoLote();
       return;
     }
     table.style.display="table"; empty.style.display="none";
-    body.innerHTML = historico.map(function(h){
+
+    body.innerHTML = lista.map(function(h){
       var diag = DIAGNOSTICOS[h.chave];
       return '<tr>'+
+        '<td><input type="checkbox" class="rel-check" data-id="'+h.id+'"></td>'+
         '<td>'+fmtDataBR(h.data)+'</td>'+
         '<td>'+escapeHtml(h.candidato.nome)+'</td>'+
-        '<td>'+h.E+'</td>'+
-        '<td>'+h.G+'</td>'+
+        '<td>'+escapeHtml((h.candidato&&h.candidato.mun)||"—")+'</td>'+
+        '<td>'+escapeHtml((h.candidato&&h.candidato.nte)||"—")+'</td>'+
         '<td><span class="badge '+h.chave+'">'+diag.perfil+'</span></td>'+
-        '<td><button class="btn btn-sm" type="button" data-edit="'+h.id+'">Editar</button></td>'+
-        '<td><button class="btn-icon" type="button" data-del="'+h.id+'" title="Excluir" aria-label="Excluir">✕</button></td>'+
         '</tr>';
     }).join("");
 
-    body.querySelectorAll("[data-edit]").forEach(function(btn){
-      btn.addEventListener("click", function(){
-        var id = btn.getAttribute("data-edit");
-        var item = todos.filter(function(h){ return h.id===id; })[0];
-        if(!item) return;
-        ativarAba("nova");
-        selecionarCandidato(item.candidato);
-        state.respostas = Object.assign({}, item.respostas);
-        document.getElementById("dataAvaliacao").value = item.data;
-        renderQuestionario();
-        setPcdUI(
-          item.deficiencia ? !!item.deficiencia.possui : false,
-          item.deficiencia ? item.deficiencia.tipo : "",
-          item.deficiencia ? item.deficiencia.especificacao : "",
-          null
-        );
-        Object.keys(state.respostas).forEach(function(q){
-          var v = state.respostas[q];
-          document.querySelectorAll('.escala[data-q="'+q+'"] button').forEach(function(b){
-            var on = parseInt(b.getAttribute("data-v"),10)===v;
-            b.classList.toggle("on", on);
-            b.setAttribute("aria-pressed", on?"true":"false");
-          });
-        });
-        atualizarProgresso();
-        atualizarRelatorio();
-        entrarModoEdicao(item.id, item.candidato.nome);
-        window.scrollTo({top:0, behavior:"smooth"});
-      });
+    document.getElementById("relSelAll").checked = false;
+    body.querySelectorAll(".rel-check").forEach(function(cb){
+      cb.addEventListener("change", atualizarSelecaoLote);
     });
-    body.querySelectorAll("[data-del]").forEach(function(btn){
-      btn.addEventListener("click", function(){
-        if(!confirm("Excluir esta avaliação? Esta ação não pode ser desfeita.")) return;
-        excluirAvaliacao(btn.getAttribute("data-del"));
-      });
-    });
-
-    renderCandidatos();
+    atualizarSelecaoLote();
   }
-  document.getElementById("histBusca").addEventListener("input", renderHistorico);
-
-  document.getElementById("btnLimparHist").addEventListener("click", function(){
-    var msg = firebaseAtivo
-      ? "Remover PERMANENTEMENTE todas as avaliações salvas (compartilhadas via Firebase)?"
-      : "Remover todas as avaliações salvas neste navegador?";
-    if(!confirm(msg)) return;
-    sairModoEdicao();
-
-    if(firebaseAtivo && db){
-      db.collection("avaliacoes").get().then(function(snap){
-        var batch = db.batch();
-        snap.docs.forEach(function(d){ batch.delete(d.ref); });
-        return batch.commit();
-      }).catch(function(err){
-        console.error("Firestore (limpar):", err);
-        alert("Não foi possível limpar o histórico compartilhado. Veja o console para detalhes.");
-      });
-    }else{
-      state.historico = [];
-      storageSet("gpv_historico", []);
-      renderHistorico();
-    }
+  function atualizarSelecaoLote(){
+    var marcados = document.querySelectorAll("#relBody .rel-check:checked");
+    document.getElementById("relSelCount").textContent = marcados.length;
+    document.getElementById("btnImprimirLote").disabled = marcados.length===0;
+  }
+  document.getElementById("filtroPerfil").addEventListener("change", renderRelatorios);
+  document.getElementById("filtroMunicipio").addEventListener("change", renderRelatorios);
+  document.getElementById("filtroNte").addEventListener("change", renderRelatorios);
+  document.getElementById("relSelAll").addEventListener("change", function(){
+    var marcar = this.checked;
+    document.querySelectorAll("#relBody .rel-check").forEach(function(cb){ cb.checked = marcar; });
+    atualizarSelecaoLote();
+  });
+  document.getElementById("btnImprimirLote").addEventListener("click", function(){
+    var ids = Array.from(document.querySelectorAll("#relBody .rel-check:checked")).map(function(cb){ return cb.getAttribute("data-id"); });
+    var lista = (state.historico||[]).filter(function(h){ return ids.indexOf(h.id)!==-1; });
+    if(lista.length===0) return;
+    imprimirRelatorios(lista);
   });
 
   /* ================= Abas ================= */
@@ -1282,10 +1473,11 @@
       b.classList.toggle("active", b.getAttribute("data-tab")===nome);
     });
     document.getElementById("panel-nova").classList.toggle("active", nome==="nova");
-    document.getElementById("panel-historico").classList.toggle("active", nome==="historico");
     document.getElementById("panel-candidatos").classList.toggle("active", nome==="candidatos");
+    document.getElementById("panel-relatorios").classList.toggle("active", nome==="relatorios");
     state.ativeTab = nome;
     if(nome==="candidatos") renderCandidatos();
+    if(nome==="relatorios") renderRelatorios();
   }
   document.querySelectorAll(".tab-btn").forEach(function(b){
     b.addEventListener("click", function(){ ativarAba(b.getAttribute("data-tab")); });
@@ -1303,7 +1495,7 @@
       el.innerHTML = '<span class="dot"></span>Sincronizado (Firebase)';
     }else if(estado==="erro"){
       el.className = "conn-status off";
-      el.innerHTML = '<span class="dot"></span>Firebase indisponível — modo local';
+      el.innerHTML = '<span class="dot"></span>Reconectando…';
     }else{
       el.className = "conn-status off";
       el.innerHTML = '<span class="dot"></span>Modo local';
@@ -1313,8 +1505,54 @@
     state.historico = storageGet("gpv_historico", []);
     state.candidatosExtra = storageGet("gpv_candidatos_extra", []);
     atualizarContadorBase();
-    renderHistorico();
+    renderCandidatos();
+    renderRelatorios();
   }
+
+  var _unsubAvaliacoes = null, _unsubCandidatos = null;
+  var _tentativasReconexao = 0;
+  function pararListeners(){
+    if(_unsubAvaliacoes){ try{ _unsubAvaliacoes(); }catch(e){} _unsubAvaliacoes = null; }
+    if(_unsubCandidatos){ try{ _unsubCandidatos(); }catch(e){} _unsubCandidatos = null; }
+  }
+  function iniciarListeners(){
+    pararListeners();
+    _unsubAvaliacoes = db.collection("avaliacoes").limit(1000).onSnapshot(function(snap){
+      _tentativasReconexao = 0;
+      atualizarStatusConexao("on");
+      state.historico = snap.docs.map(function(doc){
+        var x = doc.data(); x.id = doc.id; return x;
+      });
+      state.historico.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
+      renderCandidatos();
+      renderRelatorios();
+    }, function(err){
+      console.error("Firestore (avaliacoes):", err);
+      agendarReconexao();
+    });
+    _unsubCandidatos = db.collection("candidatosExtra").onSnapshot(function(snap){
+      state.candidatosExtra = snap.docs.map(function(doc){ return doc.data(); });
+      atualizarContadorBase();
+    }, function(err){
+      console.error("Firestore (candidatosExtra):", err);
+      agendarReconexao();
+    });
+  }
+  function agendarReconexao(){
+    atualizarStatusConexao("erro");
+    pararListeners();
+    _tentativasReconexao++;
+    var espera = Math.min(5000 * _tentativasReconexao, 30000);
+    setTimeout(function(){
+      if(firebaseAtivo) iniciarListeners();
+    }, espera);
+  }
+  function reconectarFirebase(){
+    _tentativasReconexao = 0;
+    if(firebaseAtivo && db){ iniciarListeners(); }
+    else{ initFirebase(); }
+  }
+
   function initFirebase(){
     if(typeof firebase === "undefined" || !isFirebaseConfigurado()){
       atualizarStatusConexao("off");
@@ -1322,29 +1560,11 @@
       return;
     }
     try{
-      firebase.initializeApp(firebaseConfig);
+      if(!firebase.apps || !firebase.apps.length){ firebase.initializeApp(firebaseConfig); }
       db = firebase.firestore();
       firebaseAtivo = true;
       atualizarStatusConexao("on");
-
-      db.collection("avaliacoes").orderBy("criadoEm","desc").limit(500).onSnapshot(function(snap){
-        state.historico = snap.docs.map(function(doc){
-          var x = doc.data(); x.id = doc.id; return x;
-        });
-        renderHistorico();
-      }, function(err){
-        console.error("Firestore (avaliacoes):", err);
-        firebaseAtivo = false;
-        atualizarStatusConexao("erro");
-        carregarDadosLocais();
-      });
-
-      db.collection("candidatosExtra").onSnapshot(function(snap){
-        state.candidatosExtra = snap.docs.map(function(doc){ return doc.data(); });
-        atualizarContadorBase();
-      }, function(err){
-        console.error("Firestore (candidatosExtra):", err);
-      });
+      iniciarListeners();
     }catch(e){
       console.error("Firebase init:", e);
       firebaseAtivo = false;
