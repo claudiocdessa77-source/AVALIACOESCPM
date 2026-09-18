@@ -21,6 +21,7 @@
     --shadow:0 1px 2px rgba(16,24,32,.06), 0 6px 18px rgba(16,24,32,.07);
     --font-ui:'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
     --font-mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    color-scheme: light;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -32,6 +33,7 @@
       --hibrido:#E0A945; --hibrido-soft:#332707;
       --danger:#E5837B; --danger-soft:#3A1E1C;
       --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 22px rgba(0,0,0,.4);
+      color-scheme: dark;
     }
   }
   :root[data-theme="dark"]{
@@ -43,6 +45,7 @@
     --hibrido:#E0A945; --hibrido-soft:#332707;
     --danger:#E5837B; --danger-soft:#3A1E1C;
     --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 22px rgba(0,0,0,.4);
+    color-scheme: dark;
   }
 
   *{ box-sizing:border-box; }
@@ -101,10 +104,12 @@
 
   /* ---------- Campos ---------- */
   label{ display:block; font-size:12.5px; font-weight:600; color:var(--text-muted); margin-bottom:6px; letter-spacing:.1px; }
-  input[type="text"], input[type="date"]{
+  input[type="text"], input[type="date"], select{
     width:100%; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--border);
     background:var(--surface-2); color:var(--text); font-size:14.5px;
   }
+  select{ cursor:pointer; }
+  select option{ background:var(--surface); color:var(--text); }
   .field{ margin-bottom:14px; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:600px){ .row2{ grid-template-columns:1fr; } }
@@ -475,6 +480,9 @@
       </div>
       <div class="row2">
         <div class="field"><label for="addNte">NTE *</label><input type="text" id="addNte" placeholder="Obrigatório"></div>
+        <div class="field"><label for="addFormacao">Formação</label><input type="text" id="addFormacao" placeholder="Opcional — ex.: ENSINO MÉDIO, ADMINISTRAÇÃO…"></div>
+      </div>
+      <div class="row2">
         <div class="field" style="display:flex; align-items:flex-end;">
           <button class="btn btn-primary btn-sm" type="button" id="btnAddCandidato">Adicionar à base</button>
         </div>
@@ -524,7 +532,7 @@
       </div>
       <div class="table-scroll">
         <table class="hist" id="candTable">
-          <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Avaliação</th><th></th></tr></thead>
+          <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Formação</th><th>Avaliação</th><th></th></tr></thead>
           <tbody id="candBody"></tbody>
         </table>
       </div>
@@ -586,7 +594,7 @@
   "use strict";
 
   /* ================= Dados embutidos (planilha "gabarito_convocacao_ensino_medio") ================= */
-  var CANDIDATOS_BASE = [{"insc":"2602077505","nome":"EDUARDO SILVA DOS REIS","cpf":"07339268510","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602099686","nome":"RAMON SILVA DOS SANTOS","cpf":"08306646533","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602111629","nome":"VINICIUS DE SOUZA BORGES","cpf":"06503265557","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602029223","nome":"WILSON QUEIROZ DOS SANTOS","cpf":"01893976599","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602079724","nome":"IGOR BRAGA BATISTA","cpf":"05720537546","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602066402","nome":"ALISSON PRAZERES DA SILVA","cpf":"06503097581","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602091322","nome":"EMILLY JHENIFFER DE QUEIROZ FERREIRA","cpf":"09281044510","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602064386","nome":"CLARISSA FONSECA COSTA","cpf":"09521655542","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602057582","nome":"WILLIAM DAVID ARAUJO SILVA","cpf":"05440558535","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602079993","nome":"JOSIANE DA SILVA PERES","cpf":"08826997926","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602028006","nome":"MAIANE SANTOS CARVALHO","cpf":"04560585598","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602104018","nome":"GILSON BONFIM NEVES","cpf":"05556196567","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602077616","nome":"YSLLA MONYSE LAURENCO DE OLIVEIRA","cpf":"05609271509","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602042596","nome":"MARIA CLARA RICCIO TEIXEIRA ESPINOLA","cpf":"86088725524","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602117494","nome":"JULIA ALVES PESSOA DA SILVA","cpf":"05526160521","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602115940","nome":"TAUAN BASTOS DE SOUZA SILVA","cpf":"09506356505","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602117371","nome":"ELEONORA MARIA CAMANDAROBA","cpf":"05314280523","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602096865","nome":"FLAVIO CERQUEIRA SIMPLICIO","cpf":"02049828551","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602033994","nome":"JOSE RULEONSON GALDINO ROCHA DIAS","cpf":"08582574592","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602067159","nome":"FERNANDA DE SOUZA GOMES","cpf":"86357391590","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602097116","nome":"IVE DE SOUZA PITANGA DOS SANTOS","cpf":"07964776550","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602120667","nome":"RAMON DO ESPIRITO SANTO SILVA","cpf":"03023442509","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602080235","nome":"JOHN LENO LOPES DE SOUZA","cpf":"04114234527","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602004717","nome":"GABRIEL COSTA SANTOS","cpf":"06441940574","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602019104","nome":"RICARDO OLIVEIRA DOS SANTOS","cpf":"02207066541","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602066198","nome":"DOSITE MOLEIRO ALVES FILHO","cpf":"85266280549","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602017158","nome":"RAILANE CRISTIANE GONCALVES DIAS","cpf":"84077484553","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602027474","nome":"JOSE LUCAS MAIA NERY","cpf":"05091095519","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602000282","nome":"LEONARDO EVANGELISTA SANTANA","cpf":"07507949508","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602087698","nome":"ARTHUR ATILAR DOS SANTOS SILVA","cpf":"05611632432","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602029847","nome":"LUCIANO VITOR GOMES DOS SANTOS","cpf":"09392129513","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602086297","nome":"ELLEN FERNANDA DA SILVA BRITO","cpf":"86537249589","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602041705","nome":"AGNES FRANCINE SANTANA LIMA DE CARVALHO","cpf":"85411108500","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602060143","nome":"MARCOS ADRYAN LIMA SANTANA","cpf":"85921633585","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602025398","nome":"JURANDIR MONTEIRO DE SOUSA","cpf":"54558409591","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602059216","nome":"JEMIMA ALMEIDA SILVA","cpf":"83146130530","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602084529","nome":"TAMAR MOREIRA DOS SANTOS","cpf":"05158391599","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602112740","nome":"MATEUS SALES DO CARMO NEGRAO","cpf":"04270259582","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602014896","nome":"SHALIMAR SANTOS DE JESUS","cpf":"04671964511","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602019402","nome":"LAIS GONCALVES DE CARVALHO","cpf":"06026845526","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602093976","nome":"ATHILA SOUZA DO ESPIRITO SANTO","cpf":"04266580517","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602101436","nome":"JULIANA DE JESUS DOS SANTOS","cpf":"08966333575","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602009117","nome":"REYNALDO SALES RIBEIRO","cpf":"12030407500","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602102578","nome":"FABRICIO OLIVEIRA SUZART SANTOS","cpf":"86680885566","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602054242","nome":"NATALY SANTANA ITAPARICA","cpf":"03933263573","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602099526","nome":"EMERSON SANTOS DE JESUS","cpf":"85831907554","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602090890","nome":"LUIS CEZAR FRANCA OLIVEIRA","cpf":"04844085506","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602022455","nome":"ALLANA LUIZA GONCALVES REIS","cpf":"86715524548","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602073012","nome":"VAGNER CERQUEIRA DIAS","cpf":"09096557581","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602060021","nome":"NUBIA PEREIRA IZAIAS","cpf":"09266156531","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602092159","nome":"MARCELA SOARES DE ARAUJO","cpf":"01440356505","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602072565","nome":"ROBSON GONCALVES DOS SANTOS","cpf":"03364338590","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602100476","nome":"FRANKLIN SILVA SANTOS","cpf":"94930155568","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602086541","nome":"BRUNO LEONARDO DO ESPIRITO SANTO","cpf":"79836518568","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602009754","nome":"GEOVANA FERREIRA DE OLIVEIRA","cpf":"05151505505","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602122401","nome":"VICTOR CESAR BORGES FONSECA","cpf":"41994057807","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602055631","nome":"YASMIN SANTOS DA SILVA","cpf":"06715057508","mun":"SALVADOR","nte":"26","pne":""},{"insc":"2602121589","nome":"LEIA SANTOS DE SOUZA","cpf":"06742575530","mun":"SALVADOR","nte":"26","pne":"1º"},{"insc":"2602023532","nome":"BRUNA MACHADO ARAUJO SANTANA","cpf":"06338831580","mun":"SALVADOR","nte":"26","pne":"2º"},{"insc":"2602095588","nome":"MAXIMIANO PEIXOTO PIRES","cpf":"83545530515","mun":"SALVADOR","nte":"26","pne":"3º"}];
+  var CANDIDATOS_BASE = [{"insc":"2602077505","nome":"EDUARDO SILVA DOS REIS","cpf":"07339268510","mun":"SALVADOR","nte":"26","pne":"","formacao":"ANALISE E DESENVOLVIMENTO DE SISTEMAS"},{"insc":"2602099686","nome":"RAMON SILVA DOS SANTOS","cpf":"08306646533","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNICO EM LOGISTICA"},{"insc":"2602111629","nome":"VINICIUS DE SOUZA BORGES","cpf":"06503265557","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNOLOGO EM GESTAO PUBLICA"},{"insc":"2602029223","nome":"WILSON QUEIROZ DOS SANTOS","cpf":"01893976599","mun":"SALVADOR","nte":"26","pne":"","formacao":"ADMINISTRAÇAO"},{"insc":"2602079724","nome":"IGOR BRAGA BATISTA","cpf":"05720537546","mun":"SALVADOR","nte":"26","pne":"","formacao":"GESTAO DO TURISMO"},{"insc":"2602066402","nome":"ALISSON PRAZERES DA SILVA","cpf":"06503097581","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602091322","nome":"EMILLY JHENIFFER DE QUEIROZ FERREIRA","cpf":"09281044510","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602064386","nome":"CLARISSA FONSECA COSTA","cpf":"09521655542","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602057582","nome":"WILLIAM DAVID ARAUJO SILVA","cpf":"05440558535","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602079993","nome":"JOSIANE DA SILVA PERES","cpf":"08826997926","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602028006","nome":"MAIANE SANTOS CARVALHO","cpf":"04560585598","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602104018","nome":"GILSON BONFIM NEVES","cpf":"05556196567","mun":"SALVADOR","nte":"26","pne":"","formacao":""},{"insc":"2602077616","nome":"YSLLA MONYSE LAURENCO DE OLIVEIRA","cpf":"05609271509","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602042596","nome":"MARIA CLARA RICCIO TEIXEIRA ESPINOLA","cpf":"86088725524","mun":"SALVADOR","nte":"26","pne":"","formacao":"POS GRADUAÇÃO/ CONTABILIDADE"},{"insc":"2602117494","nome":"JULIA ALVES PESSOA DA SILVA","cpf":"05526160521","mun":"SALVADOR","nte":"26","pne":"","formacao":"HUMANIDADES"},{"insc":"2602115940","nome":"TAUAN BASTOS DE SOUZA SILVA","cpf":"09506356505","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602117371","nome":"ELEONORA MARIA CAMANDAROBA","cpf":"05314280523","mun":"SALVADOR","nte":"26","pne":"","formacao":"LICENCIADA EM BIOLOGIA/NAO QUER ATUAR COMO PROFESORA"},{"insc":"2602096865","nome":"FLAVIO CERQUEIRA SIMPLICIO","cpf":"02049828551","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602033994","nome":"JOSE RULEONSON GALDINO ROCHA DIAS","cpf":"08582574592","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602067159","nome":"FERNANDA DE SOUZA GOMES","cpf":"86357391590","mun":"SALVADOR","nte":"26","pne":"","formacao":"BACHARELADO INTERDISCIPLINAR EM HUMANIDADES"},{"insc":"2602097116","nome":"IVE DE SOUZA PITANGA DOS SANTOS","cpf":"07964776550","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602120667","nome":"RAMON DO ESPIRITO SANTO SILVA","cpf":"03023442509","mun":"SALVADOR","nte":"26","pne":"","formacao":""},{"insc":"2602080235","nome":"JOHN LENO LOPES DE SOUZA","cpf":"04114234527","mun":"SALVADOR","nte":"26","pne":"","formacao":"BACHAREL EM ENGENHARIA DE PRODUÇAO CIVIL"},{"insc":"2602004717","nome":"GABRIEL COSTA SANTOS","cpf":"06441940574","mun":"SALVADOR","nte":"26","pne":"","formacao":"GESTÃO FINANCEIRA"},{"insc":"2602019104","nome":"RICARDO OLIVEIRA DOS SANTOS","cpf":"02207066541","mun":"SALVADOR","nte":"26","pne":"","formacao":"CONTABILIDADE"},{"insc":"2602066198","nome":"DOSITE MOLEIRO ALVES FILHO","cpf":"85266280549","mun":"SALVADOR","nte":"26","pne":"","formacao":""},{"insc":"2602017158","nome":"RAILANE CRISTIANE GONCALVES DIAS","cpf":"84077484553","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602027474","nome":"JOSE LUCAS MAIA NERY","cpf":"05091095519","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602000282","nome":"LEONARDO EVANGELISTA SANTANA","cpf":"07507949508","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602087698","nome":"ARTHUR ATILAR DOS SANTOS SILVA","cpf":"05611632432","mun":"SALVADOR","nte":"26","pne":"","formacao":"ADMINISTRAÇÃO"},{"insc":"2602029847","nome":"LUCIANO VITOR GOMES DOS SANTOS","cpf":"09392129513","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602086297","nome":"ELLEN FERNANDA DA SILVA BRITO","cpf":"86537249589","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602041705","nome":"AGNES FRANCINE SANTANA LIMA DE CARVALHO","cpf":"85411108500","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602060143","nome":"MARCOS ADRYAN LIMA SANTANA","cpf":"85921633585","mun":"SALVADOR","nte":"26","pne":"","formacao":"CIENCIAS DA COMPUTAÇÃO"},{"insc":"2602025398","nome":"JURANDIR MONTEIRO DE SOUSA","cpf":"54558409591","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602059216","nome":"JEMIMA ALMEIDA SILVA","cpf":"83146130530","mun":"SALVADOR","nte":"26","pne":"","formacao":"ODONTOLOGIA"},{"insc":"2602084529","nome":"TAMAR MOREIRA DOS SANTOS","cpf":"05158391599","mun":"SALVADOR","nte":"26","pne":"","formacao":"BACHARELADO INTERDISCIPLINAR EM HUMANIDADES"},{"insc":"2602112740","nome":"MATEUS SALES DO CARMO NEGRAO","cpf":"04270259582","mun":"SALVADOR","nte":"26","pne":"","formacao":"CIENCIAS DE DADOS"},{"insc":"2602014896","nome":"SHALIMAR SANTOS DE JESUS","cpf":"04671964511","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602019402","nome":"LAIS GONCALVES DE CARVALHO","cpf":"06026845526","mun":"SALVADOR","nte":"26","pne":"","formacao":"RECURSOS HUMANOS"},{"insc":"2602093976","nome":"ATHILA SOUZA DO ESPIRITO SANTO","cpf":"04266580517","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602101436","nome":"JULIANA DE JESUS DOS SANTOS","cpf":"08966333575","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNICO EM QUIMICA- TECNICO EM ELETROTECNICA"},{"insc":"2602009117","nome":"REYNALDO SALES RIBEIRO","cpf":"12030407500","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602102578","nome":"FABRICIO OLIVEIRA SUZART SANTOS","cpf":"86680885566","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602054242","nome":"NATALY SANTANA ITAPARICA","cpf":"03933263573","mun":"SALVADOR","nte":"26","pne":"","formacao":"DIREITO"},{"insc":"2602099526","nome":"EMERSON SANTOS DE JESUS","cpf":"85831907554","mun":"SALVADOR","nte":"26","pne":"","formacao":"LICENCIATUARA EM LETRAS VERNACULAS"},{"insc":"2602090890","nome":"LUIS CEZAR FRANCA OLIVEIRA","cpf":"04844085506","mun":"SALVADOR","nte":"26","pne":"","formacao":"CIENCIA E TECNOLOGIA"},{"insc":"2602022455","nome":"ALLANA LUIZA GONCALVES REIS","cpf":"86715524548","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602073012","nome":"VAGNER CERQUEIRA DIAS","cpf":"09096557581","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602060021","nome":"NUBIA PEREIRA IZAIAS","cpf":"09266156531","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO"},{"insc":"2602092159","nome":"MARCELA SOARES DE ARAUJO","cpf":"01440356505","mun":"SALVADOR","nte":"26","pne":"","formacao":"ODONTOLOGIA- FONOAUDIOLOGIA"},{"insc":"2602072565","nome":"ROBSON GONCALVES DOS SANTOS","cpf":"03364338590","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNICO EM ELETROMECANICA"},{"insc":"2602100476","nome":"FRANKLIN SILVA SANTOS","cpf":"94930155568","mun":"SALVADOR","nte":"26","pne":"","formacao":"TECNICO EM CONTABILIDADE"},{"insc":"2602086541","nome":"BRUNO LEONARDO DO ESPIRITO SANTO","cpf":"79836518568","mun":"SALVADOR","nte":"26","pne":"","formacao":"PSICOLOGIA"},{"insc":"2602009754","nome":"GEOVANA FERREIRA DE OLIVEIRA","cpf":"05151505505","mun":"SALVADOR","nte":"26","pne":"","formacao":"LETRAS VERNACULAS"},{"insc":"2602122401","nome":"VICTOR CESAR BORGES FONSECA","cpf":"41994057807","mun":"SALVADOR","nte":"26","pne":"","formacao":"ARQUITETURA E URBANISMO"},{"insc":"2602055631","nome":"YASMIN SANTOS DA SILVA","cpf":"06715057508","mun":"SALVADOR","nte":"26","pne":"","formacao":"ENSINO MEDIO/ ARQUITETURA E URBAMISMO"},{"insc":"2602121589","nome":"LEIA SANTOS DE SOUZA","cpf":"06742575530","mun":"SALVADOR","nte":"26","pne":"1º","formacao":"ENSINO MEDIO"},{"insc":"2602023532","nome":"BRUNA MACHADO ARAUJO SANTANA","cpf":"06338831580","mun":"SALVADOR","nte":"26","pne":"2º","formacao":"PSICOLOGIA"},{"insc":"2602095588","nome":"MAXIMIANO PEIXOTO PIRES","cpf":"83545530515","mun":"SALVADOR","nte":"26","pne":"3º","formacao":""}];
 
   /* ================================================================
      CONFIGURAÇÃO DO FIREBASE
@@ -929,7 +937,8 @@
             cpf:  String(pick(["cpf"])||"").trim(),
             mun:  String(pick(["municipio"])||"").trim(),
             nte:  String(pick(["nte"])||"").trim(),
-            pne:  String(pick(["pne","class. pne","classificacao pne"])||"").trim()
+            pne:  String(pick(["pne","class. pne","classificacao pne"])||"").trim(),
+            formacao: String(pick(["formacao","formação"])||"").trim()
           };
         }).filter(function(c){ return c.nome; });
 
@@ -1003,7 +1012,8 @@
       var matchNome = normaliza(c.nome).indexOf(termo) !== -1;
       var matchCpf = termoDig.length>=3 && digits(c.cpf).indexOf(termoDig) !== -1;
       var matchInsc = termoDig.length>=3 && (c.insc||"").indexOf(termoDig) !== -1;
-      return matchNome || matchCpf || matchInsc;
+      var matchFormacao = normaliza(c.formacao).indexOf(termo) !== -1;
+      return matchNome || matchCpf || matchInsc || matchFormacao;
     });
 
     tbody.innerHTML = lista.map(function(c, i){
@@ -1023,6 +1033,7 @@
         '<td>'+(c.cpf?maskCPF(c.cpf):'—')+'</td>'+
         '<td>'+escapeHtml(c.insc||"—")+'</td>'+
         '<td>'+escapeHtml(c.mun||"—")+'</td>'+
+        '<td>'+escapeHtml(c.formacao||"—")+'</td>'+
         '<td>'+statusHtml+'</td>'+
         '<td>'+acaoHtml+'</td>'+
         '</tr>';
@@ -1096,7 +1107,8 @@
       insc: document.getElementById("addInsc").value.trim(),
       mun: mun,
       nte: nte,
-      pne: ""
+      pne: "",
+      formacao: document.getElementById("addFormacao").value.trim()
     };
     function limparForm(){
       document.getElementById("addNome").value = "";
@@ -1104,6 +1116,7 @@
       document.getElementById("addInsc").value = "";
       document.getElementById("addMun").value = "";
       document.getElementById("addNte").value = "";
+      document.getElementById("addFormacao").value = "";
     }
     if(firebaseAtivo && db){
       db.collection("candidatosExtra").add(novo).then(limparForm).catch(function(err){
@@ -1312,6 +1325,7 @@
     '  <div><dt>CPF</dt><dd>'+maskCPF(c.cpf)+'</dd></div>'+
     '  <div><dt>Nº de inscrição</dt><dd>'+escapeHtml(c.insc||"—")+'</dd></div>'+
     '  <div><dt>Município / NTE</dt><dd>'+escapeHtml(c.mun||"—")+(c.nte? ' · NTE '+escapeHtml(c.nte):'')+'</dd></div>'+
+    (c.formacao ? '  <div class="full"><dt>Formação</dt><dd>'+escapeHtml(c.formacao)+'</dd></div>' : '')+
     '  <div><dt>Data da avaliação</dt><dd>'+fmtDataBR(d.data)+'</dd></div>'+
     '  <div><dt>Pessoa com deficiência (PcD)</dt><dd>'+textoPcdResumo(d.deficiencia)+'</dd></div>'+
     (d.deficiencia && d.deficiencia.possui && d.deficiencia.especificacao ?
