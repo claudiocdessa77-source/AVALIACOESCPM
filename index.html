@@ -489,6 +489,22 @@
     </div>
 
     <div class="card">
+      <div class="card-head">
+        <h2>Backup e recuperação</h2>
+        <span class="hint">Avaliações gravadas apenas neste navegador (modo local)</span>
+      </div>
+      <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">
+        Se este computador já preencheu avaliações antes de o Firebase estar conectado, exporte-as aqui e depois importe o arquivo em qualquer máquina já conectada — sem digitar de novo.
+      </p>
+      <div class="row-actions">
+        <button class="btn btn-sm" type="button" id="btnExportarBackup">⬇ Exportar avaliações deste navegador</button>
+        <button class="btn btn-sm" type="button" id="btnImportarBackup">⬆ Importar backup (.json)</button>
+        <input type="file" id="fileImportarBackup" accept=".json" style="display:none">
+      </div>
+      <span class="count" id="backupStatus"></span>
+    </div>
+
+    <div class="card">
       <div class="edit-banner no-print" id="dupBanner" style="display:none">
         <span id="dupBannerTexto"></span>
         <span class="row-actions">
@@ -582,12 +598,12 @@
      passam a ser compartilhados entre todas as estações automaticamente.
      ================================================================ */
   var firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_PROJETO.firebaseapp.com",
-    projectId: "SEU_PROJETO",
-    storageBucket: "SEU_PROJETO.appspot.com",
-    messagingSenderId: "SEU_SENDER_ID",
-    appId: "SEU_APP_ID"
+    apiKey: "AIzaSyBom1rkf4r-QYI0f7eOm3slsL48kQdi83w",
+    authDomain: "avaliacoes-cand-cpm.firebaseapp.com",
+    projectId: "avaliacoes-cand-cpm",
+    storageBucket: "avaliacoes-cand-cpm.firebasestorage.app",
+    messagingSenderId: "648805844686",
+    appId: "1:648805844686:web:18469bd24d9419fcd6f29f"
   };
 
   /* ================= Perguntas (gabarito Técnico de Nível Médio) ================= */
@@ -1159,6 +1175,86 @@
     document.getElementById("dupBanner").style.display = "none";
   });
 
+  /* ================= Backup local (exportar/importar) ================= */
+  document.getElementById("btnExportarBackup").addEventListener("click", function(){
+    var dados = storageGet("gpv_historico", []);
+    var statusEl = document.getElementById("backupStatus");
+    if(dados.length===0){
+      statusEl.textContent = "Não há avaliações gravadas localmente neste navegador para exportar.";
+      return;
+    }
+    var payload = {
+      origem: "avaliacao-perfil-vocacional",
+      exportadoEm: new Date().toISOString(),
+      avaliacoes: dados
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    var url = URL.createObjectURL(blob);
+    var ts = new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "backup-avaliacoes-"+ts+".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    statusEl.textContent = dados.length+" avaliação(ões) exportada(s) neste arquivo.";
+  });
+
+  document.getElementById("btnImportarBackup").addEventListener("click", function(){
+    document.getElementById("fileImportarBackup").click();
+  });
+  document.getElementById("fileImportarBackup").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var statusEl = document.getElementById("backupStatus");
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      var lista;
+      try{
+        var payload = JSON.parse(evt.target.result);
+        lista = Array.isArray(payload) ? payload : (payload.avaliacoes || []);
+      }catch(err){
+        statusEl.textContent = "Não foi possível ler este arquivo de backup.";
+        return;
+      }
+      if(!Array.isArray(lista) || lista.length===0){
+        statusEl.textContent = "Nenhuma avaliação encontrada neste arquivo.";
+        return;
+      }
+      if(firebaseAtivo && db){
+        var batch = db.batch();
+        lista.forEach(function(h){
+          var registro = {
+            data: h.data, candidato: h.candidato, respostas: h.respostas,
+            E: h.E, G: h.G, diff: h.diff, chave: h.chave,
+            deficiencia: h.deficiencia || {possui:false, tipo:"", especificacao:""},
+            criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          batch.set(db.collection("avaliacoes").doc(), registro);
+        });
+        batch.commit().then(function(){
+          statusEl.textContent = lista.length+' avaliação(ões) importada(s) para o Firebase — todas as máquinas conectadas já veem os dados. Use "Verificar duplicados" se a mesma pessoa aparecer em mais de um backup.';
+        }).catch(function(err){
+          console.error("Firestore (importar backup):", err);
+          statusEl.textContent = "Erro ao importar para o Firebase — veja o console (F12).";
+        });
+      }else{
+        lista.forEach(function(h){
+          var copia = {};
+          for(var k in h){ copia[k]=h[k]; }
+          copia.id = uid();
+          state.historico.unshift(copia);
+        });
+        storageSet("gpv_historico", state.historico);
+        renderCandidatos();
+        renderRelatorios();
+        statusEl.textContent = lista.length+" avaliação(ões) importada(s) (salvas apenas neste navegador — Firebase ainda não conectado).";
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
 
   /* ================= Relatório ================= */
   function atualizarRelatorio(){
