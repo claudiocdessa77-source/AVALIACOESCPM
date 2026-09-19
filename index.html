@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Avaliação de Perfil Vocacional — Técnico de Nível Médio [build 2026-09-18-f]</title>
+<title>Avaliação de Perfil Vocacional — Técnico de Nível Médio [build 2026-09-19-a]</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -261,6 +261,44 @@
 
   .report-toolbar{ display:flex; gap:10px; justify-content:flex-end; margin-top:16px; flex-wrap:wrap; }
 
+  /* ---------- Modal Relatório (pop-up) ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(15,22,31,.55); z-index:200;
+    display:none; align-items:flex-start; justify-content:center;
+    padding:40px 16px; overflow-y:auto;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-relatorio{
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    max-width:640px; width:100%; padding:30px 26px 22px; position:relative;
+    animation:modalIn .18s ease;
+  }
+  @keyframes modalIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
+  .modal-close{
+    position:absolute; top:14px; right:14px; appearance:none; border:1px solid var(--border);
+    background:var(--surface); color:var(--text-muted); width:30px; height:30px; border-radius:50%;
+    cursor:pointer; font-size:15px; line-height:1;
+  }
+  .modal-close:hover{ color:var(--danger); border-color:var(--danger); }
+  .modal-relatorio .report-toolbar{ border-top:1px solid var(--border); padding-top:16px; margin-top:20px; }
+  .report-pronto{ padding:20px 10px; text-align:center; }
+  .report-pronto strong{ display:block; color:var(--escola); font-size:14.5px; margin-bottom:12px; font-weight:600; }
+
+  /* ---------- Sub-abas (dentro de um módulo) ---------- */
+  .subtabs{
+    display:flex; gap:6px; margin-bottom:18px; background:var(--surface-2);
+    border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px;
+  }
+  .subtab-btn{
+    appearance:none; border:none; cursor:pointer; flex:1; background:transparent;
+    padding:8px 10px; border-radius:7px; font-size:13px; font-weight:600; color:var(--text-muted);
+  }
+  .subtab-btn.active{ background:var(--surface); color:var(--navy); box-shadow:var(--shadow); }
+  :root[data-theme="dark"] .subtab-btn.active{ color:var(--gestao); }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .subtab-btn.active{ color:var(--gestao); } }
+  .subtab-panel{ display:none; }
+  .subtab-panel.active{ display:block; }
+
   /* ---------- Histórico ---------- */
   table.hist{ width:100%; border-collapse:collapse; font-size:13.5px; }
   table.hist th, table.hist td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); }
@@ -297,7 +335,7 @@
   @media print{
     @page{ size:A4; margin:15mm 16mm; }
     html, body{ background:#fff !important; height:auto !important; }
-    .topbar, .wrap{ display:none !important; }
+    .topbar, .wrap, .modal-overlay{ display:none !important; }
     #printStage{
       display:block !important; width:100%; margin:0; padding:0;
       font-family: Arial, Helvetica, sans-serif !important; color:#111 !important;
@@ -338,6 +376,7 @@
     <button class="tab-btn active" data-tab="nova" type="button">Nova avaliação</button>
     <button class="tab-btn" data-tab="candidatos" type="button">Candidatos <span id="candCount"></span></button>
     <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
+    <button class="tab-btn" data-tab="encaminhamento" type="button">Encaminhamento</button>
   </div>
 
   <!-- ===================== ABA: NOVA AVALIAÇÃO ===================== -->
@@ -426,8 +465,8 @@
       </div>
     </div>
 
-    <!-- Passo 2: Questionário -->
-    <div class="card no-print">
+    <!-- Passo 2: Questionário (só aparece após selecionar o candidato) -->
+    <div class="card no-print" id="cardQuestionario" style="display:none">
       <div class="card-head">
         <span class="card-step">2</span>
         <h2>Questionário</h2>
@@ -453,90 +492,104 @@
         Selecione o candidato e responda as 10 perguntas para gerar o relatório.
       </div>
 
-      <div id="relatorio" style="display:none"></div>
-
-      <div class="report-toolbar no-print" id="reportToolbar" style="display:none">
-        <button class="btn" type="button" id="btnNovaAvaliacao">Nova avaliação</button>
-        <button class="btn" type="button" id="btnSalvarHist">Salvar no histórico</button>
-        <button class="btn btn-primary" type="button" id="btnImprimir">Imprimir / Salvar PDF</button>
+      <div id="relatorioPronto" class="report-pronto no-print" style="display:none">
+        <strong>✓ Relatório gerado</strong>
+        <button class="btn btn-primary btn-sm" type="button" id="btnVerRelatorio">Ver relatório</button>
       </div>
     </div>
   </div>
 
   <!-- ===================== ABA: CANDIDATOS ===================== -->
   <div class="tab-panel no-print" id="panel-candidatos">
-    <div class="card">
-      <div class="card-head">
-        <h2>Adicionar candidato</h2>
-        <span class="hint">Individual ou por planilha</span>
-      </div>
-      <div class="row2">
-        <div class="field"><label for="addNome">Nome completo *</label><input type="text" id="addNome" placeholder="Nome do candidato"></div>
-        <div class="field"><label for="addCpf">CPF</label><input type="text" id="addCpf" placeholder="Somente números" inputmode="numeric" maxlength="14"></div>
-      </div>
-      <div class="row2">
-        <div class="field"><label for="addInsc">Nº de inscrição</label><input type="text" id="addInsc" placeholder="Opcional"></div>
-        <div class="field"><label for="addMun">Município *</label><input type="text" id="addMun" placeholder="Obrigatório"></div>
-      </div>
-      <div class="row2">
-        <div class="field"><label for="addNte">NTE *</label><input type="text" id="addNte" placeholder="Obrigatório"></div>
-        <div class="field"><label for="addFormacao">Formação</label><input type="text" id="addFormacao" placeholder="Opcional — ex.: ENSINO MÉDIO, ADMINISTRAÇÃO…"></div>
-      </div>
-      <div class="row2">
-        <div class="field" style="display:flex; align-items:flex-end;">
-          <button class="btn btn-primary btn-sm" type="button" id="btnAddCandidato">Adicionar à base</button>
+
+    <div class="subtabs">
+      <button class="subtab-btn active" data-subtab="base" type="button">Base de Candidatos</button>
+      <button class="subtab-btn" data-subtab="adicionar" type="button">Adicionar Candidatos</button>
+      <button class="subtab-btn" data-subtab="backup" type="button">Backup e recuperação</button>
+    </div>
+
+    <!-- ---- Sub-módulo: Base de Candidatos ---- -->
+    <div class="subtab-panel active" id="subpanel-base">
+      <div class="card">
+        <div class="edit-banner no-print" id="dupBanner" style="display:none">
+          <span id="dupBannerTexto"></span>
+          <span class="row-actions">
+            <button class="link-btn" type="button" id="btnConfirmarDup">Remover duplicados agora</button>
+            <button class="link-btn" type="button" id="btnIgnorarDup">Ignorar</button>
+          </span>
+        </div>
+        <div class="hist-actions">
+          <h2 style="font-size:15px;">Base de candidatos <span id="candCountLabel"></span></h2>
+          <span class="row-actions">
+            <button class="btn btn-sm" type="button" id="btnAtualizarAgora" title="Forçar releitura dos dados">↻ Atualizar agora</button>
+            <button class="btn btn-sm" type="button" id="btnVerificarDup">Verificar duplicados</button>
+          </span>
+        </div>
+        <div class="field" style="max-width:340px;">
+          <input type="text" id="candBusca" placeholder="Buscar por nome, CPF ou inscrição…">
+        </div>
+        <div class="table-scroll">
+          <table class="hist" id="candTable">
+            <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Formação</th><th>Avaliação</th><th></th></tr></thead>
+            <tbody id="candBody"></tbody>
+          </table>
         </div>
       </div>
-      <div class="field-erro" id="addErro" style="display:none"></div>
+    </div>
 
-      <div class="import-row">
-        <button class="btn btn-sm" type="button" id="btnImportar">Importar planilha (.xlsx / .csv)</button>
-        <input type="file" id="fileImportar" accept=".xlsx,.xls,.csv" style="display:none">
-        <span class="count" id="importStatus"></span>
+    <!-- ---- Sub-módulo: Adicionar Candidatos ---- -->
+    <div class="subtab-panel" id="subpanel-adicionar">
+      <div class="card">
+        <div class="card-head">
+          <h2>Adicionar candidato</h2>
+          <span class="hint">Individual ou por planilha</span>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="addNome">Nome completo *</label><input type="text" id="addNome" placeholder="Nome do candidato"></div>
+          <div class="field"><label for="addCpf">CPF</label><input type="text" id="addCpf" placeholder="Somente números" inputmode="numeric" maxlength="14"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="addInsc">Nº de inscrição</label><input type="text" id="addInsc" placeholder="Opcional"></div>
+          <div class="field"><label for="addMun">Município *</label><input type="text" id="addMun" placeholder="Obrigatório"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="addNte">NTE *</label><input type="text" id="addNte" placeholder="Obrigatório"></div>
+          <div class="field"><label for="addFormacao">Formação</label><input type="text" id="addFormacao" placeholder="Opcional — ex.: ENSINO MÉDIO, ADMINISTRAÇÃO…"></div>
+        </div>
+        <div class="row2">
+          <div class="field" style="display:flex; align-items:flex-end;">
+            <button class="btn btn-primary btn-sm" type="button" id="btnAddCandidato">Adicionar à base</button>
+          </div>
+        </div>
+        <div class="field-erro" id="addErro" style="display:none"></div>
+
+        <div class="import-row">
+          <button class="btn btn-sm" type="button" id="btnImportar">Importar planilha (.xlsx / .csv)</button>
+          <input type="file" id="fileImportar" accept=".xlsx,.xls,.csv" style="display:none">
+          <span class="count" id="importStatus"></span>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-head">
-        <h2>Backup e recuperação</h2>
-        <span class="hint">Avaliações gravadas apenas neste navegador (modo local)</span>
+    <!-- ---- Sub-módulo: Backup e recuperação ---- -->
+    <div class="subtab-panel" id="subpanel-backup">
+      <div class="card">
+        <div class="card-head">
+          <h2>Backup e recuperação</h2>
+          <span class="hint">Avaliações gravadas apenas neste navegador (modo local)</span>
+        </div>
+        <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">
+          Se este computador já preencheu avaliações antes de o Firebase estar conectado, exporte-as aqui e depois importe o arquivo em qualquer máquina já conectada — sem digitar de novo.
+        </p>
+        <div class="row-actions">
+          <button class="btn btn-sm" type="button" id="btnExportarBackup">⬇ Exportar avaliações deste navegador</button>
+          <button class="btn btn-sm" type="button" id="btnImportarBackup">⬆ Importar backup (.json)</button>
+          <input type="file" id="fileImportarBackup" accept=".json" style="display:none">
+        </div>
+        <span class="count" id="backupStatus"></span>
       </div>
-      <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">
-        Se este computador já preencheu avaliações antes de o Firebase estar conectado, exporte-as aqui e depois importe o arquivo em qualquer máquina já conectada — sem digitar de novo.
-      </p>
-      <div class="row-actions">
-        <button class="btn btn-sm" type="button" id="btnExportarBackup">⬇ Exportar avaliações deste navegador</button>
-        <button class="btn btn-sm" type="button" id="btnImportarBackup">⬆ Importar backup (.json)</button>
-        <input type="file" id="fileImportarBackup" accept=".json" style="display:none">
-      </div>
-      <span class="count" id="backupStatus"></span>
     </div>
 
-    <div class="card">
-      <div class="edit-banner no-print" id="dupBanner" style="display:none">
-        <span id="dupBannerTexto"></span>
-        <span class="row-actions">
-          <button class="link-btn" type="button" id="btnConfirmarDup">Remover duplicados agora</button>
-          <button class="link-btn" type="button" id="btnIgnorarDup">Ignorar</button>
-        </span>
-      </div>
-      <div class="hist-actions">
-        <h2 style="font-size:15px;">Base de candidatos <span id="candCountLabel"></span></h2>
-        <span class="row-actions">
-          <button class="btn btn-sm" type="button" id="btnAtualizarAgora" title="Forçar releitura dos dados">↻ Atualizar agora</button>
-          <button class="btn btn-sm" type="button" id="btnVerificarDup">Verificar duplicados</button>
-        </span>
-      </div>
-      <div class="field" style="max-width:340px;">
-        <input type="text" id="candBusca" placeholder="Buscar por nome, CPF ou inscrição…">
-      </div>
-      <div class="table-scroll">
-        <table class="hist" id="candTable">
-          <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Formação</th><th>Avaliação</th><th></th></tr></thead>
-          <tbody id="candBody"></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
   <!-- ===================== ABA: RELATÓRIOS ===================== -->
@@ -582,6 +635,141 @@
     </div>
   </div>
 
+  <!-- ===================== ABA: ENCAMINHAMENTO ===================== -->
+  <div class="tab-panel no-print" id="panel-encaminhamento">
+
+    <!-- Passo 1: Servidor -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-step">1</span>
+        <h2>Servidor</h2>
+        <span class="hint" id="encBaseCount">— candidatos na base</span>
+      </div>
+      <div id="encBuscaBox">
+        <label for="encBuscaInput">Buscar por nome, CPF ou nº de inscrição</label>
+        <div class="search-wrap">
+          <input type="text" id="encBuscaInput" autocomplete="off" placeholder="Digite para buscar…">
+          <div class="search-results" id="encBuscaResultados"></div>
+        </div>
+      </div>
+      <div id="encCandidatoSelecionado" style="display:none"></div>
+    </div>
+
+    <!-- Passo 2: Unidade de destino -->
+    <div class="card" id="cardEncUnidade" style="display:none">
+      <div class="card-head">
+        <span class="card-step">2</span>
+        <h2>Unidade de destino</h2>
+        <span class="hint" id="encUnidBaseCount">— unidades na base</span>
+      </div>
+      <div id="encUnidBuscaBox">
+        <label for="encUnidBuscaInput">Buscar por unidade, código, município ou NTE</label>
+        <div class="search-wrap">
+          <input type="text" id="encUnidBuscaInput" autocomplete="off" placeholder="Digite para buscar…">
+          <div class="search-results" id="encUnidBuscaResultados"></div>
+        </div>
+      </div>
+      <div id="encUnidadeSelecionada" style="display:none"></div>
+      <div class="import-row" id="encSemUnidadeAviso">
+        <span class="count">Unidade fora da base? Cadastre em <button class="link-btn" type="button" id="irParaBaseUnidades">Base de Unidades</button>, logo abaixo.</span>
+      </div>
+    </div>
+
+    <!-- Passo 3: Confirmar -->
+    <div class="card" id="cardEncConfirmar" style="display:none">
+      <div class="card-head">
+        <span class="card-step">3</span>
+        <h2>Confirmar encaminhamento</h2>
+      </div>
+      <div class="row2">
+        <div class="field" style="max-width:220px;">
+          <label for="encData">Data do encaminhamento</label>
+          <input type="date" id="encData">
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn btn-primary" type="button" id="btnRegistrarEncaminhamento">Registrar encaminhamento</button>
+        <button class="btn btn-sm" type="button" id="btnCancelarEncaminhamento">Cancelar</button>
+      </div>
+      <div class="field-erro" id="encErro" style="display:none"></div>
+    </div>
+
+    <!-- Base de Unidades: cadastro -->
+    <div class="card" id="cardBaseUnidades">
+      <div class="card-head">
+        <h2>Adicionar unidade</h2>
+        <span class="hint">Individual ou por planilha</span>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="uniNte">NTE *</label><input type="text" id="uniNte" placeholder="Obrigatório"></div>
+        <div class="field"><label for="uniMun">Município *</label><input type="text" id="uniMun" placeholder="Obrigatório"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="uniCod">Código</label><input type="text" id="uniCod" placeholder="Opcional"></div>
+        <div class="field"><label for="uniEscola">Unidade escolar *</label><input type="text" id="uniEscola" placeholder="Nome da unidade"></div>
+      </div>
+      <div class="row2">
+        <div class="field" style="display:flex; align-items:flex-end;">
+          <button class="btn btn-primary btn-sm" type="button" id="btnAddUnidade">Adicionar à base</button>
+        </div>
+      </div>
+      <div class="field-erro" id="uniErro" style="display:none"></div>
+
+      <div class="import-row">
+        <button class="btn btn-sm" type="button" id="btnImportarUnidades">Importar planilha (.xlsx / .csv)</button>
+        <input type="file" id="fileImportarUnidades" accept=".xlsx,.xls,.csv" style="display:none">
+        <span class="count" id="importUniStatus"></span>
+      </div>
+    </div>
+
+    <!-- Base de Unidades: listagem -->
+    <div class="card">
+      <div class="hist-actions">
+        <h2 style="font-size:15px;">Base de unidades <span id="uniCountLabel"></span></h2>
+      </div>
+      <div class="field" style="max-width:340px;">
+        <input type="text" id="uniBusca" placeholder="Buscar por unidade, código, município ou NTE…">
+      </div>
+      <div class="table-scroll">
+        <table class="hist" id="uniTable">
+          <thead><tr><th>NTE</th><th>Município</th><th>Código</th><th>Unidade escolar</th><th></th></tr></thead>
+          <tbody id="uniBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Encaminhamentos registrados -->
+    <div class="card">
+      <div class="hist-actions">
+        <h2 style="font-size:15px;">Encaminhamentos registrados <span id="encCountLabel"></span></h2>
+      </div>
+      <div class="field" style="max-width:340px;">
+        <input type="text" id="encBusca" placeholder="Buscar por servidor, unidade, município ou NTE…">
+      </div>
+      <div class="table-scroll">
+        <table class="hist" id="encTable">
+          <thead><tr><th>Data</th><th>Servidor</th><th>Unidade de destino</th><th>Código</th><th>Município / NTE</th><th></th></tr></thead>
+          <tbody id="encBody"></tbody>
+        </table>
+      </div>
+      <div class="hist-empty" id="encEmpty" style="display:none">Nenhum encaminhamento registrado.</div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Pop-up: Relatório (abre automaticamente ao concluir a última pergunta) -->
+<div class="modal-overlay no-print" id="modalRelatorioOverlay">
+  <div class="modal-relatorio" role="dialog" aria-modal="true" aria-labelledby="modalRelatorioTitulo">
+    <button class="modal-close" type="button" id="btnFecharModalRelatorio" aria-label="Fechar">✕</button>
+    <div id="modalRelatorioConteudo"></div>
+    <div class="report-toolbar">
+      <button class="btn" type="button" id="btnNovaAvaliacaoModal">Nova avaliação</button>
+      <button class="btn" type="button" id="btnSalvarHistModal">Salvar no histórico</button>
+      <button class="btn btn-primary" type="button" id="btnImprimirModal">Imprimir / Salvar PDF</button>
+    </div>
+  </div>
 </div>
 
 <div id="printStage"></div>
@@ -659,7 +847,11 @@
     historico: [],
     deficiencia: {possui:false, tipo:"", especificacao:""},
     editandoId: null,
-    ativeTab: "nova"
+    ativeTab: "nova",
+    unidades: [],              // {nte,mun,cod,unidade}
+    encaminhamentos: [],       // {id,data,candidato,unidade}
+    encCandidato: null,
+    encUnidade: null
   };
   var firebaseAtivo = false;
   var db = null;
@@ -705,6 +897,9 @@
   function todosCandidatos(){
     return CANDIDATOS_BASE.concat(state.candidatosExtra);
   }
+  function todasUnidades(){
+    return state.unidades;
+  }
 
   /* ================= Classificação (gabarito) ================= */
   // Regra do gabarito: |E-G| >= 3 decide Escola/Gestão; diferenças de 0 a 2 pontos
@@ -742,6 +937,7 @@
 
     document.querySelectorAll(".escala button").forEach(function(btn){
       btn.addEventListener("click", function(){
+        var completoAntes = respostasCompletas();
         var q = parseInt(btn.getAttribute("data-q"),10);
         var v = parseInt(btn.getAttribute("data-v"),10);
         state.respostas[q] = v;
@@ -752,6 +948,10 @@
         });
         atualizarProgresso();
         atualizarRelatorio();
+        // Pop-up automático: abre exatamente no momento em que a última nota é preenchida.
+        if(!completoAntes && state.candidato && respostasCompletas()){
+          abrirModalRelatorio();
+        }
       });
     });
   }
@@ -861,6 +1061,7 @@
       '  <button class="chip-x" type="button" id="btnTrocarCandidato" title="Trocar candidato" aria-label="Trocar candidato">✕</button>'+
       '</div>';
     document.getElementById("btnTrocarCandidato").addEventListener("click", limparCandidato);
+    document.getElementById("cardQuestionario").style.display = "block";
     atualizarRelatorio();
   }
 
@@ -875,6 +1076,7 @@
     document.getElementById("manCpf").value = "";
     document.getElementById("manInsc").value = "";
     document.getElementById("manMun").value = "";
+    document.getElementById("cardQuestionario").style.display = "none";
     setPcdUI(false, "", "", null);
     atualizarRelatorio();
   }
@@ -977,6 +1179,7 @@
     document.getElementById("baseCount").textContent = n+" candidatos na base";
     document.getElementById("candCount").textContent = "("+n+")";
     document.getElementById("candCountLabel").textContent = "("+n+")";
+    document.getElementById("encBaseCount").textContent = n+" candidatos na base";
     renderCandidatos();
   }
 
@@ -1076,7 +1279,7 @@
     });
   }
   document.getElementById("candBusca").addEventListener("input", renderCandidatos);
-  document.getElementById("irParaCandidatos").addEventListener("click", function(){ ativarAba("candidatos"); });
+  document.getElementById("irParaCandidatos").addEventListener("click", function(){ ativarAba("candidatos"); ativarSubTabCandidatos("adicionar"); });
   document.getElementById("btnAtualizarAgora").addEventListener("click", function(){
     if(firebaseAtivo && db){
       reconectarFirebase();
@@ -1273,13 +1476,32 @@
   function atualizarRelatorio(){
     var pronto = state.candidato && respostasCompletas();
     document.getElementById("relatorioPlaceholder").style.display = pronto ? "none" : "block";
-    document.getElementById("relatorio").style.display = pronto ? "block" : "none";
-    document.getElementById("reportToolbar").style.display = pronto ? "flex" : "none";
-    if(!pronto) return;
-
-    var dados = montarResultado();
-    document.getElementById("relatorio").innerHTML = renderRelatorioHTML(dados);
+    document.getElementById("relatorioPronto").style.display = pronto ? "block" : "none";
   }
+
+  /* ---- Pop-up do relatório: abre sozinho ao concluir a última pergunta,
+     e também pode ser reaberto a qualquer momento pelo botão "Ver relatório". ---- */
+  function abrirModalRelatorio(){
+    if(!(state.candidato && respostasCompletas())) return;
+    var dados = montarResultado();
+    document.getElementById("modalRelatorioConteudo").innerHTML = renderRelatorioHTML(dados);
+    document.getElementById("modalRelatorioOverlay").classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
+  function fecharModalRelatorio(){
+    document.getElementById("modalRelatorioOverlay").classList.remove("show");
+    document.body.style.overflow = "";
+  }
+  document.getElementById("btnVerRelatorio").addEventListener("click", abrirModalRelatorio);
+  document.getElementById("btnFecharModalRelatorio").addEventListener("click", fecharModalRelatorio);
+  document.getElementById("modalRelatorioOverlay").addEventListener("click", function(e){
+    if(e.target === this) fecharModalRelatorio();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && document.getElementById("modalRelatorioOverlay").classList.contains("show")){
+      fecharModalRelatorio();
+    }
+  });
 
   function montarResultado(){
     var E=0, G=0;
@@ -1366,7 +1588,7 @@
     }).join("");
     setTimeout(function(){ window.print(); }, 60);
   }
-  document.getElementById("btnImprimir").addEventListener("click", function(){
+  document.getElementById("btnImprimirModal").addEventListener("click", function(){
     imprimirRelatorios([montarResultado()]);
   });
 
@@ -1405,12 +1627,13 @@
     atualizarProgresso();
     atualizarRelatorio();
   }
-  document.getElementById("btnNovaAvaliacao").addEventListener("click", function(){
+  document.getElementById("btnNovaAvaliacaoModal").addEventListener("click", function(){
+    fecharModalRelatorio();
     resetFormulario();
     window.scrollTo({top:0, behavior:"smooth"});
   });
 
-  document.getElementById("btnSalvarHist").addEventListener("click", function(){
+  document.getElementById("btnSalvarHistModal").addEventListener("click", function(){
     var d = montarResultado();
     var registro = {
       data: d.data,
@@ -1419,7 +1642,7 @@
       E: d.E, G: d.G, diff: d.diff, chave: d.chave,
       deficiencia: d.deficiencia
     };
-    var btn = document.getElementById("btnSalvarHist");
+    var btn = document.getElementById("btnSalvarHistModal");
     var modoEdicao = !!state.editandoId;
     function marcarFeito(msg){
       btn.textContent = msg;
@@ -1472,12 +1695,12 @@
     state.editandoId = id;
     document.getElementById("editBanner").style.display = "flex";
     document.getElementById("editBannerTexto").textContent = "Editando avaliação de "+nomeCandidato+".";
-    document.getElementById("btnSalvarHist").textContent = "Atualizar avaliação";
+    document.getElementById("btnSalvarHistModal").textContent = "Atualizar avaliação";
   }
   function sairModoEdicao(){
     state.editandoId = null;
     document.getElementById("editBanner").style.display = "none";
-    document.getElementById("btnSalvarHist").textContent = "Salvar no histórico";
+    document.getElementById("btnSalvarHistModal").textContent = "Salvar no histórico";
   }
   document.getElementById("btnCancelarEdicao").addEventListener("click", function(){
     resetFormulario();
@@ -1577,6 +1800,421 @@
     imprimirRelatorios(lista);
   });
 
+  /* ================= Sub-abas do módulo Candidatos ================= */
+  function ativarSubTabCandidatos(nome){
+    document.querySelectorAll(".subtab-btn").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-subtab")===nome);
+    });
+    document.getElementById("subpanel-base").classList.toggle("active", nome==="base");
+    document.getElementById("subpanel-adicionar").classList.toggle("active", nome==="adicionar");
+    document.getElementById("subpanel-backup").classList.toggle("active", nome==="backup");
+    if(nome==="base") renderCandidatos();
+  }
+  document.querySelectorAll(".subtab-btn").forEach(function(b){
+    b.addEventListener("click", function(){ ativarSubTabCandidatos(b.getAttribute("data-subtab")); });
+  });
+
+  /* ================= Módulo Encaminhamento ================= */
+
+  /* ---- Passo 1: busca/seleção do servidor ---- */
+  var encBuscaInput = document.getElementById("encBuscaInput");
+  var encBuscaResultados = document.getElementById("encBuscaResultados");
+
+  encBuscaInput.addEventListener("input", function(){
+    var q = normaliza(encBuscaInput.value);
+    if(q.length < 2){ encBuscaResultados.classList.remove("show"); encBuscaResultados.innerHTML=""; return; }
+    var qDigits = digits(encBuscaInput.value);
+    var lista = todosCandidatos().filter(function(c){
+      var matchNome = normaliza(c.nome).indexOf(q) !== -1;
+      var matchCpf = qDigits.length>=3 && digits(c.cpf).indexOf(qDigits) !== -1;
+      var matchInsc = qDigits.length>=3 && (c.insc||"").indexOf(qDigits) !== -1;
+      return matchNome || matchCpf || matchInsc;
+    }).slice(0,8);
+
+    if(lista.length===0){
+      encBuscaResultados.innerHTML = '<div class="search-empty">Nenhum candidato encontrado na base.</div>';
+    }else{
+      encBuscaResultados.innerHTML = lista.map(function(c, i){
+        return '<div class="search-item" data-idx="'+i+'">'+
+               '  <div class="nome">'+escapeHtml(c.nome)+'</div>'+
+               '  <div class="meta">'+maskCPF(c.cpf)+' · Insc. '+escapeHtml(c.insc||"—")+' · '+escapeHtml(c.mun||"")+'</div>'+
+               '</div>';
+      }).join("");
+      encBuscaResultados.querySelectorAll(".search-item").forEach(function(el, i){
+        el.addEventListener("click", function(){ selecionarCandidatoEnc(lista[i]); });
+      });
+    }
+    encBuscaResultados.classList.add("show");
+  });
+  document.addEventListener("click", function(e){
+    if(!encBuscaResultados.contains(e.target) && e.target!==encBuscaInput){
+      encBuscaResultados.classList.remove("show");
+    }
+  });
+
+  function selecionarCandidatoEnc(c){
+    state.encCandidato = c;
+    encBuscaInput.value = "";
+    encBuscaResultados.classList.remove("show");
+    encBuscaResultados.innerHTML = "";
+    document.getElementById("encBuscaBox").style.display = "none";
+
+    var box = document.getElementById("encCandidatoSelecionado");
+    box.style.display = "block";
+    box.innerHTML =
+      '<div class="candidato-chip">'+
+      '  <div class="info">'+
+      '    <div class="nome">'+escapeHtml(c.nome)+'</div>'+
+      '    <div class="meta">'+maskCPF(c.cpf)+(c.insc? ' · Insc. '+escapeHtml(c.insc):'')+(c.mun? ' · '+escapeHtml(c.mun):'')+'</div>'+
+      '  </div>'+
+      '  <button class="chip-x" type="button" id="btnTrocarCandidatoEnc" title="Trocar servidor" aria-label="Trocar servidor">✕</button>'+
+      '</div>';
+    document.getElementById("btnTrocarCandidatoEnc").addEventListener("click", limparCandidatoEnc);
+    document.getElementById("cardEncUnidade").style.display = "block";
+    atualizarPassoConfirmarEnc();
+  }
+  function limparCandidatoEnc(){
+    state.encCandidato = null;
+    document.getElementById("encCandidatoSelecionado").style.display = "none";
+    document.getElementById("encCandidatoSelecionado").innerHTML = "";
+    document.getElementById("encBuscaBox").style.display = "block";
+    document.getElementById("cardEncUnidade").style.display = "none";
+    limparUnidadeEnc();
+  }
+
+  /* ---- Passo 2: busca/seleção da unidade de destino ---- */
+  var encUnidBuscaInput = document.getElementById("encUnidBuscaInput");
+  var encUnidBuscaResultados = document.getElementById("encUnidBuscaResultados");
+
+  encUnidBuscaInput.addEventListener("input", function(){
+    var q = normaliza(encUnidBuscaInput.value);
+    if(q.length < 1){ encUnidBuscaResultados.classList.remove("show"); encUnidBuscaResultados.innerHTML=""; return; }
+    var lista = todasUnidades().filter(function(u){
+      return normaliza(u.unidade).indexOf(q) !== -1 ||
+             normaliza(u.mun).indexOf(q) !== -1 ||
+             normaliza(u.nte).indexOf(q) !== -1 ||
+             normaliza(u.cod).indexOf(q) !== -1;
+    }).slice(0,8);
+
+    if(lista.length===0){
+      encUnidBuscaResultados.innerHTML = '<div class="search-empty">Nenhuma unidade encontrada na base.</div>';
+    }else{
+      encUnidBuscaResultados.innerHTML = lista.map(function(u, i){
+        return '<div class="search-item" data-idx="'+i+'">'+
+               '  <div class="nome">'+escapeHtml(u.unidade)+'</div>'+
+               '  <div class="meta">'+(u.cod? 'Cód. '+escapeHtml(u.cod)+' · ':'')+escapeHtml(u.mun||"")+' · NTE '+escapeHtml(u.nte||"—")+'</div>'+
+               '</div>';
+      }).join("");
+      encUnidBuscaResultados.querySelectorAll(".search-item").forEach(function(el, i){
+        el.addEventListener("click", function(){ selecionarUnidadeEnc(lista[i]); });
+      });
+    }
+    encUnidBuscaResultados.classList.add("show");
+  });
+  document.addEventListener("click", function(e){
+    if(!encUnidBuscaResultados.contains(e.target) && e.target!==encUnidBuscaInput){
+      encUnidBuscaResultados.classList.remove("show");
+    }
+  });
+
+  function selecionarUnidadeEnc(u){
+    state.encUnidade = u;
+    encUnidBuscaInput.value = "";
+    encUnidBuscaResultados.classList.remove("show");
+    encUnidBuscaResultados.innerHTML = "";
+    document.getElementById("encUnidBuscaBox").style.display = "none";
+    document.getElementById("encSemUnidadeAviso").style.display = "none";
+
+    var box = document.getElementById("encUnidadeSelecionada");
+    box.style.display = "block";
+    box.innerHTML =
+      '<div class="candidato-chip">'+
+      '  <div class="info">'+
+      '    <div class="nome">'+escapeHtml(u.unidade)+'</div>'+
+      '    <div class="meta">'+(u.cod? 'Cód. '+escapeHtml(u.cod)+' · ':'')+escapeHtml(u.mun||"")+' · NTE '+escapeHtml(u.nte||"—")+'</div>'+
+      '  </div>'+
+      '  <button class="chip-x" type="button" id="btnTrocarUnidadeEnc" title="Trocar unidade" aria-label="Trocar unidade">✕</button>'+
+      '</div>';
+    document.getElementById("btnTrocarUnidadeEnc").addEventListener("click", limparUnidadeEnc);
+    atualizarPassoConfirmarEnc();
+  }
+  function limparUnidadeEnc(){
+    state.encUnidade = null;
+    document.getElementById("encUnidadeSelecionada").style.display = "none";
+    document.getElementById("encUnidadeSelecionada").innerHTML = "";
+    document.getElementById("encUnidBuscaBox").style.display = "block";
+    document.getElementById("encSemUnidadeAviso").style.display = "block";
+    document.getElementById("cardEncConfirmar").style.display = "none";
+  }
+  function atualizarPassoConfirmarEnc(){
+    document.getElementById("cardEncConfirmar").style.display = (state.encCandidato && state.encUnidade) ? "block" : "none";
+  }
+  document.getElementById("irParaBaseUnidades").addEventListener("click", function(){
+    document.getElementById("cardBaseUnidades").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  /* ---- Passo 3: confirmar e registrar ---- */
+  function resetEncaminhamentoForm(){
+    limparCandidatoEnc();
+    document.getElementById("encData").value = hojeISO();
+    document.getElementById("encErro").style.display = "none";
+  }
+  document.getElementById("btnCancelarEncaminhamento").addEventListener("click", resetEncaminhamentoForm);
+
+  document.getElementById("btnRegistrarEncaminhamento").addEventListener("click", function(){
+    var erroEl = document.getElementById("encErro");
+    if(!state.encCandidato || !state.encUnidade){
+      erroEl.textContent = "Selecione o servidor e a unidade de destino.";
+      erroEl.style.display = "block";
+      return;
+    }
+    erroEl.style.display = "none";
+    var registro = {
+      data: document.getElementById("encData").value || hojeISO(),
+      candidato: state.encCandidato,
+      unidade: state.encUnidade
+    };
+    var btn = document.getElementById("btnRegistrarEncaminhamento");
+    function marcarFeito(msg){
+      btn.textContent = msg;
+      setTimeout(function(){ btn.textContent = "Registrar encaminhamento"; }, 1600);
+    }
+    if(firebaseAtivo && db){
+      registro.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
+      db.collection("encaminhamentos").add(registro).then(function(){
+        marcarFeito("Registrado ✓");
+        resetEncaminhamentoForm();
+      }).catch(function(err){
+        console.error("Firestore (registrar encaminhamento):", err);
+        erroEl.textContent = "Não foi possível registrar o encaminhamento no Firebase.";
+        erroEl.style.display = "block";
+      });
+    }else{
+      registro.id = uid();
+      state.encaminhamentos.unshift(registro);
+      storageSet("gpv_encaminhamentos", state.encaminhamentos);
+      renderEncaminhamentos();
+      marcarFeito("Registrado ✓");
+      resetEncaminhamentoForm();
+    }
+  });
+
+  /* ---- Base de Unidades: cadastro individual ---- */
+  document.getElementById("btnAddUnidade").addEventListener("click", function(){
+    var erroEl = document.getElementById("uniErro");
+    var nte = document.getElementById("uniNte").value.trim();
+    var mun = document.getElementById("uniMun").value.trim();
+    var unidade = document.getElementById("uniEscola").value.trim();
+    var faltando = [];
+    if(!nte) faltando.push("NTE");
+    if(!mun) faltando.push("Município");
+    if(!unidade) faltando.push("Unidade escolar");
+    if(faltando.length){
+      erroEl.textContent = "Preencha: "+faltando.join(", ")+".";
+      erroEl.style.display = "block";
+      document.getElementById(!nte?"uniNte":(!mun?"uniMun":"uniEscola")).focus();
+      return;
+    }
+    erroEl.style.display = "none";
+    var novo = {
+      nte: nte,
+      mun: mun,
+      cod: document.getElementById("uniCod").value.trim(),
+      unidade: unidade
+    };
+    function limparForm(){
+      document.getElementById("uniNte").value = "";
+      document.getElementById("uniMun").value = "";
+      document.getElementById("uniCod").value = "";
+      document.getElementById("uniEscola").value = "";
+    }
+    if(firebaseAtivo && db){
+      db.collection("unidades").add(novo).then(limparForm).catch(function(err){
+        console.error("Firestore (adicionar unidade):", err);
+        erroEl.textContent = "Não foi possível adicionar a unidade ao Firebase.";
+        erroEl.style.display = "block";
+      });
+    }else{
+      novo.id = uid();
+      state.unidades.push(novo);
+      storageSet("gpv_unidades", state.unidades);
+      atualizarContadorUnidades();
+      limparForm();
+    }
+  });
+
+  /* ---- Base de Unidades: importar planilha ---- */
+  document.getElementById("btnImportarUnidades").addEventListener("click", function(){
+    document.getElementById("fileImportarUnidades").click();
+  });
+  document.getElementById("fileImportarUnidades").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        var wb = XLSX.read(evt.target.result, {type:"array"});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+        var importadas = rows.map(function(r){
+          var keys = Object.keys(r);
+          function pick(nomes){
+            for(var i=0;i<keys.length;i++){
+              var kn = normaliza(keys[i]);
+              for(var j=0;j<nomes.length;j++){
+                if(kn.indexOf(nomes[j]) !== -1) return r[keys[i]];
+              }
+            }
+            return "";
+          }
+          return {
+            nte: String(pick(["nte"])||"").trim(),
+            mun: String(pick(["municipio"])||"").trim(),
+            cod: String(pick(["codigo","cod inep","inep"])||"").trim(),
+            unidade: String(pick(["unidade escolar","unidade","escola","nome da unidade","nome da escola"])||"").trim()
+          };
+        }).filter(function(u){ return u.unidade; });
+
+        if(importadas.length===0){
+          document.getElementById("importUniStatus").textContent = "Nenhuma unidade reconhecida no arquivo.";
+          return;
+        }
+
+        if(firebaseAtivo && db){
+          var batch = db.batch();
+          importadas.forEach(function(u){
+            batch.set(db.collection("unidades").doc(), u);
+          });
+          batch.commit().then(function(){
+            document.getElementById("importUniStatus").textContent = importadas.length+" unidade(s) adicionada(s) e sincronizada(s) via Firebase.";
+          }).catch(function(err){
+            console.error("Firestore (importar unidades):", err);
+            document.getElementById("importUniStatus").textContent = "Não foi possível sincronizar com o Firebase.";
+          });
+        }else{
+          importadas.forEach(function(u){ u.id = uid(); });
+          state.unidades = state.unidades.concat(importadas);
+          storageSet("gpv_unidades", state.unidades);
+          atualizarContadorUnidades();
+          document.getElementById("importUniStatus").textContent = importadas.length+" unidade(s) adicionada(s) (salvas neste navegador).";
+        }
+      }catch(err){
+        document.getElementById("importUniStatus").textContent = "Não foi possível ler este arquivo.";
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  });
+
+  function atualizarContadorUnidades(){
+    var n = todasUnidades().length;
+    document.getElementById("uniCountLabel").textContent = "("+n+")";
+    document.getElementById("encUnidBaseCount").textContent = n+" unidades na base";
+    renderUnidades();
+  }
+
+  /* ---- Base de Unidades: listagem ---- */
+  function renderUnidades(){
+    var tbody = document.getElementById("uniBody");
+    if(!tbody) return;
+    var termo = normaliza(document.getElementById("uniBusca").value);
+    var lista = todasUnidades().filter(function(u){
+      if(!termo) return true;
+      return normaliza(u.unidade).indexOf(termo)!==-1 ||
+             normaliza(u.mun).indexOf(termo)!==-1 ||
+             normaliza(u.nte).indexOf(termo)!==-1 ||
+             normaliza(u.cod).indexOf(termo)!==-1;
+    });
+    tbody.innerHTML = lista.map(function(u, i){
+      return '<tr>'+
+        '<td>'+escapeHtml(u.nte||"—")+'</td>'+
+        '<td>'+escapeHtml(u.mun||"—")+'</td>'+
+        '<td>'+escapeHtml(u.cod||"—")+'</td>'+
+        '<td>'+escapeHtml(u.unidade)+'</td>'+
+        '<td><button class="btn-icon" type="button" data-excluir-uni="'+i+'" title="Excluir" aria-label="Excluir">✕</button></td>'+
+        '</tr>';
+    }).join("");
+    tbody.querySelectorAll("[data-excluir-uni]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var u = lista[parseInt(btn.getAttribute("data-excluir-uni"),10)];
+        if(!confirm("Excluir a unidade "+u.unidade+"? Esta ação não pode ser desfeita.")) return;
+        excluirUnidade(u);
+      });
+    });
+  }
+  document.getElementById("uniBusca").addEventListener("input", renderUnidades);
+
+  function excluirUnidade(u){
+    if(firebaseAtivo && db){
+      db.collection("unidades").doc(u.id).delete().catch(function(err){
+        console.error("Firestore (excluir unidade):", err);
+        alert("Não foi possível excluir esta unidade.");
+      });
+    }else{
+      state.unidades = state.unidades.filter(function(x){ return x.id!==u.id; });
+      storageSet("gpv_unidades", state.unidades);
+      atualizarContadorUnidades();
+    }
+  }
+
+  /* ---- Encaminhamentos registrados: listagem ---- */
+  function renderEncaminhamentos(){
+    var tbody = document.getElementById("encBody");
+    if(!tbody) return;
+    var termo = normaliza(document.getElementById("encBusca").value);
+    var todos = state.encaminhamentos || [];
+    var lista = todos.filter(function(h){
+      if(!termo) return true;
+      var c = h.candidato||{}, u = h.unidade||{};
+      return normaliza(c.nome).indexOf(termo)!==-1 ||
+             normaliza(u.unidade).indexOf(termo)!==-1 ||
+             normaliza(u.mun).indexOf(termo)!==-1 ||
+             normaliza(u.nte).indexOf(termo)!==-1 ||
+             normaliza(u.cod).indexOf(termo)!==-1;
+    });
+    document.getElementById("encCountLabel").textContent = "("+lista.length+")";
+    var table = document.getElementById("encTable");
+    var empty = document.getElementById("encEmpty");
+    if(lista.length===0){
+      table.style.display="none"; tbody.innerHTML=""; empty.style.display="block";
+      return;
+    }
+    table.style.display="table"; empty.style.display="none";
+
+    tbody.innerHTML = lista.map(function(h, i){
+      var c = h.candidato||{}, u = h.unidade||{};
+      return '<tr>'+
+        '<td>'+fmtDataBR(h.data)+'</td>'+
+        '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+        '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+        '<td>'+escapeHtml(u.cod||"—")+'</td>'+
+        '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
+        '<td><button class="btn-icon" type="button" data-excluir-enc="'+i+'" title="Excluir" aria-label="Excluir">✕</button></td>'+
+        '</tr>';
+    }).join("");
+    tbody.querySelectorAll("[data-excluir-enc]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var h = lista[parseInt(btn.getAttribute("data-excluir-enc"),10)];
+        if(!confirm("Excluir este encaminhamento?")) return;
+        excluirEncaminhamento(h.id);
+      });
+    });
+  }
+  document.getElementById("encBusca").addEventListener("input", renderEncaminhamentos);
+
+  function excluirEncaminhamento(id){
+    if(firebaseAtivo && db){
+      db.collection("encaminhamentos").doc(id).delete().catch(function(err){
+        console.error("Firestore (excluir encaminhamento):", err);
+        alert("Não foi possível excluir este encaminhamento.");
+      });
+    }else{
+      state.encaminhamentos = state.encaminhamentos.filter(function(h){ return h.id!==id; });
+      storageSet("gpv_encaminhamentos", state.encaminhamentos);
+      renderEncaminhamentos();
+    }
+  }
+
   /* ================= Abas ================= */
   function ativarAba(nome){
     document.querySelectorAll(".tab-btn").forEach(function(b){
@@ -1585,9 +2223,11 @@
     document.getElementById("panel-nova").classList.toggle("active", nome==="nova");
     document.getElementById("panel-candidatos").classList.toggle("active", nome==="candidatos");
     document.getElementById("panel-relatorios").classList.toggle("active", nome==="relatorios");
+    document.getElementById("panel-encaminhamento").classList.toggle("active", nome==="encaminhamento");
     state.ativeTab = nome;
     if(nome==="candidatos") renderCandidatos();
     if(nome==="relatorios") renderRelatorios();
+    if(nome==="encaminhamento"){ renderUnidades(); renderEncaminhamentos(); }
   }
   document.querySelectorAll(".tab-btn").forEach(function(b){
     b.addEventListener("click", function(){ ativarAba(b.getAttribute("data-tab")); });
@@ -1614,16 +2254,22 @@
   function carregarDadosLocais(){
     state.historico = storageGet("gpv_historico", []);
     state.candidatosExtra = storageGet("gpv_candidatos_extra", []);
+    state.unidades = storageGet("gpv_unidades", []);
+    state.encaminhamentos = storageGet("gpv_encaminhamentos", []);
     atualizarContadorBase();
+    atualizarContadorUnidades();
     renderCandidatos();
     renderRelatorios();
+    renderEncaminhamentos();
   }
 
-  var _unsubAvaliacoes = null, _unsubCandidatos = null;
+  var _unsubAvaliacoes = null, _unsubCandidatos = null, _unsubUnidades = null, _unsubEncaminhamentos = null;
   var _tentativasReconexao = 0;
   function pararListeners(){
     if(_unsubAvaliacoes){ try{ _unsubAvaliacoes(); }catch(e){} _unsubAvaliacoes = null; }
     if(_unsubCandidatos){ try{ _unsubCandidatos(); }catch(e){} _unsubCandidatos = null; }
+    if(_unsubUnidades){ try{ _unsubUnidades(); }catch(e){} _unsubUnidades = null; }
+    if(_unsubEncaminhamentos){ try{ _unsubEncaminhamentos(); }catch(e){} _unsubEncaminhamentos = null; }
   }
   function iniciarListeners(){
     pararListeners();
@@ -1645,6 +2291,25 @@
       atualizarContadorBase();
     }, function(err){
       console.error("Firestore (candidatosExtra):", err);
+      agendarReconexao();
+    });
+    _unsubUnidades = db.collection("unidades").onSnapshot(function(snap){
+      state.unidades = snap.docs.map(function(doc){
+        var x = doc.data(); x.id = doc.id; return x;
+      });
+      atualizarContadorUnidades();
+    }, function(err){
+      console.error("Firestore (unidades):", err);
+      agendarReconexao();
+    });
+    _unsubEncaminhamentos = db.collection("encaminhamentos").limit(1000).onSnapshot(function(snap){
+      state.encaminhamentos = snap.docs.map(function(doc){
+        var x = doc.data(); x.id = doc.id; return x;
+      });
+      state.encaminhamentos.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
+      renderEncaminhamentos();
+    }, function(err){
+      console.error("Firestore (encaminhamentos):", err);
       agendarReconexao();
     });
   }
@@ -1686,6 +2351,7 @@
   /* ================= Inicialização ================= */
   function init(){
     document.getElementById("dataAvaliacao").value = hojeISO();
+    document.getElementById("encData").value = hojeISO();
     renderQuestionario();
     atualizarProgresso();
     atualizarRelatorio();
