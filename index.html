@@ -350,6 +350,9 @@
     width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:13px; line-height:1;
   }
   .btn-icon:hover{ color:var(--danger); border-color:var(--danger); }
+  .btn-icon-confirmar:hover{ color:var(--escola); border-color:var(--escola); }
+  .btn-icon-confirmar.on{ background:var(--escola); border-color:var(--escola); color:#fff; }
+  .btn-icon-confirmar.on:hover{ background:var(--escola); border-color:var(--escola); color:#fff; opacity:.85; }
   .row-actions{ display:flex; gap:6px; }
 
   /* ---------- Ofício de Encaminhamento ---------- */
@@ -2096,7 +2099,8 @@
       data: document.getElementById("encData").value || hojeISO(),
       candidato: state.encCandidato,
       unidade: state.encUnidade,
-      sexo: sexo
+      sexo: sexo,
+      confirmado: false
     };
     var btn = document.getElementById("btnRegistrarEncaminhamento");
     function marcarFeito(msg){
@@ -2377,6 +2381,7 @@
 
     tbody.innerHTML = lista.map(function(h, i){
       var c = h.candidato||{}, u = h.unidade||{};
+      var confirmado = !!h.confirmado;
       return '<tr>'+
         '<td>'+fmtDataBR(h.data)+'</td>'+
         '<td>'+escapeHtml(c.nome||"—")+'</td>'+
@@ -2384,11 +2389,18 @@
         '<td>'+escapeHtml(u.cod||"—")+'</td>'+
         '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
         '<td><span class="row-actions">'+
+        '  <button class="btn-icon btn-icon-confirmar'+(confirmado?' on':'')+'" type="button" data-confirmar-enc="'+i+'" title="'+(confirmado?'Encaminhado — compareceu (clique para desmarcar)':'Marcar como encaminhado (compareceu)')+'" aria-label="Marcar como encaminhado" aria-pressed="'+(confirmado?'true':'false')+'">✓</button>'+
         '  <button class="btn-icon" type="button" data-imprimir-enc="'+i+'" title="Imprimir ofício" aria-label="Imprimir ofício">🖨</button>'+
         '  <button class="btn-icon" type="button" data-excluir-enc="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'+
         '</span></td>'+
         '</tr>';
     }).join("");
+    tbody.querySelectorAll("[data-confirmar-enc]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var h = lista[parseInt(btn.getAttribute("data-confirmar-enc"),10)];
+        alternarConfirmadoEncaminhamento(h);
+      });
+    });
     tbody.querySelectorAll("[data-imprimir-enc]").forEach(function(btn){
       btn.addEventListener("click", function(){
         var h = lista[parseInt(btn.getAttribute("data-imprimir-enc"),10)];
@@ -2404,6 +2416,20 @@
     });
   }
   document.getElementById("encBusca").addEventListener("input", renderEncaminhamentos);
+
+  function alternarConfirmadoEncaminhamento(h){
+    var novoValor = !h.confirmado;
+    if(firebaseAtivo && db){
+      db.collection("encaminhamentos").doc(h.id).update({confirmado: novoValor}).catch(function(err){
+        console.error("Firestore (confirmar encaminhamento):", err);
+        alert("Não foi possível atualizar o status deste encaminhamento.");
+      });
+    }else{
+      h.confirmado = novoValor;
+      storageSet("gpv_encaminhamentos", state.encaminhamentos);
+      renderEncaminhamentos();
+    }
+  }
 
   /* ---- Ofício de Encaminhamento (impressão) ---- */
   function renderOficioEncaminhamentoHTML(h){
