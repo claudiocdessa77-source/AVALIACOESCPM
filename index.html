@@ -856,7 +856,7 @@
         </div>
         <div class="table-scroll">
           <table class="hist" id="encTable">
-            <thead><tr><th>Data</th><th>Servidor</th><th>Unidade de destino</th><th>Código</th><th>Município / NTE</th><th></th></tr></thead>
+            <thead><tr><th>Data</th><th>Servidor</th><th>Unidade de destino</th><th>Código</th><th>Município / NTE</th><th>Registrado por</th><th></th></tr></thead>
             <tbody id="encBody"></tbody>
           </table>
         </div>
@@ -973,6 +973,20 @@
         </table>
       </div>
       <div class="hist-empty" id="usuEmpty" style="display:none">Nenhum usuário cadastrado ainda.</div>
+    </div>
+
+    <div class="card">
+      <div class="hist-actions">
+        <h2 style="font-size:15px;">Histórico de acessos <span id="acessoCountLabel"></span></h2>
+      </div>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Mostra os 200 acessos mais recentes.</p>
+      <div class="table-scroll">
+        <table class="hist" id="acessoTable">
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Data/Hora</th></tr></thead>
+          <tbody id="acessoBody"></tbody>
+        </table>
+      </div>
+      <div class="hist-empty" id="acessoEmpty" style="display:none">Nenhum acesso registrado ainda.</div>
     </div>
 
   </div>
@@ -1108,7 +1122,8 @@
     encUnidade: null,
     ntesHabilitados: {},       // {"NÚCLEO 26 - SALVADOR": true/false, ...} — ausente = habilitado
     usuarioAtual: null,        // {uid,email,nome,role,ntes} depois do login
-    usuarios: []                // lista de usuários cadastrados (só carregada para administrador)
+    usuarios: [],               // lista de usuários cadastrados (só carregada para administrador)
+    acessos: []                  // histórico de acessos (só carregado para administrador)
   };
   var firebaseAtivo = false;
   var db = null;
@@ -1522,7 +1537,7 @@
   function avaliadoInfo(c){
     var r = registrosDoCandidato(c);
     if(r.length===0) return {avaliado:false};
-    return {avaliado:true, data:r[0].data, total:r.length};
+    return {avaliado:true, data:r[0].data, total:r.length, por:r[0].criadoPor};
   }
   function registrosEncaminhamentoDoCandidato(c){
     var cpfC = digits(c.cpf), inscC = (c.insc||"").trim();
@@ -1538,7 +1553,7 @@
   function encaminhadoInfo(c){
     var confirmados = registrosEncaminhamentoDoCandidato(c).filter(function(h){ return !!h.confirmado; });
     if(confirmados.length===0) return {encaminhado:false};
-    return {encaminhado:true, data:confirmados[0].data, unidade:confirmados[0].unidade||{}, total:confirmados.length};
+    return {encaminhado:true, data:confirmados[0].data, unidade:confirmados[0].unidade||{}, total:confirmados.length, por:confirmados[0].confirmadoPor};
   }
 
   function renderCandidatos(){
@@ -1558,11 +1573,11 @@
     tbody.innerHTML = lista.map(function(c, i){
       var av = avaliadoInfo(c);
       var statusHtml = av.avaliado
-        ? '<span class="status-pill ok" title="'+av.total+' avaliação(ões) — última em '+fmtDataBR(av.data)+'">✓ Avaliado ('+fmtDataBR(av.data)+')</span>'
+        ? '<span class="status-pill ok" title="'+av.total+' avaliação(ões) — última em '+fmtDataBR(av.data)+(av.por?' · por '+escapeHtml(av.por.nome):'')+'">✓ Avaliado ('+fmtDataBR(av.data)+')</span>'
         : '<span class="status-pill pend">— Pendente</span>';
       var enc = encaminhadoInfo(c);
       var encHtml = enc.encaminhado
-        ? '<span class="status-pill ok" title="'+enc.total+' encaminhamento(s) confirmado(s) — mais recente em '+fmtDataBR(enc.data)+' para '+escapeHtml(enc.unidade.unidade||"")+'">✓ Encaminhado ('+fmtDataBR(enc.data)+')</span>'
+        ? '<span class="status-pill ok" title="'+enc.total+' encaminhamento(s) confirmado(s) — mais recente em '+fmtDataBR(enc.data)+' para '+escapeHtml(enc.unidade.unidade||"")+(enc.por?' · confirmado por '+escapeHtml(enc.por.nome):'')+'">✓ Encaminhado ('+fmtDataBR(enc.data)+')</span>'
         : '<span class="status-pill pend">— Pendente</span>';
       var acaoHtml = av.avaliado
         ? '<span class="row-actions">'+
@@ -2052,6 +2067,10 @@
     window.scrollTo({top:0, behavior:"smooth"});
   });
 
+  function quemSouEu(){
+    return state.usuarioAtual ? {uid: state.usuarioAtual.uid, nome: state.usuarioAtual.nome, email: state.usuarioAtual.email} : null;
+  }
+
   document.getElementById("btnSalvarHistModal").addEventListener("click", function(){
     var d = montarResultado();
     var registro = {
@@ -2074,7 +2093,9 @@
 
     if(modoEdicao){
       var id = state.editandoId;
+      registro.atualizadoPor = quemSouEu();
       if(firebaseAtivo && db){
+        registro.atualizadoEm = firebase.firestore.FieldValue.serverTimestamp();
         db.collection("avaliacoes").doc(id).update(registro).then(function(){
           marcarFeito("Atualizado ✓");
           sairModoEdicao();
@@ -2082,8 +2103,12 @@
       }else{
         var idx = state.historico.findIndex(function(h){ return h.id===id; });
         if(idx>-1){
-          registro.id = id;
-          state.historico[idx] = registro;
+          var registroFinal = {};
+          for(var k in state.historico[idx]){ registroFinal[k] = state.historico[idx][k]; }
+          for(var k2 in registro){ registroFinal[k2] = registro[k2]; }
+          registroFinal.id = id;
+          registroFinal.atualizadoEm = new Date().toISOString();
+          state.historico[idx] = registroFinal;
           storageSet("gpv_historico", state.historico);
         }
         marcarFeito("Atualizado ✓");
@@ -2092,6 +2117,7 @@
         renderRelatorios();
       }
     }else{
+      registro.criadoPor = quemSouEu();
       if(firebaseAtivo && db){
         registro.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
         db.collection("avaliacoes").add(registro).then(function(){ marcarFeito("Salvo ✓"); }).catch(function(err){
@@ -2100,6 +2126,7 @@
         });
       }else{
         registro.id = uid();
+        registro.criadoEm = new Date().toISOString();
         state.historico.unshift(registro);
         storageSet("gpv_historico", state.historico);
         renderCandidatos();
@@ -2421,7 +2448,8 @@
       candidato: state.encCandidato,
       unidade: state.encUnidade,
       sexo: sexo,
-      confirmado: false
+      confirmado: false,
+      criadoPor: quemSouEu()
     };
     var btn = document.getElementById("btnRegistrarEncaminhamento");
     function marcarFeito(msg){
@@ -2440,6 +2468,7 @@
       });
     }else{
       registro.id = uid();
+      registro.criadoEm = new Date().toISOString();
       state.encaminhamentos.unshift(registro);
       storageSet("gpv_encaminhamentos", state.encaminhamentos);
       renderEncaminhamentos();
@@ -2703,12 +2732,16 @@
     tbody.innerHTML = lista.map(function(h, i){
       var c = h.candidato||{}, u = h.unidade||{};
       var confirmado = !!h.confirmado;
+      var registradoPor = (h.criadoPor && h.criadoPor.nome) || "—";
+      var tituloRegistrado = (confirmado && h.confirmadoPor && h.confirmadoPor.nome && h.confirmadoPor.nome!==registradoPor)
+        ? "Confirmado por "+h.confirmadoPor.nome : "";
       return '<tr>'+
         '<td>'+fmtDataBR(h.data)+'</td>'+
         '<td>'+escapeHtml(c.nome||"—")+'</td>'+
         '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
         '<td>'+escapeHtml(u.cod||"—")+'</td>'+
         '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
+        '<td style="font-size:11.5px;" title="'+escapeHtml(tituloRegistrado)+'">'+escapeHtml(registradoPor)+'</td>'+
         '<td><span class="row-actions">'+
         '  <button class="btn-icon btn-icon-confirmar'+(confirmado?' on':'')+'" type="button" data-confirmar-enc="'+i+'" title="'+(confirmado?'Encaminhado — compareceu (clique para desmarcar)':'Marcar como encaminhado (compareceu)')+'" aria-label="Marcar como encaminhado" aria-pressed="'+(confirmado?'true':'false')+'">✓</button>'+
         '  <button class="btn-icon" type="button" data-imprimir-enc="'+i+'" title="Imprimir ofício" aria-label="Imprimir ofício">🖨</button>'+
@@ -2740,13 +2773,20 @@
 
   function alternarConfirmadoEncaminhamento(h){
     var novoValor = !h.confirmado;
+    var campos = {
+      confirmado: novoValor,
+      confirmadoPor: novoValor ? quemSouEu() : null
+    };
     if(firebaseAtivo && db){
-      db.collection("encaminhamentos").doc(h.id).update({confirmado: novoValor}).catch(function(err){
+      campos.confirmadoEm = novoValor ? firebase.firestore.FieldValue.serverTimestamp() : null;
+      db.collection("encaminhamentos").doc(h.id).update(campos).catch(function(err){
         console.error("Firestore (confirmar encaminhamento):", err);
         alert("Não foi possível atualizar o status deste encaminhamento.");
       });
     }else{
-      h.confirmado = novoValor;
+      h.confirmado = campos.confirmado;
+      h.confirmadoPor = campos.confirmadoPor;
+      h.confirmadoEm = novoValor ? new Date().toISOString() : null;
       storageSet("gpv_encaminhamentos", state.encaminhamentos);
       renderEncaminhamentos();
       renderCandidatos();
@@ -2941,6 +2981,29 @@
     });
   }
 
+  function renderAcessos(){
+    var tbody = document.getElementById("acessoBody");
+    if(!tbody) return;
+    var lista = state.acessos||[];
+    document.getElementById("acessoCountLabel").textContent = "("+lista.length+")";
+    var table = document.getElementById("acessoTable");
+    var empty = document.getElementById("acessoEmpty");
+    if(lista.length===0){
+      table.style.display="none"; tbody.innerHTML=""; empty.style.display="block";
+      return;
+    }
+    table.style.display="table"; empty.style.display="none";
+    tbody.innerHTML = lista.map(function(a){
+      var dh = a.dataHora && a.dataHora.toDate ? a.dataHora.toDate() : null;
+      var txt = dh ? dh.toLocaleString("pt-BR") : "—";
+      return '<tr>'+
+        '<td>'+escapeHtml(a.nome||"—")+'</td>'+
+        '<td>'+escapeHtml(a.email||"—")+'</td>'+
+        '<td>'+txt+'</td>'+
+        '</tr>';
+    }).join("");
+  }
+
   var _usuarioEditando = null;
   function abrirModalUsuario(u){
     _usuarioEditando = u;
@@ -3039,7 +3102,7 @@
     if(nome==="candidatos") renderCandidatos();
     if(nome==="relatorios") renderRelatorios();
     if(nome==="encaminhamento"){ renderUnidades(); renderEncaminhamentos(); }
-    if(nome==="usuarios") renderUsuarios();
+    if(nome==="usuarios"){ renderUsuarios(); renderAcessos(); }
   }
   document.querySelectorAll(".tab-btn").forEach(function(b){
     b.addEventListener("click", function(){ ativarAba(b.getAttribute("data-tab")); });
@@ -3076,7 +3139,7 @@
     renderEncaminhamentos();
   }
 
-  var _unsubAvaliacoes = null, _unsubCandidatos = null, _unsubUnidades = null, _unsubEncaminhamentos = null, _unsubNtesHabilitados = null, _unsubUsuarios = null;
+  var _unsubAvaliacoes = null, _unsubCandidatos = null, _unsubUnidades = null, _unsubEncaminhamentos = null, _unsubNtesHabilitados = null, _unsubUsuarios = null, _unsubAcessos = null;
   var _tentativasReconexao = 0;
   function pararListeners(){
     if(_unsubAvaliacoes){ try{ _unsubAvaliacoes(); }catch(e){} _unsubAvaliacoes = null; }
@@ -3085,6 +3148,7 @@
     if(_unsubEncaminhamentos){ try{ _unsubEncaminhamentos(); }catch(e){} _unsubEncaminhamentos = null; }
     if(_unsubNtesHabilitados){ try{ _unsubNtesHabilitados(); }catch(e){} _unsubNtesHabilitados = null; }
     if(_unsubUsuarios){ try{ _unsubUsuarios(); }catch(e){} _unsubUsuarios = null; }
+    if(_unsubAcessos){ try{ _unsubAcessos(); }catch(e){} _unsubAcessos = null; }
   }
   function iniciarListeners(){
     pararListeners();
@@ -3145,6 +3209,12 @@
       }, function(err){
         console.error("Firestore (usuarios):", err);
       });
+      _unsubAcessos = db.collection("acessos").orderBy("dataHora","desc").limit(200).onSnapshot(function(snap){
+        state.acessos = snap.docs.map(function(doc){ return doc.data(); });
+        renderAcessos();
+      }, function(err){
+        console.error("Firestore (acessos):", err);
+      });
     }
   }
   function agendarReconexao(){
@@ -3186,6 +3256,7 @@
     state.encaminhamentos = [];
     state.ntesHabilitados = {};
     state.usuarios = [];
+    state.acessos = [];
     state.usuarioAtual = null;
   }
   function aplicarRestricoesPapel(){
@@ -3229,6 +3300,16 @@
       callback(true); // em caso de erro, mostra login normal em vez de oferecer criar admin indevidamente
     });
   }
+  function registrarAcesso(){
+    if(!(firebaseAtivo && db && state.usuarioAtual)) return;
+    db.collection("acessos").add({
+      uid: state.usuarioAtual.uid,
+      email: state.usuarioAtual.email,
+      nome: state.usuarioAtual.nome,
+      dataHora: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(function(err){ console.error("Firestore (registrar acesso):", err); });
+  }
+
   function carregarPerfilUsuario(user){
     db.collection("usuarios").doc(user.uid).get().then(function(doc){
       if(!doc.exists || doc.data().ativo===false){
@@ -3246,6 +3327,7 @@
       atualizarTopbarUsuario();
       aplicarRestricoesPapel();
       iniciarListeners();
+      registrarAcesso();
     }).catch(function(err){
       console.error("Firestore (perfil do usuário):", err);
       document.getElementById("loginSemAcessoEmail").textContent = user.email;
@@ -3301,6 +3383,7 @@
         atualizarTopbarUsuario();
         aplicarRestricoesPapel();
         iniciarListeners();
+        registrarAcesso();
       });
     }).catch(function(err){
       console.error("Auth/Firestore (criar administrador):", err);
