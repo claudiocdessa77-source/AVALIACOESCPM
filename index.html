@@ -1167,17 +1167,49 @@
     });
   }
 
+  /* ---- Escopo por NTE (papel "usuário") ---- */
+  function nteNumero(s){
+    var m = (s||"").toString().match(/\d+/);
+    return m ? String(parseInt(m[0],10)) : "";
+  }
+  function meusNtesNumeros(){
+    if(!state.usuarioAtual || state.usuarioAtual.role==="admin") return null; // null = sem restrição
+    return (state.usuarioAtual.ntes||[]).map(nteNumero);
+  }
+
   function todosCandidatos(){
-    return CANDIDATOS_BASE.concat(state.candidatosExtra);
+    var base = CANDIDATOS_BASE.concat(state.candidatosExtra);
+    var meus = meusNtesNumeros();
+    if(meus===null) return base;
+    return base.filter(function(c){ return meus.indexOf(nteNumero(c.nte)) !== -1; });
   }
   function todasUnidades(){
-    return UNIDADES_BASE.concat(state.unidades);
+    var base = UNIDADES_BASE.concat(state.unidades);
+    var meus = meusNtesNumeros();
+    if(meus===null) return base;
+    return base.filter(function(u){ return meus.indexOf(nteNumero(u.nte)) !== -1; });
   }
   function nteHabilitado(nte){
     return state.ntesHabilitados[nte] !== false; // ausente = habilitado por padrão
   }
   function unidadesHabilitadas(){
     return todasUnidades().filter(function(u){ return nteHabilitado(u.nte); });
+  }
+  function historicoVisivel(){
+    var meus = meusNtesNumeros();
+    if(meus===null) return state.historico||[];
+    return (state.historico||[]).filter(function(h){
+      return meus.indexOf(nteNumero((h.candidato||{}).nte)) !== -1;
+    });
+  }
+  function encaminhamentosVisiveis(){
+    var meus = meusNtesNumeros();
+    if(meus===null) return state.encaminhamentos||[];
+    return (state.encaminhamentos||[]).filter(function(h){
+      var candNte = nteNumero((h.candidato||{}).nte);
+      var unidNte = nteNumero((h.unidade||{}).nte);
+      return meus.indexOf(candNte)!==-1 || meus.indexOf(unidNte)!==-1;
+    });
   }
   var NTES_UNICOS = Array.from(new Set(UNIDADES_BASE.map(function(u){ return u.nte; }))).sort();
 
@@ -1654,7 +1686,7 @@
   /* ---- Duplicidades: mesma pessoa (CPF) com mais de uma avaliação salva ---- */
   function detectarDuplicados(){
     var porCpf = {};
-    (state.historico||[]).forEach(function(h){
+    historicoVisivel().forEach(function(h){
       var cpf = digits(h.candidato && h.candidato.cpf);
       if(!cpf) return;
       (porCpf[cpf] = porCpf[cpf] || []).push(h);
@@ -2121,7 +2153,7 @@
   function renderRelatorios(){
     var body = document.getElementById("relBody");
     if(!body) return;
-    var todos = state.historico || [];
+    var todos = historicoVisivel();
 
     var municipios = Array.from(new Set(todos.map(function(h){ return (h.candidato&&h.candidato.mun)||""; }).filter(Boolean))).sort();
     var ntes = Array.from(new Set(todos.map(function(h){ return (h.candidato&&h.candidato.nte)||""; }).filter(Boolean))).sort();
@@ -2649,7 +2681,7 @@
     var tbody = document.getElementById("encBody");
     if(!tbody) return;
     var termo = normaliza(document.getElementById("encBusca").value);
-    var todos = state.encaminhamentos || [];
+    var todos = encaminhamentosVisiveis();
     var lista = todos.filter(function(h){
       if(!termo) return true;
       var c = h.candidato||{}, u = h.unidade||{};
@@ -3161,10 +3193,21 @@
     document.getElementById("tabBtnUsuarios").style.display = admin ? "" : "none";
     var subBtnHabilitarNte = document.querySelector('#panel-encaminhamento .subtab-btn[data-subtab="habilitarnte"]');
     if(subBtnHabilitarNte) subBtnHabilitarNte.style.display = admin ? "" : "none";
+    var subBtnBackup = document.querySelector('#panel-candidatos .subtab-btn[data-subtab="backup"]');
+    if(subBtnBackup) subBtnBackup.style.display = admin ? "" : "none";
     // Se um usuário sem papel de administrador estiver com essas telas abertas, volta para uma aba permitida.
     if(!admin){
       if(state.ativeTab==="usuarios") ativarAba("nova");
       if(document.getElementById("encsub-habilitarnte").classList.contains("active")) ativarSubTabEncaminhamento("encaminhar");
+      if(document.getElementById("subpanel-backup").classList.contains("active")) ativarSubTabCandidatos("base");
+    }
+    // Conveniência: pré-preenche o NTE do usuário nos formulários de cadastro (ele pode digitar outro, se precisar).
+    if(!admin && state.usuarioAtual && state.usuarioAtual.ntes && state.usuarioAtual.ntes.length){
+      var primeiroNte = state.usuarioAtual.ntes[0];
+      var campoAddNte = document.getElementById("addNte");
+      if(campoAddNte && !campoAddNte.value) campoAddNte.value = nteNumero(primeiroNte);
+      var campoUniNte = document.getElementById("uniNte");
+      if(campoUniNte && !campoUniNte.value) campoUniNte.value = primeiroNte;
     }
   }
   function mensagemErroAuth(err){
