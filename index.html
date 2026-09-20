@@ -73,6 +73,14 @@
   }
   .topbar h1{ font-size:19px; letter-spacing:.1px; }
   .topbar .sub{ margin-top:3px; font-size:13px; color:rgba(255,255,255,.72); }
+  .topbar-user{ margin-left:auto; display:flex; align-items:center; gap:10px; padding-top:4px; }
+  .topbar-user .quem{ font-size:12.5px; color:rgba(255,255,255,.85); text-align:right; line-height:1.35; }
+  .topbar-user .quem .papel{ display:block; font-size:10.5px; color:rgba(255,255,255,.6); text-transform:uppercase; letter-spacing:.03em; }
+  .topbar-user .btn-sair{
+    appearance:none; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.08); color:#fff;
+    padding:6px 12px; border-radius:7px; font-size:12.5px; cursor:pointer; white-space:nowrap;
+  }
+  .topbar-user .btn-sair:hover{ background:rgba(255,255,255,.16); }
 
   /* ---------- Abas ---------- */
   .tabs{ display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--border); }
@@ -261,6 +269,24 @@
 
   .report-toolbar{ display:flex; gap:10px; justify-content:flex-end; margin-top:16px; flex-wrap:wrap; }
 
+  /* ---------- Login ---------- */
+  .login-overlay{
+    position:fixed; inset:0; background:var(--bg); z-index:500;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-overlay.hide{ display:none; }
+  .login-box{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); max-width:380px; width:100%; padding:30px 28px;
+  }
+  .login-header{ display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+  .login-brasao{ width:44px; height:auto; flex:none; }
+  .login-header h1{ font-size:16.5px; line-height:1.25; }
+  .login-header .sub{ font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .login-status{ font-size:13px; color:var(--text-muted); text-align:center; padding:10px 0; }
+  .login-hint{ font-size:12.5px; color:var(--text-muted); margin-bottom:16px; line-height:1.5; }
+  #formLogin .field, #formBootstrap .field{ margin-bottom:14px; }
+
   /* ---------- Modal Relatório (pop-up) ---------- */
   .modal-overlay{
     position:fixed; inset:0; background:rgba(15,22,31,.55); z-index:200;
@@ -374,7 +400,7 @@
   @media print{
     @page{ size:A4; margin:15mm 16mm; }
     html, body{ background:#fff !important; height:auto !important; }
-    .topbar, .wrap, .modal-overlay{ display:none !important; }
+    .topbar, .wrap, .modal-overlay, .login-overlay{ display:none !important; }
     #printStage{
       display:block !important; width:100%; margin:0; padding:0;
       font-family: Arial, Helvetica, sans-serif !important; color:#111 !important;
@@ -392,6 +418,57 @@
 </head>
 <body>
 
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-header">
+      <img class="login-brasao" src="" id="loginBrasao" alt="">
+      <div>
+        <h1>Avaliação de Perfil Vocacional</h1>
+        <div class="sub">SEC-BA · CPM</div>
+      </div>
+    </div>
+
+    <div id="loginCarregando" class="login-status">Verificando…</div>
+
+    <form id="formLogin" style="display:none">
+      <div class="field">
+        <label for="loginEmail">E-mail</label>
+        <input type="email" id="loginEmail" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="loginSenha">Senha</label>
+        <input type="password" id="loginSenha" autocomplete="current-password" required>
+      </div>
+      <div class="field-erro" id="loginErro" style="display:none"></div>
+      <button class="btn btn-primary" type="submit" id="btnEntrar" style="width:100%;">Entrar</button>
+    </form>
+
+    <form id="formBootstrap" style="display:none">
+      <p class="login-hint">Nenhum administrador cadastrado ainda neste sistema. Crie a primeira conta de administrador para começar.</p>
+      <div class="field">
+        <label for="bootNome">Nome</label>
+        <input type="text" id="bootNome" required>
+      </div>
+      <div class="field">
+        <label for="bootEmail">E-mail</label>
+        <input type="email" id="bootEmail" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="bootSenha">Senha (mínimo 6 caracteres)</label>
+        <input type="password" id="bootSenha" autocomplete="new-password" required minlength="6">
+      </div>
+      <div class="field-erro" id="bootErro" style="display:none"></div>
+      <button class="btn btn-primary" type="submit" id="btnCriarAdmin" style="width:100%;">Criar administrador</button>
+    </form>
+
+    <div id="loginSemAcesso" class="login-status" style="display:none">
+      <p>Sua conta (<strong id="loginSemAcessoEmail"></strong>) ainda não tem um perfil configurado neste sistema.</p>
+      <p>Peça para um administrador liberar seu acesso.</p>
+      <button class="btn btn-sm" type="button" id="btnSairSemAcesso">Sair e tentar outra conta</button>
+    </div>
+  </div>
+</div>
+
 <div class="topbar no-print">
   <div class="topbar-inner">
     <div class="topbar-mark" aria-hidden="true">
@@ -406,6 +483,10 @@
       <div class="sub">Técnico de Nível Médio · Convocação Ensino Médio · SEC-BA / CPM
         <span class="conn-status off" id="connStatus"><span class="dot"></span>Verificando…</span>
       </div>
+    </div>
+    <div class="topbar-user" id="topbarUser" style="display:none">
+      <span class="quem"><span id="topbarUserNome"></span><span class="papel" id="topbarUserPapel"></span></span>
+      <button class="btn-sair" type="button" id="btnSair">Sair</button>
     </div>
   </div>
 </div>
@@ -570,7 +651,7 @@
         </div>
         <div class="table-scroll">
           <table class="hist" id="candTable">
-            <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Formação</th><th>Avaliação</th><th></th></tr></thead>
+            <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Formação</th><th>Avaliação</th><th>Encaminhado</th><th></th></tr></thead>
             <tbody id="candBody"></tbody>
           </table>
         </div>
@@ -856,6 +937,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-auth-compat.js"></script>
 <script>
 (function(){
   "use strict";
@@ -938,7 +1020,8 @@
     encaminhamentos: [],       // {id,data,candidato,unidade}
     encCandidato: null,
     encUnidade: null,
-    ntesHabilitados: {}        // {"NÚCLEO 26 - SALVADOR": true/false, ...} — ausente = habilitado
+    ntesHabilitados: {},       // {"NÚCLEO 26 - SALVADOR": true/false, ...} — ausente = habilitado
+    usuarioAtual: null         // {uid,email,nome,role,ntes} depois do login
   };
   var firebaseAtivo = false;
   var db = null;
@@ -1322,6 +1405,22 @@
     if(r.length===0) return {avaliado:false};
     return {avaliado:true, data:r[0].data, total:r.length};
   }
+  function registrosEncaminhamentoDoCandidato(c){
+    var cpfC = digits(c.cpf), inscC = (c.insc||"").trim();
+    var achados = (state.encaminhamentos||[]).filter(function(h){
+      var hc = h.candidato||{};
+      if(cpfC && digits(hc.cpf)===cpfC) return true;
+      if(!cpfC && inscC && (hc.insc||"").trim()===inscC) return true;
+      return false;
+    });
+    achados.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
+    return achados;
+  }
+  function encaminhadoInfo(c){
+    var confirmados = registrosEncaminhamentoDoCandidato(c).filter(function(h){ return !!h.confirmado; });
+    if(confirmados.length===0) return {encaminhado:false};
+    return {encaminhado:true, data:confirmados[0].data, unidade:confirmados[0].unidade||{}, total:confirmados.length};
+  }
 
   function renderCandidatos(){
     var tbody = document.getElementById("candBody");
@@ -1342,6 +1441,10 @@
       var statusHtml = av.avaliado
         ? '<span class="status-pill ok" title="'+av.total+' avaliação(ões) — última em '+fmtDataBR(av.data)+'">✓ Avaliado ('+fmtDataBR(av.data)+')</span>'
         : '<span class="status-pill pend">— Pendente</span>';
+      var enc = encaminhadoInfo(c);
+      var encHtml = enc.encaminhado
+        ? '<span class="status-pill ok" title="'+enc.total+' encaminhamento(s) confirmado(s) — mais recente em '+fmtDataBR(enc.data)+' para '+escapeHtml(enc.unidade.unidade||"")+'">✓ Encaminhado ('+fmtDataBR(enc.data)+')</span>'
+        : '<span class="status-pill pend">— Pendente</span>';
       var acaoHtml = av.avaliado
         ? '<span class="row-actions">'+
           '<button class="btn btn-sm" type="button" data-editar="'+i+'">Editar</button>'+
@@ -1356,6 +1459,7 @@
         '<td>'+escapeHtml(c.mun||"—")+'</td>'+
         '<td>'+escapeHtml(c.formacao||"—")+'</td>'+
         '<td>'+statusHtml+'</td>'+
+        '<td>'+encHtml+'</td>'+
         '<td>'+acaoHtml+'</td>'+
         '</tr>';
     }).join("");
@@ -2526,6 +2630,7 @@
       h.confirmado = novoValor;
       storageSet("gpv_encaminhamentos", state.encaminhamentos);
       renderEncaminhamentos();
+      renderCandidatos();
     }
   }
 
@@ -2676,6 +2781,7 @@
       });
       state.encaminhamentos.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
       renderEncaminhamentos();
+      renderCandidatos();
     }, function(err){
       console.error("Firestore (encaminhamentos):", err);
       agendarReconexao();
@@ -2698,6 +2804,161 @@
       if(firebaseAtivo) iniciarListeners();
     }, espera);
   }
+  /* ================= Autenticação ================= */
+  var _criandoAdminInicial = false;
+
+  function mostrarLogin(modo){
+    document.getElementById("loginOverlay").classList.remove("hide");
+    document.getElementById("loginCarregando").style.display = modo==="carregando" ? "block" : "none";
+    document.getElementById("formLogin").style.display = modo==="login" ? "block" : "none";
+    document.getElementById("formBootstrap").style.display = modo==="bootstrap" ? "block" : "none";
+    document.getElementById("loginSemAcesso").style.display = modo==="semAcesso" ? "block" : "none";
+  }
+  function esconderLogin(){
+    document.getElementById("loginOverlay").classList.add("hide");
+  }
+  function atualizarTopbarUsuario(){
+    var el = document.getElementById("topbarUser");
+    if(state.usuarioAtual){
+      el.style.display = "flex";
+      document.getElementById("topbarUserNome").textContent = state.usuarioAtual.nome;
+      document.getElementById("topbarUserPapel").textContent = state.usuarioAtual.role==="admin" ? "Administrador" : "Usuário";
+    }else{
+      el.style.display = "none";
+    }
+  }
+  function limparEstadoAoDeslogar(){
+    state.historico = [];
+    state.candidatosExtra = [];
+    state.unidades = [];
+    state.encaminhamentos = [];
+    state.ntesHabilitados = {};
+    state.usuarioAtual = null;
+  }
+  function aplicarRestricoesPapel(){
+    // Restrições por papel (admin/usuário) e por NTE atribuído — etapa seguinte.
+  }
+  function mensagemErroAuth(err){
+    var codigo = err && err.code;
+    if(codigo==="auth/invalid-email") return "E-mail inválido.";
+    if(codigo==="auth/user-not-found" || codigo==="auth/wrong-password" || codigo==="auth/invalid-credential") return "E-mail ou senha incorretos.";
+    if(codigo==="auth/too-many-requests") return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+    if(codigo==="auth/network-request-failed") return "Falha de conexão. Verifique sua internet.";
+    if(codigo==="auth/weak-password") return "Senha muito curta (mínimo 6 caracteres).";
+    if(codigo==="auth/email-already-in-use") return "Este e-mail já está cadastrado.";
+    if(codigo==="auth/operation-not-allowed") return "Login por e-mail/senha não está habilitado no Firebase (Authentication → Sign-in method).";
+    return "Não foi possível concluir. Tente novamente.";
+  }
+  function verificarInicializacao(callback){
+    db.collection("config").doc("inicializacao").get().then(function(doc){
+      callback(doc.exists && doc.data().concluida===true);
+    }).catch(function(err){
+      console.error("Firestore (verificar inicialização):", err);
+      callback(true); // em caso de erro, mostra login normal em vez de oferecer criar admin indevidamente
+    });
+  }
+  function carregarPerfilUsuario(user){
+    db.collection("usuarios").doc(user.uid).get().then(function(doc){
+      if(!doc.exists || doc.data().ativo===false){
+        document.getElementById("loginSemAcessoEmail").textContent = user.email;
+        mostrarLogin("semAcesso");
+        return;
+      }
+      var d = doc.data();
+      state.usuarioAtual = {
+        uid: user.uid, email: user.email, nome: d.nome || user.email,
+        role: d.role==="admin" ? "admin" : "usuario",
+        ntes: Array.isArray(d.ntes) ? d.ntes : []
+      };
+      esconderLogin();
+      atualizarTopbarUsuario();
+      aplicarRestricoesPapel();
+      iniciarListeners();
+    }).catch(function(err){
+      console.error("Firestore (perfil do usuário):", err);
+      document.getElementById("loginSemAcessoEmail").textContent = user.email;
+      mostrarLogin("semAcesso");
+    });
+  }
+
+  document.getElementById("formLogin").addEventListener("submit", function(e){
+    e.preventDefault();
+    var erroEl = document.getElementById("loginErro");
+    var email = document.getElementById("loginEmail").value.trim();
+    var senha = document.getElementById("loginSenha").value;
+    erroEl.style.display = "none";
+    var btn = document.getElementById("btnEntrar");
+    btn.disabled = true; btn.textContent = "Entrando…";
+    firebase.auth().signInWithEmailAndPassword(email, senha).catch(function(err){
+      console.error("Auth (login):", err);
+      erroEl.textContent = mensagemErroAuth(err);
+      erroEl.style.display = "block";
+    }).finally(function(){
+      btn.disabled = false; btn.textContent = "Entrar";
+    });
+  });
+
+  document.getElementById("formBootstrap").addEventListener("submit", function(e){
+    e.preventDefault();
+    var erroEl = document.getElementById("bootErro");
+    var nome = document.getElementById("bootNome").value.trim();
+    var email = document.getElementById("bootEmail").value.trim();
+    var senha = document.getElementById("bootSenha").value;
+    erroEl.style.display = "none";
+    if(!nome || !email || senha.length<6){
+      erroEl.textContent = "Preencha nome, e-mail e uma senha com pelo menos 6 caracteres.";
+      erroEl.style.display = "block";
+      return;
+    }
+    var btn = document.getElementById("btnCriarAdmin");
+    btn.disabled = true; btn.textContent = "Criando…";
+    _criandoAdminInicial = true;
+    firebase.auth().createUserWithEmailAndPassword(email, senha).then(function(cred){
+      var user = cred.user;
+      return db.collection("usuarios").doc(user.uid).set({
+        nome: nome, email: email, role: "admin", ntes: [], ativo: true,
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(){
+        return db.collection("config").doc("inicializacao").set({
+          concluida: true, criadoEm: firebase.firestore.FieldValue.serverTimestamp(), criadoPor: email
+        });
+      }).then(function(){
+        state.usuarioAtual = {uid:user.uid, email:email, nome:nome, role:"admin", ntes:[]};
+        _criandoAdminInicial = false;
+        esconderLogin();
+        atualizarTopbarUsuario();
+        aplicarRestricoesPapel();
+        iniciarListeners();
+      });
+    }).catch(function(err){
+      console.error("Auth/Firestore (criar administrador):", err);
+      _criandoAdminInicial = false;
+      erroEl.textContent = mensagemErroAuth(err);
+      erroEl.style.display = "block";
+      btn.disabled = false; btn.textContent = "Criar administrador";
+    });
+  });
+
+  document.getElementById("btnSair").addEventListener("click", function(){ firebase.auth().signOut(); });
+  document.getElementById("btnSairSemAcesso").addEventListener("click", function(){ firebase.auth().signOut(); });
+
+  function iniciarAutenticacao(){
+    firebase.auth().onAuthStateChanged(function(user){
+      if(user){
+        if(_criandoAdminInicial) return; // o próprio fluxo de bootstrap finaliza a tela
+        mostrarLogin("carregando");
+        carregarPerfilUsuario(user);
+      }else{
+        pararListeners();
+        limparEstadoAoDeslogar();
+        atualizarTopbarUsuario();
+        verificarInicializacao(function(concluida){
+          mostrarLogin(concluida ? "login" : "bootstrap");
+        });
+      }
+    });
+  }
+
   function reconectarFirebase(){
     _tentativasReconexao = 0;
     if(firebaseAtivo && db){ iniciarListeners(); }
@@ -2707,6 +2968,7 @@
   function initFirebase(){
     if(typeof firebase === "undefined" || !isFirebaseConfigurado()){
       atualizarStatusConexao("off");
+      esconderLogin();
       carregarDadosLocais();
       return;
     }
@@ -2715,11 +2977,18 @@
       db = firebase.firestore();
       firebaseAtivo = true;
       atualizarStatusConexao("on");
-      iniciarListeners();
+      if(typeof firebase.auth !== "function"){
+        console.error("Firebase Auth SDK não carregado.");
+        esconderLogin();
+        iniciarListeners();
+        return;
+      }
+      iniciarAutenticacao();
     }catch(e){
       console.error("Firebase init:", e);
       firebaseAtivo = false;
       atualizarStatusConexao("erro");
+      esconderLogin();
       carregarDadosLocais();
     }
   }
