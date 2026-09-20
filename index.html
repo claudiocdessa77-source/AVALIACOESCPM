@@ -347,6 +347,17 @@
   .toggle-switch input:checked + .toggle-slider:before{ transform:translateX(18px); }
   .toggle-switch input:focus-visible + .toggle-slider{ outline:2px solid var(--focus); outline-offset:2px; }
 
+  /* ---------- Checklist de NTE (criar/editar usuário) ---------- */
+  .nte-checklist{
+    max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:6px 10px; margin-top:4px;
+  }
+  .nte-checklist label{
+    display:flex; align-items:center; gap:8px; padding:6px 2px; font-size:12.5px; font-weight:400; cursor:pointer;
+  }
+  .nte-checklist label:not(:last-child){ border-bottom:1px solid var(--border); }
+  .nte-checklist input[type="checkbox"]{ width:15px; height:15px; flex:none; accent-color:var(--escola); cursor:pointer; }
+
   /* ---------- Histórico ---------- */
   table.hist{ width:100%; border-collapse:collapse; font-size:13.5px; }
   table.hist th, table.hist td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); }
@@ -441,6 +452,7 @@
       </div>
       <div class="field-erro" id="loginErro" style="display:none"></div>
       <button class="btn btn-primary" type="submit" id="btnEntrar" style="width:100%;">Entrar</button>
+      <button class="link-btn" type="button" id="btnEsqueciSenha" style="display:block; margin:12px auto 0; font-size:12px;">Esqueci minha senha</button>
     </form>
 
     <form id="formBootstrap" style="display:none">
@@ -498,6 +510,7 @@
     <button class="tab-btn" data-tab="candidatos" type="button">Candidatos <span id="candCount"></span></button>
     <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
     <button class="tab-btn" data-tab="encaminhamento" type="button">Encaminhamento</button>
+    <button class="tab-btn" data-tab="usuarios" type="button" id="tabBtnUsuarios" style="display:none">Usuários</button>
   </div>
 
   <!-- ===================== ABA: NOVA AVALIAÇÃO ===================== -->
@@ -917,6 +930,53 @@
 
   </div>
 
+  <!-- ===================== ABA: USUÁRIOS (somente administrador) ===================== -->
+  <div class="tab-panel no-print" id="panel-usuarios">
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Criar usuário</h2>
+        <span class="hint">Administrador ou usuário vinculado a NTE específicos</span>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="novoUsuNome">Nome *</label><input type="text" id="novoUsuNome"></div>
+        <div class="field"><label for="novoUsuEmail">E-mail *</label><input type="email" id="novoUsuEmail" autocomplete="off"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="novoUsuSenha">Senha inicial *</label><input type="password" id="novoUsuSenha" autocomplete="new-password" minlength="6" placeholder="Mínimo 6 caracteres"></div>
+        <div class="field">
+          <label for="novoUsuRole">Papel *</label>
+          <select id="novoUsuRole">
+            <option value="usuario">Usuário</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="novoUsuNtesBox">
+        <label>NTE(s) atribuído(s) *</label>
+        <div class="nte-checklist" id="novoUsuNtesLista"></div>
+      </div>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn btn-primary btn-sm" type="button" id="btnCriarUsuario">Criar usuário</button>
+      </div>
+      <div class="field-erro" id="novoUsuErro" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <div class="hist-actions">
+        <h2 style="font-size:15px;">Usuários cadastrados <span id="usuCountLabel"></span></h2>
+      </div>
+      <div class="table-scroll">
+        <table class="hist" id="usuTable">
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>NTE(s)</th><th>Status</th><th></th></tr></thead>
+          <tbody id="usuBody"></tbody>
+        </table>
+      </div>
+      <div class="hist-empty" id="usuEmpty" style="display:none">Nenhum usuário cadastrado ainda.</div>
+    </div>
+
+  </div>
+
 </div>
 
 <!-- Pop-up: Relatório (abre automaticamente ao concluir a última pergunta) -->
@@ -928,6 +988,32 @@
       <button class="btn" type="button" id="btnNovaAvaliacaoModal">Nova avaliação</button>
       <button class="btn" type="button" id="btnSalvarHistModal">Salvar no histórico</button>
       <button class="btn btn-primary" type="button" id="btnImprimirModal">Imprimir / Salvar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pop-up: Editar usuário -->
+<div class="modal-overlay no-print" id="modalUsuarioOverlay">
+  <div class="modal-relatorio" style="max-width:420px;" role="dialog" aria-modal="true">
+    <button class="modal-close" type="button" id="btnFecharModalUsuario" aria-label="Fechar">✕</button>
+    <h2 style="font-size:16px; margin-bottom:16px;">Editar usuário</h2>
+    <div class="field"><label for="editUsuNome">Nome</label><input type="text" id="editUsuNome"></div>
+    <div class="field"><label for="editUsuEmail">E-mail</label><input type="text" id="editUsuEmail" disabled></div>
+    <div class="field">
+      <label for="editUsuRole">Papel</label>
+      <select id="editUsuRole">
+        <option value="usuario">Usuário</option>
+        <option value="admin">Administrador</option>
+      </select>
+    </div>
+    <div class="field" id="editUsuNtesBox">
+      <label>NTE(s) atribuído(s)</label>
+      <div class="nte-checklist" id="editUsuNtesLista"></div>
+    </div>
+    <div class="field-erro" id="editUsuErro" style="display:none"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-primary btn-sm" type="button" id="btnSalvarEdicaoUsuario">Salvar</button>
+      <button class="btn btn-sm" type="button" id="btnRedefinirSenhaUsuario">Enviar redefinição de senha</button>
     </div>
   </div>
 </div>
@@ -1021,7 +1107,8 @@
     encCandidato: null,
     encUnidade: null,
     ntesHabilitados: {},       // {"NÚCLEO 26 - SALVADOR": true/false, ...} — ausente = habilitado
-    usuarioAtual: null         // {uid,email,nome,role,ntes} depois do login
+    usuarioAtual: null,        // {uid,email,nome,role,ntes} depois do login
+    usuarios: []                // lista de usuários cadastrados (só carregada para administrador)
   };
   var firebaseAtivo = false;
   var db = null;
@@ -2686,6 +2773,226 @@
     }
   }
 
+  /* ================= Módulo Usuários ================= */
+  function renderNteChecklist(containerId, selecionados){
+    var box = document.getElementById(containerId);
+    var setSel = {};
+    (selecionados||[]).forEach(function(n){ setSel[n] = true; });
+    box.innerHTML = NTES_UNICOS.map(function(nte, i){
+      var id = containerId+"_item"+i;
+      return '<label for="'+id+'">'+
+        '<input type="checkbox" id="'+id+'" value="'+escapeHtml(nte)+'" '+(setSel[nte]?"checked":"")+'>'+
+        escapeHtml(nte)+
+        '</label>';
+    }).join("");
+  }
+  function lerNtesSelecionados(containerId){
+    return Array.from(document.querySelectorAll("#"+containerId+" input:checked")).map(function(i){ return i.value; });
+  }
+  function atualizarVisibilidadeNtesBox(selectId, boxId){
+    var role = document.getElementById(selectId).value;
+    document.getElementById(boxId).style.display = role==="usuario" ? "block" : "none";
+  }
+
+  renderNteChecklist("novoUsuNtesLista", []);
+  document.getElementById("novoUsuRole").addEventListener("change", function(){
+    atualizarVisibilidadeNtesBox("novoUsuRole","novoUsuNtesBox");
+  });
+  atualizarVisibilidadeNtesBox("novoUsuRole","novoUsuNtesBox");
+
+  document.getElementById("editUsuRole").addEventListener("change", function(){
+    atualizarVisibilidadeNtesBox("editUsuRole","editUsuNtesBox");
+  });
+
+  /* ---- Criar usuário sem deslogar o administrador atual (app Firebase secundário e temporário) ---- */
+  function criarUsuarioSemDeslogar(email, senha){
+    var nomeApp = "criarUsuario_"+Date.now();
+    var appSecundario = firebase.initializeApp(firebaseConfig, nomeApp);
+    return appSecundario.auth().createUserWithEmailAndPassword(email, senha).then(function(cred){
+      var uid = cred.user.uid;
+      return appSecundario.auth().signOut().then(function(){
+        return appSecundario.delete();
+      }).then(function(){ return uid; });
+    }).catch(function(err){
+      appSecundario.delete().catch(function(){});
+      throw err;
+    });
+  }
+
+  document.getElementById("btnCriarUsuario").addEventListener("click", function(){
+    var erroEl = document.getElementById("novoUsuErro");
+    var nome = document.getElementById("novoUsuNome").value.trim();
+    var email = document.getElementById("novoUsuEmail").value.trim();
+    var senha = document.getElementById("novoUsuSenha").value;
+    var role = document.getElementById("novoUsuRole").value;
+    var ntes = role==="usuario" ? lerNtesSelecionados("novoUsuNtesLista") : [];
+    erroEl.style.display = "none";
+
+    var faltando = [];
+    if(!nome) faltando.push("Nome");
+    if(!email) faltando.push("E-mail");
+    if(!senha || senha.length<6) faltando.push("Senha (mínimo 6 caracteres)");
+    if(role==="usuario" && ntes.length===0) faltando.push("ao menos um NTE");
+    if(faltando.length){
+      erroEl.textContent = "Preencha: "+faltando.join(", ")+".";
+      erroEl.style.display = "block";
+      return;
+    }
+
+    var btn = document.getElementById("btnCriarUsuario");
+    btn.disabled = true; btn.textContent = "Criando…";
+    criarUsuarioSemDeslogar(email, senha).then(function(uid){
+      return db.collection("usuarios").doc(uid).set({
+        nome: nome, email: email, role: role, ntes: ntes, ativo: true,
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+        criadoPor: state.usuarioAtual ? state.usuarioAtual.email : ""
+      });
+    }).then(function(){
+      document.getElementById("novoUsuNome").value = "";
+      document.getElementById("novoUsuEmail").value = "";
+      document.getElementById("novoUsuSenha").value = "";
+      document.getElementById("novoUsuRole").value = "usuario";
+      renderNteChecklist("novoUsuNtesLista", []);
+      atualizarVisibilidadeNtesBox("novoUsuRole","novoUsuNtesBox");
+      btn.textContent = "Criado ✓";
+      setTimeout(function(){ btn.textContent = "Criar usuário"; }, 1600);
+    }).catch(function(err){
+      console.error("Auth/Firestore (criar usuário):", err);
+      erroEl.textContent = mensagemErroAuth(err);
+      erroEl.style.display = "block";
+    }).finally(function(){
+      btn.disabled = false;
+    });
+  });
+
+  /* ---- Listagem, edição, ativar/desativar, redefinir senha ---- */
+  function renderUsuarios(){
+    var tbody = document.getElementById("usuBody");
+    if(!tbody) return;
+    var lista = (state.usuarios||[]).slice().sort(function(a,b){ return (a.nome||"").localeCompare(b.nome||""); });
+    document.getElementById("usuCountLabel").textContent = "("+lista.length+")";
+    var table = document.getElementById("usuTable");
+    var empty = document.getElementById("usuEmpty");
+    if(lista.length===0){
+      table.style.display="none"; tbody.innerHTML=""; empty.style.display="block";
+      return;
+    }
+    table.style.display="table"; empty.style.display="none";
+    tbody.innerHTML = lista.map(function(u, i){
+      var ativo = u.ativo!==false;
+      var ntesTxt = (u.role==="admin") ? "— (todos)" : (u.ntes&&u.ntes.length ? u.ntes.join(", ") : "— (nenhum)");
+      return '<tr>'+
+        '<td>'+escapeHtml(u.nome||"—")+'</td>'+
+        '<td>'+escapeHtml(u.email||"—")+'</td>'+
+        '<td>'+(u.role==="admin"?"Administrador":"Usuário")+'</td>'+
+        '<td style="font-size:11.5px;">'+escapeHtml(ntesTxt)+'</td>'+
+        '<td>'+(ativo? '<span class="status-pill ok">✓ Ativo</span>' : '<span class="status-pill pend">— Inativo</span>')+'</td>'+
+        '<td><span class="row-actions">'+
+        '  <button class="btn btn-sm" type="button" data-editar-usu="'+i+'">Editar</button>'+
+        '  <button class="btn-icon btn-icon-confirmar'+(ativo?' on':'')+'" type="button" data-toggle-usu="'+i+'" title="'+(ativo?"Desativar acesso":"Ativar acesso")+'">'+(ativo?"✓":"—")+'</button>'+
+        '</span></td>'+
+        '</tr>';
+    }).join("");
+    tbody.querySelectorAll("[data-editar-usu]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        abrirModalUsuario(lista[parseInt(btn.getAttribute("data-editar-usu"),10)]);
+      });
+    });
+    tbody.querySelectorAll("[data-toggle-usu]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var u = lista[parseInt(btn.getAttribute("data-toggle-usu"),10)];
+        db.collection("usuarios").doc(u.uid).update({ativo: !(u.ativo!==false)}).catch(function(err){
+          console.error("Firestore (ativar/desativar usuário):", err);
+          alert("Não foi possível atualizar este usuário.");
+        });
+      });
+    });
+  }
+
+  var _usuarioEditando = null;
+  function abrirModalUsuario(u){
+    _usuarioEditando = u;
+    document.getElementById("editUsuNome").value = u.nome||"";
+    document.getElementById("editUsuEmail").value = u.email||"";
+    document.getElementById("editUsuRole").value = u.role==="admin" ? "admin" : "usuario";
+    renderNteChecklist("editUsuNtesLista", u.ntes||[]);
+    atualizarVisibilidadeNtesBox("editUsuRole","editUsuNtesBox");
+    document.getElementById("editUsuErro").style.display = "none";
+    document.getElementById("modalUsuarioOverlay").classList.add("show");
+  }
+  function fecharModalUsuario(){
+    document.getElementById("modalUsuarioOverlay").classList.remove("show");
+    _usuarioEditando = null;
+  }
+  document.getElementById("btnFecharModalUsuario").addEventListener("click", fecharModalUsuario);
+  document.getElementById("modalUsuarioOverlay").addEventListener("click", function(e){
+    if(e.target===this) fecharModalUsuario();
+  });
+
+  document.getElementById("btnSalvarEdicaoUsuario").addEventListener("click", function(){
+    if(!_usuarioEditando) return;
+    var erroEl = document.getElementById("editUsuErro");
+    var nome = document.getElementById("editUsuNome").value.trim();
+    var role = document.getElementById("editUsuRole").value;
+    var ntes = role==="usuario" ? lerNtesSelecionados("editUsuNtesLista") : [];
+    if(!nome){
+      erroEl.textContent = "Informe o nome.";
+      erroEl.style.display = "block";
+      return;
+    }
+    if(role==="usuario" && ntes.length===0){
+      erroEl.textContent = "Selecione ao menos um NTE para este usuário.";
+      erroEl.style.display = "block";
+      return;
+    }
+    erroEl.style.display = "none";
+    db.collection("usuarios").doc(_usuarioEditando.uid).update({
+      nome: nome, role: role, ntes: ntes
+    }).then(function(){
+      fecharModalUsuario();
+    }).catch(function(err){
+      console.error("Firestore (editar usuário):", err);
+      erroEl.textContent = "Não foi possível salvar. Tente novamente.";
+      erroEl.style.display = "block";
+    });
+  });
+
+  document.getElementById("btnRedefinirSenhaUsuario").addEventListener("click", function(){
+    if(!_usuarioEditando) return;
+    var btn = document.getElementById("btnRedefinirSenhaUsuario");
+    btn.disabled = true;
+    firebase.auth().sendPasswordResetEmail(_usuarioEditando.email).then(function(){
+      btn.textContent = "E-mail enviado ✓";
+      setTimeout(function(){ btn.textContent = "Enviar redefinição de senha"; btn.disabled = false; }, 2200);
+    }).catch(function(err){
+      console.error("Auth (redefinir senha):", err);
+      alert(mensagemErroAuth(err));
+      btn.disabled = false;
+    });
+  });
+
+  document.getElementById("btnEsqueciSenha").addEventListener("click", function(){
+    var email = document.getElementById("loginEmail").value.trim();
+    var erroEl = document.getElementById("loginErro");
+    if(!email){
+      erroEl.textContent = "Digite seu e-mail no campo acima e clique novamente em \"Esqueci minha senha\".";
+      erroEl.style.display = "block";
+      return;
+    }
+    var btn = document.getElementById("btnEsqueciSenha");
+    btn.disabled = true;
+    firebase.auth().sendPasswordResetEmail(email).then(function(){
+      erroEl.style.display = "none";
+      btn.textContent = "E-mail de redefinição enviado ✓";
+      setTimeout(function(){ btn.textContent = "Esqueci minha senha"; btn.disabled = false; }, 3000);
+    }).catch(function(err){
+      console.error("Auth (esqueci senha):", err);
+      erroEl.textContent = mensagemErroAuth(err);
+      erroEl.style.display = "block";
+      btn.disabled = false;
+    });
+  });
+
   /* ================= Abas ================= */
   function ativarAba(nome){
     document.querySelectorAll(".tab-btn").forEach(function(b){
@@ -2695,10 +3002,12 @@
     document.getElementById("panel-candidatos").classList.toggle("active", nome==="candidatos");
     document.getElementById("panel-relatorios").classList.toggle("active", nome==="relatorios");
     document.getElementById("panel-encaminhamento").classList.toggle("active", nome==="encaminhamento");
+    document.getElementById("panel-usuarios").classList.toggle("active", nome==="usuarios");
     state.ativeTab = nome;
     if(nome==="candidatos") renderCandidatos();
     if(nome==="relatorios") renderRelatorios();
     if(nome==="encaminhamento"){ renderUnidades(); renderEncaminhamentos(); }
+    if(nome==="usuarios") renderUsuarios();
   }
   document.querySelectorAll(".tab-btn").forEach(function(b){
     b.addEventListener("click", function(){ ativarAba(b.getAttribute("data-tab")); });
@@ -2735,7 +3044,7 @@
     renderEncaminhamentos();
   }
 
-  var _unsubAvaliacoes = null, _unsubCandidatos = null, _unsubUnidades = null, _unsubEncaminhamentos = null, _unsubNtesHabilitados = null;
+  var _unsubAvaliacoes = null, _unsubCandidatos = null, _unsubUnidades = null, _unsubEncaminhamentos = null, _unsubNtesHabilitados = null, _unsubUsuarios = null;
   var _tentativasReconexao = 0;
   function pararListeners(){
     if(_unsubAvaliacoes){ try{ _unsubAvaliacoes(); }catch(e){} _unsubAvaliacoes = null; }
@@ -2743,6 +3052,7 @@
     if(_unsubUnidades){ try{ _unsubUnidades(); }catch(e){} _unsubUnidades = null; }
     if(_unsubEncaminhamentos){ try{ _unsubEncaminhamentos(); }catch(e){} _unsubEncaminhamentos = null; }
     if(_unsubNtesHabilitados){ try{ _unsubNtesHabilitados(); }catch(e){} _unsubNtesHabilitados = null; }
+    if(_unsubUsuarios){ try{ _unsubUsuarios(); }catch(e){} _unsubUsuarios = null; }
   }
   function iniciarListeners(){
     pararListeners();
@@ -2794,6 +3104,16 @@
       console.error("Firestore (ntesHabilitados):", err);
       agendarReconexao();
     });
+    if(state.usuarioAtual && state.usuarioAtual.role==="admin"){
+      _unsubUsuarios = db.collection("usuarios").onSnapshot(function(snap){
+        state.usuarios = snap.docs.map(function(doc){
+          var x = doc.data(); x.uid = doc.id; return x;
+        });
+        renderUsuarios();
+      }, function(err){
+        console.error("Firestore (usuarios):", err);
+      });
+    }
   }
   function agendarReconexao(){
     atualizarStatusConexao("erro");
@@ -2833,10 +3153,19 @@
     state.unidades = [];
     state.encaminhamentos = [];
     state.ntesHabilitados = {};
+    state.usuarios = [];
     state.usuarioAtual = null;
   }
   function aplicarRestricoesPapel(){
-    // Restrições por papel (admin/usuário) e por NTE atribuído — etapa seguinte.
+    var admin = state.usuarioAtual && state.usuarioAtual.role==="admin";
+    document.getElementById("tabBtnUsuarios").style.display = admin ? "" : "none";
+    var subBtnHabilitarNte = document.querySelector('#panel-encaminhamento .subtab-btn[data-subtab="habilitarnte"]');
+    if(subBtnHabilitarNte) subBtnHabilitarNte.style.display = admin ? "" : "none";
+    // Se um usuário sem papel de administrador estiver com essas telas abertas, volta para uma aba permitida.
+    if(!admin){
+      if(state.ativeTab==="usuarios") ativarAba("nova");
+      if(document.getElementById("encsub-habilitarnte").classList.contains("active")) ativarSubTabEncaminhamento("encaminhar");
+    }
   }
   function mensagemErroAuth(err){
     var codigo = err && err.code;
