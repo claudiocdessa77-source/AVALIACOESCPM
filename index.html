@@ -3610,6 +3610,9 @@
     }else if(estado==="erro"){
       el.className = "conn-status off";
       el.innerHTML = '<span class="dot"></span>Reconectando…';
+    }else if(estado==="falha"){
+      el.className = "conn-status off";
+      el.innerHTML = '<span class="dot"></span>Falha ao sincronizar — clique em "Atualizar agora"';
     }else{
       el.className = "conn-status off";
       el.innerHTML = '<span class="dot"></span>Modo local';
@@ -3631,104 +3634,111 @@
     atualizarVagasEnc();
   }
 
-  var _unsubAvaliacoes = null, _unsubCandidatos = null, _unsubUnidades = null, _unsubEncaminhamentos = null, _unsubNtesHabilitados = null, _unsubUsuarios = null, _unsubAcessos = null, _unsubSubstituicoes = null;
-  var _tentativasReconexao = 0;
+  var _listenersAtivos = [];
   function pararListeners(){
-    if(_unsubAvaliacoes){ try{ _unsubAvaliacoes(); }catch(e){} _unsubAvaliacoes = null; }
-    if(_unsubCandidatos){ try{ _unsubCandidatos(); }catch(e){} _unsubCandidatos = null; }
-    if(_unsubUnidades){ try{ _unsubUnidades(); }catch(e){} _unsubUnidades = null; }
-    if(_unsubEncaminhamentos){ try{ _unsubEncaminhamentos(); }catch(e){} _unsubEncaminhamentos = null; }
-    if(_unsubNtesHabilitados){ try{ _unsubNtesHabilitados(); }catch(e){} _unsubNtesHabilitados = null; }
-    if(_unsubUsuarios){ try{ _unsubUsuarios(); }catch(e){} _unsubUsuarios = null; }
-    if(_unsubAcessos){ try{ _unsubAcessos(); }catch(e){} _unsubAcessos = null; }
-    if(_unsubSubstituicoes){ try{ _unsubSubstituicoes(); }catch(e){} _unsubSubstituicoes = null; }
+    _listenersAtivos.forEach(function(l){ l.parar(); });
+    _listenersAtivos = [];
+  }
+  /* Cada coleção tem seu próprio ciclo de tentativas — uma coleção com problema de
+     permissão (ex.: regra do Firestore não cobre a coleção) não derruba nem trava
+     a sincronização das demais. Depois de algumas tentativas, essa coleção
+     específica desiste (e avisa no console) em vez de tentar para sempre. */
+  function criarListenerResiliente(nome, iniciarFn, onErroTentativa, onDesistiu){
+    var estado = { tentativas: 0, unsub: null, parado: false };
+    function tentar(){
+      if(estado.parado) return;
+      if(estado.unsub){ try{ estado.unsub(); }catch(e){} estado.unsub = null; }
+      estado.unsub = iniciarFn(function(err){
+        console.error("Firestore ("+nome+"):", err && err.code ? err.code : err);
+        estado.tentativas++;
+        if(estado.tentativas > 5){
+          console.error('Firestore ("'+nome+'"): desistindo após '+estado.tentativas+' tentativas — verifique as regras do Firestore para esta coleção.');
+          if(onDesistiu) onDesistiu();
+          return;
+        }
+        if(onErroTentativa) onErroTentativa();
+        var espera = Math.min(4000 * estado.tentativas, 30000);
+        setTimeout(tentar, espera);
+      });
+    }
+    tentar();
+    _listenersAtivos.push({
+      parar: function(){
+        estado.parado = true;
+        if(estado.unsub){ try{ estado.unsub(); }catch(e){} estado.unsub = null; }
+      }
+    });
   }
   function iniciarListeners(){
     pararListeners();
-    _unsubAvaliacoes = db.collection("avaliacoes").limit(1000).onSnapshot(function(snap){
-      _tentativasReconexao = 0;
-      atualizarStatusConexao("on");
-      state.historico = snap.docs.map(function(doc){
-        var x = doc.data(); x.id = doc.id; return x;
-      });
-      state.historico.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
-      renderCandidatos();
-      renderRelatorios();
-    }, function(err){
-      console.error("Firestore (avaliacoes):", err);
-      agendarReconexao();
+    criarListenerResiliente("avaliacoes", function(onErro){
+      return db.collection("avaliacoes").limit(1000).onSnapshot(function(snap){
+        atualizarStatusConexao("on");
+        state.historico = snap.docs.map(function(doc){
+          var x = doc.data(); x.id = doc.id; return x;
+        });
+        state.historico.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
+        renderCandidatos();
+        renderRelatorios();
+      }, onErro);
+    }, function(){ atualizarStatusConexao("erro"); }, function(){ atualizarStatusConexao("falha"); });
+    criarListenerResiliente("candidatosExtra", function(onErro){
+      return db.collection("candidatosExtra").onSnapshot(function(snap){
+        state.candidatosExtra = snap.docs.map(function(doc){ return doc.data(); });
+        atualizarContadorBase();
+      }, onErro);
     });
-    _unsubCandidatos = db.collection("candidatosExtra").onSnapshot(function(snap){
-      state.candidatosExtra = snap.docs.map(function(doc){ return doc.data(); });
-      atualizarContadorBase();
-    }, function(err){
-      console.error("Firestore (candidatosExtra):", err);
-      agendarReconexao();
+    criarListenerResiliente("unidades", function(onErro){
+      return db.collection("unidades").onSnapshot(function(snap){
+        state.unidades = snap.docs.map(function(doc){
+          var x = doc.data(); x.id = doc.id; return x;
+        });
+        atualizarContadorUnidades();
+      }, onErro);
     });
-    _unsubUnidades = db.collection("unidades").onSnapshot(function(snap){
-      state.unidades = snap.docs.map(function(doc){
-        var x = doc.data(); x.id = doc.id; return x;
-      });
-      atualizarContadorUnidades();
-    }, function(err){
-      console.error("Firestore (unidades):", err);
-      agendarReconexao();
+    criarListenerResiliente("substituicoes", function(onErro){
+      return db.collection("substituicoes").onSnapshot(function(snap){
+        state.substituicoes = snap.docs.map(function(doc){
+          var x = doc.data(); x.id = doc.id; return x;
+        });
+        atualizarContadorSubstituicoes();
+        atualizarVagasEnc();
+      }, onErro);
     });
-    _unsubSubstituicoes = db.collection("substituicoes").onSnapshot(function(snap){
-      state.substituicoes = snap.docs.map(function(doc){
-        var x = doc.data(); x.id = doc.id; return x;
-      });
-      atualizarContadorSubstituicoes();
-      atualizarVagasEnc();
-    }, function(err){
-      console.error("Firestore (substituicoes):", err);
-      agendarReconexao();
+    criarListenerResiliente("encaminhamentos", function(onErro){
+      return db.collection("encaminhamentos").limit(1000).onSnapshot(function(snap){
+        state.encaminhamentos = snap.docs.map(function(doc){
+          var x = doc.data(); x.id = doc.id; return x;
+        });
+        state.encaminhamentos.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
+        renderEncaminhamentos();
+        renderCandidatos();
+        atualizarVagasEnc();
+      }, onErro);
     });
-    _unsubEncaminhamentos = db.collection("encaminhamentos").limit(1000).onSnapshot(function(snap){
-      state.encaminhamentos = snap.docs.map(function(doc){
-        var x = doc.data(); x.id = doc.id; return x;
-      });
-      state.encaminhamentos.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
-      renderEncaminhamentos();
-      renderCandidatos();
-      atualizarVagasEnc();
-    }, function(err){
-      console.error("Firestore (encaminhamentos):", err);
-      agendarReconexao();
-    });
-    _unsubNtesHabilitados = db.collection("config").doc("ntesHabilitados").onSnapshot(function(doc){
-      state.ntesHabilitados = doc.exists ? doc.data() : {};
-      document.getElementById("encUnidBaseCount").textContent = unidadesHabilitadas().length+" unidades habilitadas";
-      if(document.getElementById("cfgsub-habilitarnte").classList.contains("active")) renderHabilitarNte();
-    }, function(err){
-      console.error("Firestore (ntesHabilitados):", err);
-      agendarReconexao();
+    criarListenerResiliente("ntesHabilitados", function(onErro){
+      return db.collection("config").doc("ntesHabilitados").onSnapshot(function(doc){
+        state.ntesHabilitados = doc.exists ? doc.data() : {};
+        document.getElementById("encUnidBaseCount").textContent = unidadesHabilitadas().length+" unidades habilitadas";
+        if(document.getElementById("cfgsub-habilitarnte").classList.contains("active")) renderHabilitarNte();
+      }, onErro);
     });
     if(state.usuarioAtual && state.usuarioAtual.role==="admin"){
-      _unsubUsuarios = db.collection("usuarios").onSnapshot(function(snap){
-        state.usuarios = snap.docs.map(function(doc){
-          var x = doc.data(); x.uid = doc.id; return x;
-        });
-        renderUsuarios();
-      }, function(err){
-        console.error("Firestore (usuarios):", err);
+      criarListenerResiliente("usuarios", function(onErro){
+        return db.collection("usuarios").onSnapshot(function(snap){
+          state.usuarios = snap.docs.map(function(doc){
+            var x = doc.data(); x.uid = doc.id; return x;
+          });
+          renderUsuarios();
+        }, onErro);
       });
-      _unsubAcessos = db.collection("acessos").orderBy("dataHora","desc").limit(200).onSnapshot(function(snap){
-        state.acessos = snap.docs.map(function(doc){ return doc.data(); });
-        renderAcessos();
-      }, function(err){
-        console.error("Firestore (acessos):", err);
+      criarListenerResiliente("acessos", function(onErro){
+        return db.collection("acessos").orderBy("dataHora","desc").limit(200).onSnapshot(function(snap){
+          state.acessos = snap.docs.map(function(doc){ return doc.data(); });
+          renderAcessos();
+        }, onErro);
       });
     }
-  }
-  function agendarReconexao(){
-    atualizarStatusConexao("erro");
-    pararListeners();
-    _tentativasReconexao++;
-    var espera = Math.min(5000 * _tentativasReconexao, 30000);
-    setTimeout(function(){
-      if(firebaseAtivo) iniciarListeners();
-    }, espera);
   }
   /* ================= Autenticação ================= */
   var _criandoAdminInicial = false;
@@ -3930,7 +3940,6 @@
   }
 
   function reconectarFirebase(){
-    _tentativasReconexao = 0;
     if(firebaseAtivo && db){ iniciarListeners(); }
     else{ initFirebase(); }
   }
@@ -3946,7 +3955,6 @@
       if(!firebase.apps || !firebase.apps.length){ firebase.initializeApp(firebaseConfig); }
       db = firebase.firestore();
       firebaseAtivo = true;
-      atualizarStatusConexao("on");
       if(typeof firebase.auth !== "function"){
         console.error("Firebase Auth SDK não carregado.");
         esconderLogin();
@@ -3957,7 +3965,7 @@
     }catch(e){
       console.error("Firebase init:", e);
       firebaseAtivo = false;
-      atualizarStatusConexao("erro");
+      atualizarStatusConexao("off");
       esconderLogin();
       carregarDadosLocais();
     }
