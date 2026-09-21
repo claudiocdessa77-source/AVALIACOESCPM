@@ -215,6 +215,9 @@
     background:var(--hibrido-soft); color:var(--hibrido); border:1px solid transparent;
   }
   .pcd-base-legal{ font-size:10.5px; color:var(--text-muted); margin-top:10px; line-height:1.5; }
+  .vagas-badge{ display:inline-block; padding:6px 13px; border-radius:20px; font-size:12.5px; font-weight:700; }
+  .vagas-badge.ok{ background:var(--escola-soft); color:var(--escola); }
+  .vagas-badge.zero{ background:var(--danger-soft); color:var(--danger); }
 
   .conn-status{
     display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
@@ -802,6 +805,14 @@
           </div>
         </div>
         <div id="encUnidadeSelecionada" style="display:none"></div>
+        <div id="encVagasInfo" style="display:none; margin-top:12px;">
+          <span class="vagas-badge" id="encVagasBadge"></span>
+          <div class="field" style="margin-top:12px;">
+            <label for="encRedaSelect">Servidor REDA a ser substituído</label>
+            <select id="encRedaSelect"><option value="">Nenhum (não informar agora)</option></select>
+            <div class="pcd-base-legal">Opcional no momento do encaminhamento.</div>
+          </div>
+        </div>
         <div class="import-row" id="encSemUnidadeAviso">
           <span class="count">Unidade fora da base ou NTE não aparece? Veja <button class="link-btn" type="button" id="irParaBaseUnidades">Base de Unidades</button> ou <button class="link-btn" type="button" id="irParaHabilitarNte">Habilitar NTE</button>.</span>
         </div>
@@ -2487,6 +2498,7 @@
       '  <button class="chip-x" type="button" id="btnTrocarUnidadeEnc" title="Trocar unidade" aria-label="Trocar unidade">✕</button>'+
       '</div>';
     document.getElementById("btnTrocarUnidadeEnc").addEventListener("click", limparUnidadeEnc);
+    atualizarVagasEnc();
     atualizarPassoConfirmarEnc();
   }
   function limparUnidadeEnc(){
@@ -2496,16 +2508,63 @@
     document.getElementById("encUnidBuscaBox").style.display = "block";
     document.getElementById("encSemUnidadeAviso").style.display = "block";
     document.getElementById("cardEncConfirmar").style.display = "none";
+    atualizarVagasEnc();
   }
+
+  /* ---- Vagas REDA (substituição 1:1) ---- */
+  function vagasDisponiveis(cod){
+    var totalReda = (state.substituicoes||[]).filter(function(s){ return s.cod===cod; }).length;
+    var totalEnc = (state.encaminhamentos||[]).filter(function(e){ return e.unidade && e.unidade.cod===cod; }).length;
+    return Math.max(0, totalReda - totalEnc);
+  }
+  function redaDisponiveisDaUnidade(cod){
+    return (state.substituicoes||[]).filter(function(s){ return s.cod===cod && !s.vinculadoA; });
+  }
+  function atualizarVagasEnc(){
+    var info = document.getElementById("encVagasInfo");
+    var btn = document.getElementById("btnRegistrarEncaminhamento");
+    if(!state.encUnidade){
+      info.style.display = "none";
+      if(btn) btn.disabled = false;
+      return;
+    }
+    info.style.display = "block";
+    var cod = state.encUnidade.cod;
+    var totalReda = (state.substituicoes||[]).filter(function(s){ return s.cod===cod; }).length;
+    var vagas = vagasDisponiveis(cod);
+
+    var badge = document.getElementById("encVagasBadge");
+    badge.textContent = "Vagas REDA Disponíveis: "+vagas+" de "+totalReda;
+    badge.className = "vagas-badge " + (vagas>0 ? "ok" : "zero");
+
+    var valorAtual = document.getElementById("encRedaSelect").value;
+    var disponiveis = redaDisponiveisDaUnidade(cod);
+    var select = document.getElementById("encRedaSelect");
+    select.innerHTML = '<option value="">Nenhum (não informar agora)</option>' +
+      disponiveis.map(function(r){ return '<option value="'+r.id+'">'+escapeHtml(r.nome)+'</option>'; }).join("");
+    if(disponiveis.some(function(r){ return r.id===valorAtual; })) select.value = valorAtual;
+
+    if(btn) btn.disabled = vagas<=0;
+    var erroEl = document.getElementById("encErro");
+    if(vagas<=0){
+      erroEl.textContent = "Limite de vagas ativas excedido para esta Unidade Escolar.";
+      erroEl.style.display = "block";
+    }else if(erroEl.textContent==="Limite de vagas ativas excedido para esta Unidade Escolar."){
+      erroEl.style.display = "none";
+    }
+  }
+
   function atualizarPassoConfirmarEnc(){
     document.getElementById("cardEncConfirmar").style.display = (state.encCandidato && state.encUnidade) ? "block" : "none";
   }
   document.getElementById("irParaBaseUnidades").addEventListener("click", function(){
-    ativarSubTabEncaminhamento("baseunidades");
+    ativarAba("configuracoes");
+    ativarSubTabConfiguracoes("baseunidades");
     window.scrollTo({top:0, behavior:"smooth"});
   });
   document.getElementById("irParaHabilitarNte").addEventListener("click", function(){
-    ativarSubTabEncaminhamento("habilitarnte");
+    ativarAba("configuracoes");
+    ativarSubTabConfiguracoes("habilitarnte");
     window.scrollTo({top:0, behavior:"smooth"});
   });
 
@@ -2532,7 +2591,14 @@
       document.getElementById("encSexo").focus();
       return;
     }
+    var cod = state.encUnidade.cod;
+    if(vagasDisponiveis(cod)<=0){
+      erroEl.textContent = "Limite de vagas ativas excedido para esta Unidade Escolar.";
+      erroEl.style.display = "block";
+      return;
+    }
     erroEl.style.display = "none";
+    var redaId = document.getElementById("encRedaSelect").value || null;
     var registro = {
       data: document.getElementById("encData").value || hojeISO(),
       candidato: state.encCandidato,
@@ -2548,20 +2614,68 @@
     }
     if(firebaseAtivo && db){
       registro.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection("encaminhamentos").add(registro).then(function(){
+      // O SDK web do Firestore só permite ler DOCUMENTOS ÚNICOS dentro de uma
+      // transação (transaction.get só aceita DocumentReference, não Query) — por
+      // isso a recontagem de vagas é feita logo antes da gravação (não dentro da
+      // transação em si). Isso reduz bastante a janela de corrida em relação ao
+      // código anterior (que não recontava nada). O vínculo do REDA específico,
+      // por usar um único documento, esse sim fica 100% atômico via transação.
+      Promise.all([
+        db.collection("substituicoes").where("cod","==",cod).get(),
+        db.collection("encaminhamentos").where("unidade.cod","==",cod).get()
+      ]).then(function(resultados){
+        var totalRedaAgora = resultados[0].size;
+        var totalEncAgora = resultados[1].size;
+        if(totalRedaAgora - totalEncAgora <= 0){
+          var e = new Error("vagas-esgotadas"); e.code = "vagas-esgotadas"; throw e;
+        }
+        return db.runTransaction(function(tx){
+          var redaRef = redaId ? db.collection("substituicoes").doc(redaId) : null;
+          var redaGet = redaRef ? tx.get(redaRef) : Promise.resolve(null);
+          return redaGet.then(function(redaDoc){
+            if(redaDoc && redaDoc.exists && redaDoc.data().vinculadoA){
+              var e2 = new Error("reda-ja-vinculado"); e2.code = "reda-ja-vinculado"; throw e2;
+            }
+            var novoRef = db.collection("encaminhamentos").doc();
+            tx.set(novoRef, registro);
+            if(redaRef) tx.update(redaRef, { vinculadoA: novoRef.id });
+            return novoRef.id;
+          });
+        });
+      }).then(function(){
         marcarFeito("Registrado ✓");
         resetEncaminhamentoForm();
       }).catch(function(err){
         console.error("Firestore (registrar encaminhamento):", err);
-        erroEl.textContent = "Não foi possível registrar o encaminhamento no Firebase.";
+        if(err && err.code==="vagas-esgotadas"){
+          erroEl.textContent = "Limite de vagas ativas excedido para esta Unidade Escolar.";
+        }else if(err && err.code==="reda-ja-vinculado"){
+          erroEl.textContent = "Este servidor REDA acabou de ser vinculado por outra estação. Escolha outro ou deixe em branco.";
+        }else{
+          erroEl.textContent = "Não foi possível registrar o encaminhamento no Firebase.";
+        }
         erroEl.style.display = "block";
+        atualizarVagasEnc();
       });
     }else{
+      if(redaId){
+        var redaLocal = state.substituicoes.filter(function(s){ return s.id===redaId; })[0];
+        if(redaLocal && redaLocal.vinculadoA){
+          erroEl.textContent = "Este servidor REDA já foi vinculado a outro encaminhamento.";
+          erroEl.style.display = "block";
+          return;
+        }
+      }
       registro.id = uid();
       registro.criadoEm = new Date().toISOString();
       state.encaminhamentos.unshift(registro);
+      if(redaId){
+        state.substituicoes.forEach(function(s){ if(s.id===redaId) s.vinculadoA = registro.id; });
+        storageSet("gpv_substituicoes", state.substituicoes);
+      }
       storageSet("gpv_encaminhamentos", state.encaminhamentos);
       renderEncaminhamentos();
+      atualizarContadorSubstituicoes();
       marcarFeito("Registrado ✓");
       resetEncaminhamentoForm();
     }
@@ -2708,7 +2822,7 @@
       return;
     }
     erroEl.style.display = "none";
-    var novo = { nome: nome, nte: nte, mun: mun, cod: cod, unidade: unidade, selecionado: false };
+    var novo = { nome: nome, nte: nte, mun: mun, cod: cod, unidade: unidade, vinculadoA: null };
     function limparForm(){
       document.getElementById("substNome").value = "";
       document.getElementById("substMun").value = "";
@@ -2760,7 +2874,7 @@
             mun: String(pick(["municipio"])||"").trim(),
             cod: String(pick(["codsecul","codigo","cod inep","inep","codsap","cod uee"])||"").trim(),
             unidade: String(pick(["nome uee","nome sistema escolar","unidade escolar","unidade","escola","nome da unidade","nome da escola"])||"").trim(),
-            selecionado: false
+            vinculadoA: null
           };
         }).filter(function(p){ return p.nome; });
 
@@ -2815,17 +2929,18 @@
     }
   }
 
-  function alternarSelecaoSubstituicao(p){
-    var novoValor = !(p.selecionado===true);
+  function desvincularSubstituicao(p){
+    if(!confirm("Desvincular "+p.nome+" do encaminhamento atual? A vaga associada a esse encaminhamento não é alterada — use isso só para corrigir um vínculo errado.")) return;
     if(firebaseAtivo && db){
-      db.collection("substituicoes").doc(p.id).update({selecionado: novoValor}).catch(function(err){
-        console.error("Firestore (selecionar substituição):", err);
-        alert("Não foi possível atualizar esta pessoa.");
+      db.collection("substituicoes").doc(p.id).update({vinculadoA: null}).catch(function(err){
+        console.error("Firestore (desvincular substituição):", err);
+        alert("Não foi possível desvincular esta pessoa.");
       });
     }else{
-      p.selecionado = novoValor;
+      p.vinculadoA = null;
       storageSet("gpv_substituicoes", state.substituicoes);
       atualizarContadorSubstituicoes();
+      atualizarVagasEnc();
     }
   }
 
@@ -2852,10 +2967,13 @@
     table.style.display="table"; empty.style.display="none";
 
     tbody.innerHTML = lista.map(function(p, i){
-      var sel = p.selecionado===true;
-      var statusHtml = sel
-        ? '<span class="status-pill ok">✓ Selecionado(a)</span>'
+      var vinculado = !!p.vinculadoA;
+      var statusHtml = vinculado
+        ? '<span class="status-pill ok">✓ Vinculado(a)</span>'
         : '<span class="status-pill pend">— Disponível</span>';
+      var acaoVinculo = vinculado
+        ? '<button class="btn btn-sm" type="button" data-desvincular-subst="'+i+'">Desvincular</button>'
+        : '';
       return '<tr>'+
         '<td>'+escapeHtml(p.nome)+'</td>'+
         '<td>'+escapeHtml(p.nte||"—")+'</td>'+
@@ -2864,15 +2982,15 @@
         '<td>'+escapeHtml(p.unidade||"—")+'</td>'+
         '<td>'+statusHtml+'</td>'+
         '<td><span class="row-actions">'+
-        '  <button class="btn btn-sm" type="button" data-toggle-subst="'+i+'">'+(sel?"Desmarcar":"Selecionar")+'</button>'+
+        acaoVinculo+
         '  <button class="btn-icon" type="button" data-excluir-subst="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'+
         '</span></td>'+
         '</tr>';
     }).join("");
 
-    tbody.querySelectorAll("[data-toggle-subst]").forEach(function(btn){
+    tbody.querySelectorAll("[data-desvincular-subst]").forEach(function(btn){
       btn.addEventListener("click", function(){
-        alternarSelecaoSubstituicao(lista[parseInt(btn.getAttribute("data-toggle-subst"),10)]);
+        desvincularSubstituicao(lista[parseInt(btn.getAttribute("data-desvincular-subst"),10)]);
       });
     });
     tbody.querySelectorAll("[data-excluir-subst]").forEach(function(btn){
@@ -3126,14 +3244,23 @@
 
   function excluirEncaminhamento(id){
     if(firebaseAtivo && db){
-      db.collection("encaminhamentos").doc(id).delete().catch(function(err){
+      db.collection("substituicoes").where("vinculadoA","==",id).get().then(function(snap){
+        var batch = db.batch();
+        snap.docs.forEach(function(d){ batch.update(d.ref, {vinculadoA: null}); });
+        batch.delete(db.collection("encaminhamentos").doc(id));
+        return batch.commit();
+      }).catch(function(err){
         console.error("Firestore (excluir encaminhamento):", err);
         alert("Não foi possível excluir este encaminhamento.");
       });
     }else{
       state.encaminhamentos = state.encaminhamentos.filter(function(h){ return h.id!==id; });
+      state.substituicoes.forEach(function(s){ if(s.vinculadoA===id) s.vinculadoA = null; });
       storageSet("gpv_encaminhamentos", state.encaminhamentos);
+      storageSet("gpv_substituicoes", state.substituicoes);
       renderEncaminhamentos();
+      atualizarContadorSubstituicoes();
+      atualizarVagasEnc();
     }
   }
 
@@ -3501,6 +3628,7 @@
     renderCandidatos();
     renderRelatorios();
     renderEncaminhamentos();
+    atualizarVagasEnc();
   }
 
   var _unsubAvaliacoes = null, _unsubCandidatos = null, _unsubUnidades = null, _unsubEncaminhamentos = null, _unsubNtesHabilitados = null, _unsubUsuarios = null, _unsubAcessos = null, _unsubSubstituicoes = null;
@@ -3551,6 +3679,7 @@
         var x = doc.data(); x.id = doc.id; return x;
       });
       atualizarContadorSubstituicoes();
+      atualizarVagasEnc();
     }, function(err){
       console.error("Firestore (substituicoes):", err);
       agendarReconexao();
@@ -3562,6 +3691,7 @@
       state.encaminhamentos.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
       renderEncaminhamentos();
       renderCandidatos();
+      atualizarVagasEnc();
     }, function(err){
       console.error("Firestore (encaminhamentos):", err);
       agendarReconexao();
