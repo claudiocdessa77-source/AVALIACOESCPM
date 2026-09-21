@@ -171,6 +171,8 @@
   }
   .btn:hover{ background:var(--surface-2); }
   .btn-primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+.btn-danger{ background:var(--danger); border-color:var(--danger); color:#fff; }
+.btn-danger:hover{ opacity:.88; }
   .btn-primary:hover{ background:var(--navy); border-color:var(--navy); }
   .btn-primary:disabled{ opacity:.45; cursor:not-allowed; }
   .btn-ghost{ background:transparent; border-color:transparent; color:var(--blue); }
@@ -1012,7 +1014,8 @@
     <button class="modal-close" type="button" id="btnFecharModalUsuario" aria-label="Fechar">✕</button>
     <h2 style="font-size:16px; margin-bottom:16px;">Editar usuário</h2>
     <div class="field"><label for="editUsuNome">Nome</label><input type="text" id="editUsuNome"></div>
-    <div class="field"><label for="editUsuEmail">E-mail</label><input type="text" id="editUsuEmail" disabled></div>
+    <div class="field"><label for="editUsuEmail">E-mail</label><input type="text" id="editUsuEmail"></div>
+    <p class="pcd-base-legal">Corrigir aqui atualiza o cadastro. O e-mail de login (Firebase Authentication) não muda junto — se ele também estiver errado, use "Excluir usuário" abaixo e cadastre de novo com o e-mail certo.</p>
     <div class="field">
       <label for="editUsuRole">Papel</label>
       <select id="editUsuRole">
@@ -1028,6 +1031,10 @@
     <div class="btn-row" style="margin-top:14px;">
       <button class="btn btn-primary btn-sm" type="button" id="btnSalvarEdicaoUsuario">Salvar</button>
       <button class="btn btn-sm" type="button" id="btnRedefinirSenhaUsuario">Enviar redefinição de senha</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px; padding-top:12px; border-top:1px solid var(--border);">
+      <button class="btn btn-sm" type="button" id="btnToggleAcessoUsuario">Desativar acesso</button>
+      <button class="btn btn-danger btn-sm" type="button" id="btnExcluirUsuario">Excluir usuário</button>
     </div>
   </div>
 </div>
@@ -3013,6 +3020,7 @@
     renderNteChecklist("editUsuNtesLista", u.ntes||[]);
     atualizarVisibilidadeNtesBox("editUsuRole","editUsuNtesBox");
     document.getElementById("editUsuErro").style.display = "none";
+    document.getElementById("btnToggleAcessoUsuario").textContent = (u.ativo!==false) ? "Desativar acesso" : "Ativar acesso";
     document.getElementById("modalUsuarioOverlay").classList.add("show");
   }
   function fecharModalUsuario(){
@@ -3028,10 +3036,16 @@
     if(!_usuarioEditando) return;
     var erroEl = document.getElementById("editUsuErro");
     var nome = document.getElementById("editUsuNome").value.trim();
+    var email = document.getElementById("editUsuEmail").value.trim();
     var role = document.getElementById("editUsuRole").value;
     var ntes = role==="usuario" ? lerNtesSelecionados("editUsuNtesLista") : [];
     if(!nome){
       erroEl.textContent = "Informe o nome.";
+      erroEl.style.display = "block";
+      return;
+    }
+    if(!email || email.indexOf("@")===-1){
+      erroEl.textContent = "Informe um e-mail válido.";
       erroEl.style.display = "block";
       return;
     }
@@ -3042,13 +3056,45 @@
     }
     erroEl.style.display = "none";
     db.collection("usuarios").doc(_usuarioEditando.uid).update({
-      nome: nome, role: role, ntes: ntes
+      nome: nome, email: email, role: role, ntes: ntes
     }).then(function(){
       fecharModalUsuario();
     }).catch(function(err){
       console.error("Firestore (editar usuário):", err);
       erroEl.textContent = "Não foi possível salvar. Tente novamente.";
       erroEl.style.display = "block";
+    });
+  });
+
+  document.getElementById("btnToggleAcessoUsuario").addEventListener("click", function(){
+    if(!_usuarioEditando) return;
+    var btn = document.getElementById("btnToggleAcessoUsuario");
+    var novoAtivo = !(_usuarioEditando.ativo!==false);
+    btn.disabled = true;
+    db.collection("usuarios").doc(_usuarioEditando.uid).update({ativo: novoAtivo}).then(function(){
+      _usuarioEditando.ativo = novoAtivo;
+      btn.textContent = novoAtivo ? "Desativar acesso" : "Ativar acesso";
+    }).catch(function(err){
+      console.error("Firestore (ativar/desativar usuário):", err);
+      alert("Não foi possível atualizar o acesso deste usuário.");
+    }).finally(function(){
+      btn.disabled = false;
+    });
+  });
+
+  document.getElementById("btnExcluirUsuario").addEventListener("click", function(){
+    if(!_usuarioEditando) return;
+    var nomeConfirma = _usuarioEditando.nome || _usuarioEditando.email || "este usuário";
+    if(!confirm('Excluir '+nomeConfirma+'? Isso remove o acesso dele ao sistema imediatamente. Esta ação não pode ser desfeita por aqui.')) return;
+    var btn = document.getElementById("btnExcluirUsuario");
+    btn.disabled = true;
+    db.collection("usuarios").doc(_usuarioEditando.uid).delete().then(function(){
+      fecharModalUsuario();
+    }).catch(function(err){
+      console.error("Firestore (excluir usuário):", err);
+      alert("Não foi possível excluir este usuário.");
+    }).finally(function(){
+      btn.disabled = false;
     });
   });
 
