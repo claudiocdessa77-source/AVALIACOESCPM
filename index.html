@@ -445,8 +445,8 @@
 
     <form id="formLogin" style="display:none">
       <div class="field">
-        <label for="loginEmail">E-mail</label>
-        <input type="email" id="loginEmail" autocomplete="username" required>
+        <label for="loginEmail">Login ou e-mail</label>
+        <input type="text" id="loginEmail" autocomplete="username" required>
       </div>
       <div class="field">
         <label for="loginSenha">Senha</label>
@@ -513,6 +513,7 @@
     <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
     <button class="tab-btn" data-tab="encaminhamento" type="button">Encaminhamento</button>
     <button class="tab-btn" data-tab="usuarios" type="button" id="tabBtnUsuarios" style="display:none">Usuários</button>
+    <button class="tab-btn" data-tab="configuracoes" type="button" id="tabBtnConfiguracoes" style="display:none">Configurações</button>
   </div>
 
   <!-- ===================== ABA: NOVA AVALIAÇÃO ===================== -->
@@ -561,6 +562,10 @@
         <div class="field" style="max-width:220px;">
           <label for="dataAvaliacao">Data da avaliação</label>
           <input type="date" id="dataAvaliacao">
+        </div>
+        <div class="field">
+          <label for="candidatoBairro">Bairro onde reside</label>
+          <input type="text" id="candidatoBairro" placeholder="Bairro do servidor" autocomplete="off">
         </div>
       </div>
 
@@ -641,7 +646,6 @@
     <div class="subtabs">
       <button class="subtab-btn active" data-subtab="base" type="button">Base de Candidatos</button>
       <button class="subtab-btn" data-subtab="adicionar" type="button">Adicionar Candidatos</button>
-      <button class="subtab-btn" data-subtab="backup" type="button">Backup e recuperação</button>
     </div>
 
     <!-- ---- Sub-módulo: Base de Candidatos ---- -->
@@ -708,23 +712,7 @@
     </div>
 
     <!-- ---- Sub-módulo: Backup e recuperação ---- -->
-    <div class="subtab-panel" id="subpanel-backup">
-      <div class="card">
-        <div class="card-head">
-          <h2>Backup e recuperação</h2>
-          <span class="hint">Dados gravados apenas neste navegador (modo local)</span>
-        </div>
-        <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">
-          Exporta tudo que está gravado apenas neste navegador — avaliações, candidatos adicionados, base de unidades, encaminhamentos e a configuração de NTE habilitados. Se este computador funcionou antes de o Firebase estar conectado, exporte aqui e depois importe o arquivo em qualquer máquina já conectada — sem digitar de novo.
-        </p>
-        <div class="row-actions">
-          <button class="btn btn-sm" type="button" id="btnExportarBackup">⬇ Exportar dados deste navegador</button>
-          <button class="btn btn-sm" type="button" id="btnImportarBackup">⬆ Importar backup (.json)</button>
-          <input type="file" id="fileImportarBackup" accept=".json" style="display:none">
-        </div>
-        <span class="count" id="backupStatus"></span>
-      </div>
-    </div>
+    
 
   </div>
 
@@ -776,8 +764,7 @@
 
     <div class="subtabs">
       <button class="subtab-btn active" data-subtab="encaminhar" type="button">Encaminhar</button>
-      <button class="subtab-btn" data-subtab="baseunidades" type="button">Base de Unidades</button>
-      <button class="subtab-btn" data-subtab="habilitarnte" type="button">Habilitar NTE</button>
+      <button class="subtab-btn" data-subtab="substituicao" type="button">Substituição</button>
     </div>
 
     <!-- ---- Sub-módulo: Encaminhar ---- -->
@@ -866,8 +853,129 @@
       </div>
     </div>
 
-    <!-- ---- Sub-módulo: Base de Unidades ---- -->
-    <div class="subtab-panel" id="encsub-baseunidades">
+    <!-- ---- Sub-módulo: Substituição ---- -->
+    <div class="subtab-panel" id="encsub-substituicao">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Adicionar pessoa</h2>
+          <span class="hint">Individual ou por planilha</span>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="substNome">Nome *</label><input type="text" id="substNome" placeholder="Nome completo"></div>
+          <div class="field"><label for="substNte">NTE *</label><input type="text" id="substNte" placeholder="Obrigatório"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="substMun">Município *</label><input type="text" id="substMun" placeholder="Obrigatório"></div>
+          <div class="field"><label for="substCod">Código UEE *</label><input type="text" id="substCod" placeholder="Obrigatório"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="substUnidade">Nome da UEE *</label><input type="text" id="substUnidade" placeholder="Obrigatório"></div>
+          <div class="field" style="display:flex; align-items:flex-end;">
+            <button class="btn btn-primary btn-sm" type="button" id="btnAddSubstituicao">Adicionar à base</button>
+          </div>
+        </div>
+        <div class="field-erro" id="substErro" style="display:none"></div>
+
+        <div class="import-row">
+          <button class="btn btn-sm" type="button" id="btnImportarSubstituicao">Importar planilha (.xlsx / .csv)</button>
+          <input type="file" id="fileImportarSubstituicao" accept=".xlsx,.xls,.csv" style="display:none">
+          <span class="count" id="importSubstStatus"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hist-actions">
+          <h2 style="font-size:15px;">Pessoas para substituição <span id="substCountLabel"></span></h2>
+        </div>
+        <div class="field" style="max-width:340px;">
+          <input type="text" id="substBusca" placeholder="Buscar por nome, NTE, município, código ou UEE…">
+        </div>
+        <div class="table-scroll">
+          <table class="hist" id="substTable">
+            <thead><tr><th>Nome</th><th>NTE</th><th>Município</th><th>Código</th><th>UEE</th><th>Status</th><th></th></tr></thead>
+            <tbody id="substBody"></tbody>
+          </table>
+        </div>
+        <div class="hist-empty" id="substEmpty" style="display:none">Nenhuma pessoa cadastrada ainda.</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ===================== ABA: USUÁRIOS (somente administrador) ===================== -->
+  <div class="tab-panel no-print" id="panel-usuarios">
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Criar usuário</h2>
+        <span class="hint">Administrador ou usuário vinculado a NTE específicos</span>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="novoUsuNome">Nome completo *</label><input type="text" id="novoUsuNome"></div>
+        <div class="field"><label for="novoUsuLogin">Login *</label><input type="text" id="novoUsuLogin" autocomplete="off" placeholder="ex.: rebeca.oliveira"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="novoUsuEmail">E-mail *</label><input type="email" id="novoUsuEmail" autocomplete="off"></div>
+        <div class="field"><label for="novoUsuSenha">Senha inicial *</label><input type="password" id="novoUsuSenha" autocomplete="new-password" minlength="6" placeholder="Mínimo 6 caracteres"></div>
+      </div>
+      <div class="field">
+        <label for="novoUsuRole">Papel *</label>
+        <select id="novoUsuRole">
+          <option value="usuario">Usuário</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+      <div class="field" id="novoUsuNtesBox">
+        <label>NTE(s) atribuído(s) *</label>
+        <div class="nte-checklist" id="novoUsuNtesLista"></div>
+      </div>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn btn-primary btn-sm" type="button" id="btnCriarUsuario">Criar usuário</button>
+      </div>
+      <div class="field-erro" id="novoUsuErro" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <div class="hist-actions">
+        <h2 style="font-size:15px;">Usuários cadastrados <span id="usuCountLabel"></span></h2>
+      </div>
+      <div class="table-scroll">
+        <table class="hist" id="usuTable">
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>NTE(s)</th><th>Status</th><th></th></tr></thead>
+          <tbody id="usuBody"></tbody>
+        </table>
+      </div>
+      <div class="hist-empty" id="usuEmpty" style="display:none">Nenhum usuário cadastrado ainda.</div>
+    </div>
+
+    <div class="card">
+      <div class="hist-actions">
+        <h2 style="font-size:15px;">Histórico de acessos <span id="acessoCountLabel"></span></h2>
+      </div>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Mostra os 200 acessos mais recentes.</p>
+      <div class="table-scroll">
+        <table class="hist" id="acessoTable">
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Data/Hora</th></tr></thead>
+          <tbody id="acessoBody"></tbody>
+        </table>
+      </div>
+      <div class="hist-empty" id="acessoEmpty" style="display:none">Nenhum acesso registrado ainda.</div>
+    </div>
+
+  </div>
+
+<!-- ===================== ABA: CONFIGURAÇÕES (somente administrador) ===================== -->
+<div class="tab-panel no-print" id="panel-configuracoes">
+
+    <div class="subtabs">
+      <button class="subtab-btn active" data-subtab="baseunidades" type="button">Base de Unidades</button>
+      <button class="subtab-btn" data-subtab="habilitarnte" type="button">Habilitar NTE</button>
+      <button class="subtab-btn" data-subtab="backup" type="button">Backup e recuperação</button>
+    </div>
+
+    <div class="subtab-panel active" id="cfgsub-baseunidades">
 
       <div class="card" id="cardBaseUnidades">
         <div class="card-head">
@@ -913,8 +1021,7 @@
       </div>
     </div>
 
-    <!-- ---- Sub-módulo: Habilitar NTE ---- -->
-    <div class="subtab-panel" id="encsub-habilitarnte">
+    <div class="subtab-panel" id="cfgsub-habilitarnte">
       <div class="card">
         <div class="hist-actions">
           <h2 style="font-size:15px;">NTE habilitados para encaminhamento <span id="nteCountLabel"></span></h2>
@@ -930,65 +1037,22 @@
       </div>
     </div>
 
-  </div>
-
-  <!-- ===================== ABA: USUÁRIOS (somente administrador) ===================== -->
-  <div class="tab-panel no-print" id="panel-usuarios">
-
-    <div class="card">
-      <div class="card-head">
-        <h2>Criar usuário</h2>
-        <span class="hint">Administrador ou usuário vinculado a NTE específicos</span>
-      </div>
-      <div class="row2">
-        <div class="field"><label for="novoUsuNome">Nome *</label><input type="text" id="novoUsuNome"></div>
-        <div class="field"><label for="novoUsuEmail">E-mail *</label><input type="email" id="novoUsuEmail" autocomplete="off"></div>
-      </div>
-      <div class="row2">
-        <div class="field"><label for="novoUsuSenha">Senha inicial *</label><input type="password" id="novoUsuSenha" autocomplete="new-password" minlength="6" placeholder="Mínimo 6 caracteres"></div>
-        <div class="field">
-          <label for="novoUsuRole">Papel *</label>
-          <select id="novoUsuRole">
-            <option value="usuario">Usuário</option>
-            <option value="admin">Administrador</option>
-          </select>
+    <div class="subtab-panel" id="cfgsub-backup">
+      <div class="card">
+        <div class="card-head">
+          <h2>Backup e recuperação</h2>
+          <span class="hint">Dados gravados apenas neste navegador (modo local)</span>
         </div>
+        <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">
+          Exporta tudo que está gravado apenas neste navegador — avaliações, candidatos adicionados, base de unidades, encaminhamentos e a configuração de NTE habilitados. Se este computador funcionou antes de o Firebase estar conectado, exporte aqui e depois importe o arquivo em qualquer máquina já conectada — sem digitar de novo.
+        </p>
+        <div class="row-actions">
+          <button class="btn btn-sm" type="button" id="btnExportarBackup">⬇ Exportar dados deste navegador</button>
+          <button class="btn btn-sm" type="button" id="btnImportarBackup">⬆ Importar backup (.json)</button>
+          <input type="file" id="fileImportarBackup" accept=".json" style="display:none">
+        </div>
+        <span class="count" id="backupStatus"></span>
       </div>
-      <div class="field" id="novoUsuNtesBox">
-        <label>NTE(s) atribuído(s) *</label>
-        <div class="nte-checklist" id="novoUsuNtesLista"></div>
-      </div>
-      <div class="btn-row" style="margin-top:6px;">
-        <button class="btn btn-primary btn-sm" type="button" id="btnCriarUsuario">Criar usuário</button>
-      </div>
-      <div class="field-erro" id="novoUsuErro" style="display:none"></div>
-    </div>
-
-    <div class="card">
-      <div class="hist-actions">
-        <h2 style="font-size:15px;">Usuários cadastrados <span id="usuCountLabel"></span></h2>
-      </div>
-      <div class="table-scroll">
-        <table class="hist" id="usuTable">
-          <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>NTE(s)</th><th>Status</th><th></th></tr></thead>
-          <tbody id="usuBody"></tbody>
-        </table>
-      </div>
-      <div class="hist-empty" id="usuEmpty" style="display:none">Nenhum usuário cadastrado ainda.</div>
-    </div>
-
-    <div class="card">
-      <div class="hist-actions">
-        <h2 style="font-size:15px;">Histórico de acessos <span id="acessoCountLabel"></span></h2>
-      </div>
-      <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Mostra os 200 acessos mais recentes.</p>
-      <div class="table-scroll">
-        <table class="hist" id="acessoTable">
-          <thead><tr><th>Nome</th><th>E-mail</th><th>Data/Hora</th></tr></thead>
-          <tbody id="acessoBody"></tbody>
-        </table>
-      </div>
-      <div class="hist-empty" id="acessoEmpty" style="display:none">Nenhum acesso registrado ainda.</div>
     </div>
 
   </div>
@@ -1013,7 +1077,8 @@
   <div class="modal-relatorio" style="max-width:420px;" role="dialog" aria-modal="true">
     <button class="modal-close" type="button" id="btnFecharModalUsuario" aria-label="Fechar">✕</button>
     <h2 style="font-size:16px; margin-bottom:16px;">Editar usuário</h2>
-    <div class="field"><label for="editUsuNome">Nome</label><input type="text" id="editUsuNome"></div>
+    <div class="field"><label for="editUsuNome">Nome completo</label><input type="text" id="editUsuNome"></div>
+    <div class="field"><label for="editUsuLogin">Login</label><input type="text" id="editUsuLogin" autocomplete="off"></div>
     <div class="field"><label for="editUsuEmail">E-mail</label><input type="text" id="editUsuEmail"></div>
     <p class="pcd-base-legal">Corrigir aqui atualiza o cadastro. O e-mail de login (Firebase Authentication) não muda junto — se ele também estiver errado, use "Excluir usuário" abaixo e cadastre de novo com o e-mail certo.</p>
     <div class="field">
@@ -1125,6 +1190,7 @@
     ativeTab: "nova",
     unidades: [],              // {nte,mun,cod,unidade,sexo}
     encaminhamentos: [],       // {id,data,candidato,unidade}
+    substituicoes: [],         // {id,nome,nte,mun,cod,unidade,selecionado}
     encCandidato: null,
     encUnidade: null,
     ntesHabilitados: {},       // {"NÚCLEO 26 - SALVADOR": true/false, ...} — ausente = habilitado
@@ -1954,6 +2020,7 @@
     return {
       candidato: state.candidato,
       data: document.getElementById("dataAvaliacao").value || hojeISO(),
+      bairro: document.getElementById("candidatoBairro").value.trim(),
       respostas: Object.assign({}, state.respostas),
       E:E, G:G, diff:Math.abs(E-G),
       chave: chave,
@@ -1990,6 +2057,7 @@
     '  <div><dt>Município / NTE</dt><dd>'+escapeHtml(c.mun||"—")+(c.nte? ' · NTE '+escapeHtml(c.nte):'')+'</dd></div>'+
     (c.formacao ? '  <div class="full"><dt>Formação</dt><dd>'+escapeHtml(c.formacao)+'</dd></div>' : '')+
     '  <div><dt>Data da avaliação</dt><dd>'+fmtDataBR(d.data)+'</dd></div>'+
+    (d.bairro ? '  <div><dt>Bairro onde reside</dt><dd>'+escapeHtml(d.bairro)+'</dd></div>' : '')+
     '  <div><dt>Pessoa com deficiência (PcD)</dt><dd>'+textoPcdResumo(d.deficiencia)+'</dd></div>'+
     (d.deficiencia && d.deficiencia.possui && d.deficiencia.especificacao ?
       '  <div class="full"><dt>Especificação</dt><dd style="font-weight:500;">'+escapeHtml(d.deficiencia.especificacao)+'</dd></div>' : '')+
@@ -2038,6 +2106,7 @@
     selecionarCandidato(item.candidato);
     state.respostas = Object.assign({}, item.respostas);
     document.getElementById("dataAvaliacao").value = item.data;
+    document.getElementById("candidatoBairro").value = item.bairro||"";
     renderQuestionario();
     setPcdUI(
       item.deficiencia ? !!item.deficiencia.possui : false,
@@ -2064,6 +2133,7 @@
     limparCandidato();
     state.respostas = {};
     document.getElementById("dataAvaliacao").value = hojeISO();
+    document.getElementById("candidatoBairro").value = "";
     renderQuestionario();
     atualizarProgresso();
     atualizarRelatorio();
@@ -2083,6 +2153,7 @@
     var registro = {
       data: d.data,
       candidato: d.candidato,
+      bairro: d.bairro,
       respostas: d.respostas,
       E: d.E, G: d.G, diff: d.diff, chave: d.chave,
       deficiencia: d.deficiencia
@@ -2260,7 +2331,6 @@
     });
     document.getElementById("subpanel-base").classList.toggle("active", nome==="base");
     document.getElementById("subpanel-adicionar").classList.toggle("active", nome==="adicionar");
-    document.getElementById("subpanel-backup").classList.toggle("active", nome==="backup");
     if(nome==="base") renderCandidatos();
   }
   document.querySelectorAll("#panel-candidatos .subtab-btn").forEach(function(b){
@@ -2273,13 +2343,26 @@
       b.classList.toggle("active", b.getAttribute("data-subtab")===nome);
     });
     document.getElementById("encsub-encaminhar").classList.toggle("active", nome==="encaminhar");
-    document.getElementById("encsub-baseunidades").classList.toggle("active", nome==="baseunidades");
-    document.getElementById("encsub-habilitarnte").classList.toggle("active", nome==="habilitarnte");
-    if(nome==="baseunidades") renderUnidades();
-    if(nome==="habilitarnte") renderHabilitarNte();
+    document.getElementById("encsub-substituicao").classList.toggle("active", nome==="substituicao");
+    if(nome==="substituicao") renderSubstituicoes();
   }
   document.querySelectorAll("#panel-encaminhamento .subtab-btn").forEach(function(b){
     b.addEventListener("click", function(){ ativarSubTabEncaminhamento(b.getAttribute("data-subtab")); });
+  });
+
+  /* ================= Sub-abas do módulo Configurações ================= */
+  function ativarSubTabConfiguracoes(nome){
+    document.querySelectorAll("#panel-configuracoes .subtab-btn").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-subtab")===nome);
+    });
+    document.getElementById("cfgsub-baseunidades").classList.toggle("active", nome==="baseunidades");
+    document.getElementById("cfgsub-habilitarnte").classList.toggle("active", nome==="habilitarnte");
+    document.getElementById("cfgsub-backup").classList.toggle("active", nome==="backup");
+    if(nome==="baseunidades") renderUnidades();
+    if(nome==="habilitarnte") renderHabilitarNte();
+  }
+  document.querySelectorAll("#panel-configuracoes .subtab-btn").forEach(function(b){
+    b.addEventListener("click", function(){ ativarSubTabConfiguracoes(b.getAttribute("data-subtab")); });
   });
 
   /* ================= Módulo Encaminhamento ================= */
@@ -2600,6 +2683,208 @@
     renderUnidades();
   }
 
+  /* ================= Sub-módulo: Substituição ================= */
+  function todasSubstituicoes(){
+    return state.substituicoes || [];
+  }
+
+  document.getElementById("btnAddSubstituicao").addEventListener("click", function(){
+    var erroEl = document.getElementById("substErro");
+    var nome = document.getElementById("substNome").value.trim();
+    var nte = document.getElementById("substNte").value.trim();
+    var mun = document.getElementById("substMun").value.trim();
+    var cod = document.getElementById("substCod").value.trim();
+    var unidade = document.getElementById("substUnidade").value.trim();
+    var faltando = [];
+    if(!nome) faltando.push("Nome");
+    if(!nte) faltando.push("NTE");
+    if(!mun) faltando.push("Município");
+    if(!cod) faltando.push("Código UEE");
+    if(!unidade) faltando.push("Nome da UEE");
+    if(faltando.length){
+      erroEl.textContent = "Preencha: "+faltando.join(", ")+".";
+      erroEl.style.display = "block";
+      document.getElementById(!nome?"substNome":(!nte?"substNte":(!mun?"substMun":(!cod?"substCod":"substUnidade")))).focus();
+      return;
+    }
+    erroEl.style.display = "none";
+    var novo = { nome: nome, nte: nte, mun: mun, cod: cod, unidade: unidade, selecionado: false };
+    function limparForm(){
+      document.getElementById("substNome").value = "";
+      document.getElementById("substMun").value = "";
+      document.getElementById("substCod").value = "";
+      document.getElementById("substUnidade").value = "";
+      // NTE mantido (facilita cadastrar varias pessoas da mesma regiao em sequencia)
+    }
+    if(firebaseAtivo && db){
+      db.collection("substituicoes").add(novo).then(limparForm).catch(function(err){
+        console.error("Firestore (adicionar substituição):", err);
+        erroEl.textContent = "Não foi possível adicionar ao Firebase.";
+        erroEl.style.display = "block";
+      });
+    }else{
+      novo.id = uid();
+      state.substituicoes.push(novo);
+      storageSet("gpv_substituicoes", state.substituicoes);
+      atualizarContadorSubstituicoes();
+      limparForm();
+    }
+  });
+
+  document.getElementById("btnImportarSubstituicao").addEventListener("click", function(){
+    document.getElementById("fileImportarSubstituicao").click();
+  });
+  document.getElementById("fileImportarSubstituicao").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        var wb = XLSX.read(evt.target.result, {type:"array"});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+        var importadas = rows.map(function(r){
+          var keys = Object.keys(r);
+          function pick(nomes){
+            for(var i=0;i<keys.length;i++){
+              var kn = normaliza(keys[i]);
+              for(var j=0;j<nomes.length;j++){
+                if(kn.indexOf(nomes[j]) !== -1) return r[keys[i]];
+              }
+            }
+            return "";
+          }
+          return {
+            nome: String(pick(["nome"])||"").trim(),
+            nte: String(pick(["nte"])||"").trim(),
+            mun: String(pick(["municipio"])||"").trim(),
+            cod: String(pick(["codsecul","codigo","cod inep","inep","codsap","cod uee"])||"").trim(),
+            unidade: String(pick(["nome uee","nome sistema escolar","unidade escolar","unidade","escola","nome da unidade","nome da escola"])||"").trim(),
+            selecionado: false
+          };
+        }).filter(function(p){ return p.nome; });
+
+        if(importadas.length===0){
+          document.getElementById("importSubstStatus").textContent = "Nenhuma pessoa reconhecida no arquivo.";
+          return;
+        }
+
+        if(firebaseAtivo && db){
+          var batch = db.batch();
+          importadas.forEach(function(p){
+            batch.set(db.collection("substituicoes").doc(), p);
+          });
+          batch.commit().then(function(){
+            document.getElementById("importSubstStatus").textContent = importadas.length+" pessoa(s) adicionada(s) e sincronizada(s) via Firebase.";
+          }).catch(function(err){
+            console.error("Firestore (importar substituições):", err);
+            document.getElementById("importSubstStatus").textContent = "Não foi possível sincronizar com o Firebase.";
+          });
+        }else{
+          importadas.forEach(function(p){ p.id = uid(); });
+          state.substituicoes = state.substituicoes.concat(importadas);
+          storageSet("gpv_substituicoes", state.substituicoes);
+          atualizarContadorSubstituicoes();
+          document.getElementById("importSubstStatus").textContent = importadas.length+" pessoa(s) adicionada(s) (salvas neste navegador).";
+        }
+      }catch(err){
+        document.getElementById("importSubstStatus").textContent = "Não foi possível ler este arquivo.";
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  });
+
+  function atualizarContadorSubstituicoes(){
+    var n = todasSubstituicoes().length;
+    document.getElementById("substCountLabel").textContent = "("+n+")";
+    renderSubstituicoes();
+  }
+
+  function excluirSubstituicao(p){
+    if(!p.id) return;
+    if(firebaseAtivo && db){
+      db.collection("substituicoes").doc(p.id).delete().catch(function(err){
+        console.error("Firestore (excluir substituição):", err);
+        alert("Não foi possível excluir esta pessoa.");
+      });
+    }else{
+      state.substituicoes = state.substituicoes.filter(function(x){ return x.id!==p.id; });
+      storageSet("gpv_substituicoes", state.substituicoes);
+      atualizarContadorSubstituicoes();
+    }
+  }
+
+  function alternarSelecaoSubstituicao(p){
+    var novoValor = !(p.selecionado===true);
+    if(firebaseAtivo && db){
+      db.collection("substituicoes").doc(p.id).update({selecionado: novoValor}).catch(function(err){
+        console.error("Firestore (selecionar substituição):", err);
+        alert("Não foi possível atualizar esta pessoa.");
+      });
+    }else{
+      p.selecionado = novoValor;
+      storageSet("gpv_substituicoes", state.substituicoes);
+      atualizarContadorSubstituicoes();
+    }
+  }
+
+  function renderSubstituicoes(){
+    var tbody = document.getElementById("substBody");
+    if(!tbody) return;
+    var termo = normaliza(document.getElementById("substBusca").value);
+    var todas = todasSubstituicoes();
+    var lista = !termo ? todas.slice() : todas.filter(function(p){
+      return normaliza(p.nome).indexOf(termo)!==-1 ||
+             normaliza(p.nte).indexOf(termo)!==-1 ||
+             normaliza(p.mun).indexOf(termo)!==-1 ||
+             normaliza(p.cod).indexOf(termo)!==-1 ||
+             normaliza(p.unidade).indexOf(termo)!==-1;
+    });
+    lista.sort(function(a,b){ return (a.nome||"").localeCompare(b.nome||""); });
+
+    var table = document.getElementById("substTable");
+    var empty = document.getElementById("substEmpty");
+    if(lista.length===0){
+      table.style.display="none"; tbody.innerHTML=""; empty.style.display="block";
+      return;
+    }
+    table.style.display="table"; empty.style.display="none";
+
+    tbody.innerHTML = lista.map(function(p, i){
+      var sel = p.selecionado===true;
+      var statusHtml = sel
+        ? '<span class="status-pill ok">✓ Selecionado(a)</span>'
+        : '<span class="status-pill pend">— Disponível</span>';
+      return '<tr>'+
+        '<td>'+escapeHtml(p.nome)+'</td>'+
+        '<td>'+escapeHtml(p.nte||"—")+'</td>'+
+        '<td>'+escapeHtml(p.mun||"—")+'</td>'+
+        '<td>'+escapeHtml(p.cod||"—")+'</td>'+
+        '<td>'+escapeHtml(p.unidade||"—")+'</td>'+
+        '<td>'+statusHtml+'</td>'+
+        '<td><span class="row-actions">'+
+        '  <button class="btn btn-sm" type="button" data-toggle-subst="'+i+'">'+(sel?"Desmarcar":"Selecionar")+'</button>'+
+        '  <button class="btn-icon" type="button" data-excluir-subst="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'+
+        '</span></td>'+
+        '</tr>';
+    }).join("");
+
+    tbody.querySelectorAll("[data-toggle-subst]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        alternarSelecaoSubstituicao(lista[parseInt(btn.getAttribute("data-toggle-subst"),10)]);
+      });
+    });
+    tbody.querySelectorAll("[data-excluir-subst]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var p = lista[parseInt(btn.getAttribute("data-excluir-subst"),10)];
+        if(!confirm("Excluir "+p.nome+" da lista de substituição?")) return;
+        excluirSubstituicao(p);
+      });
+    });
+  }
+  document.getElementById("substBusca").addEventListener("input", renderSubstituicoes);
+
   /* ---- Base de Unidades: listagem ---- */
   var LIMITE_LISTA_UNIDADES = 150;
   function renderUnidades(){
@@ -2901,6 +3186,8 @@
   document.getElementById("btnCriarUsuario").addEventListener("click", function(){
     var erroEl = document.getElementById("novoUsuErro");
     var nome = document.getElementById("novoUsuNome").value.trim();
+    var login = document.getElementById("novoUsuLogin").value.trim().toLowerCase().replace(/\s+/g,"");
+    document.getElementById("novoUsuLogin").value = login;
     var email = document.getElementById("novoUsuEmail").value.trim();
     var senha = document.getElementById("novoUsuSenha").value;
     var role = document.getElementById("novoUsuRole").value;
@@ -2908,7 +3195,8 @@
     erroEl.style.display = "none";
 
     var faltando = [];
-    if(!nome) faltando.push("Nome");
+    if(!nome) faltando.push("Nome completo");
+    if(!login) faltando.push("Login");
     if(!email) faltando.push("E-mail");
     if(!senha || senha.length<6) faltando.push("Senha (mínimo 6 caracteres)");
     if(role==="usuario" && ntes.length===0) faltando.push("ao menos um NTE");
@@ -2920,14 +3208,22 @@
 
     var btn = document.getElementById("btnCriarUsuario");
     btn.disabled = true; btn.textContent = "Criando…";
-    criarUsuarioSemDeslogar(email, senha).then(function(uid){
+    db.collection("usuarios").where("login","==",login).limit(1).get().then(function(snap){
+      if(!snap.empty){
+        var e = new Error("login-em-uso");
+        e.code = "login-em-uso";
+        throw e;
+      }
+      return criarUsuarioSemDeslogar(email, senha);
+    }).then(function(uid){
       return db.collection("usuarios").doc(uid).set({
-        nome: nome, email: email, role: role, ntes: ntes, ativo: true,
+        nome: nome, login: login, email: email, role: role, ntes: ntes, ativo: true,
         criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
         criadoPor: state.usuarioAtual ? state.usuarioAtual.email : ""
       });
     }).then(function(){
       document.getElementById("novoUsuNome").value = "";
+      document.getElementById("novoUsuLogin").value = "";
       document.getElementById("novoUsuEmail").value = "";
       document.getElementById("novoUsuSenha").value = "";
       document.getElementById("novoUsuRole").value = "usuario";
@@ -2937,7 +3233,7 @@
       setTimeout(function(){ btn.textContent = "Criar usuário"; }, 1600);
     }).catch(function(err){
       console.error("Auth/Firestore (criar usuário):", err);
-      erroEl.textContent = mensagemErroAuth(err);
+      erroEl.textContent = (err && err.code==="login-em-uso") ? "Este login já está em uso. Escolha outro." : mensagemErroAuth(err);
       erroEl.style.display = "block";
     }).finally(function(){
       btn.disabled = false;
@@ -2962,6 +3258,7 @@
       var ntesTxt = (u.role==="admin") ? "— (todos)" : (u.ntes&&u.ntes.length ? u.ntes.join(", ") : "— (nenhum)");
       return '<tr>'+
         '<td>'+escapeHtml(u.nome||"—")+'</td>'+
+        '<td>'+escapeHtml(u.login||"—")+'</td>'+
         '<td>'+escapeHtml(u.email||"—")+'</td>'+
         '<td>'+(u.role==="admin"?"Administrador":"Usuário")+'</td>'+
         '<td style="font-size:11.5px;">'+escapeHtml(ntesTxt)+'</td>'+
@@ -3015,6 +3312,7 @@
   function abrirModalUsuario(u){
     _usuarioEditando = u;
     document.getElementById("editUsuNome").value = u.nome||"";
+    document.getElementById("editUsuLogin").value = u.login||"";
     document.getElementById("editUsuEmail").value = u.email||"";
     document.getElementById("editUsuRole").value = u.role==="admin" ? "admin" : "usuario";
     renderNteChecklist("editUsuNtesLista", u.ntes||[]);
@@ -3036,11 +3334,18 @@
     if(!_usuarioEditando) return;
     var erroEl = document.getElementById("editUsuErro");
     var nome = document.getElementById("editUsuNome").value.trim();
+    var login = document.getElementById("editUsuLogin").value.trim().toLowerCase().replace(/\s+/g,"");
+    document.getElementById("editUsuLogin").value = login;
     var email = document.getElementById("editUsuEmail").value.trim();
     var role = document.getElementById("editUsuRole").value;
     var ntes = role==="usuario" ? lerNtesSelecionados("editUsuNtesLista") : [];
     if(!nome){
       erroEl.textContent = "Informe o nome.";
+      erroEl.style.display = "block";
+      return;
+    }
+    if(!login){
+      erroEl.textContent = "Informe o login.";
       erroEl.style.display = "block";
       return;
     }
@@ -3055,13 +3360,22 @@
       return;
     }
     erroEl.style.display = "none";
-    db.collection("usuarios").doc(_usuarioEditando.uid).update({
-      nome: nome, email: email, role: role, ntes: ntes
+    var uidAtual = _usuarioEditando.uid;
+    db.collection("usuarios").where("login","==",login).limit(2).get().then(function(snap){
+      var conflito = snap.docs.some(function(d){ return d.id !== uidAtual; });
+      if(conflito){
+        var e = new Error("login-em-uso");
+        e.code = "login-em-uso";
+        throw e;
+      }
+      return db.collection("usuarios").doc(uidAtual).update({
+        nome: nome, login: login, email: email, role: role, ntes: ntes
+      });
     }).then(function(){
       fecharModalUsuario();
     }).catch(function(err){
       console.error("Firestore (editar usuário):", err);
-      erroEl.textContent = "Não foi possível salvar. Tente novamente.";
+      erroEl.textContent = (err && err.code==="login-em-uso") ? "Este login já está em uso por outro usuário." : "Não foi possível salvar. Tente novamente.";
       erroEl.style.display = "block";
     });
   });
@@ -3144,11 +3458,13 @@
     document.getElementById("panel-relatorios").classList.toggle("active", nome==="relatorios");
     document.getElementById("panel-encaminhamento").classList.toggle("active", nome==="encaminhamento");
     document.getElementById("panel-usuarios").classList.toggle("active", nome==="usuarios");
+    document.getElementById("panel-configuracoes").classList.toggle("active", nome==="configuracoes");
     state.ativeTab = nome;
     if(nome==="candidatos") renderCandidatos();
     if(nome==="relatorios") renderRelatorios();
-    if(nome==="encaminhamento"){ renderUnidades(); renderEncaminhamentos(); }
+    if(nome==="encaminhamento"){ renderEncaminhamentos(); }
     if(nome==="usuarios"){ renderUsuarios(); renderAcessos(); }
+    if(nome==="configuracoes"){ renderUnidades(); }
   }
   document.querySelectorAll(".tab-btn").forEach(function(b){
     b.addEventListener("click", function(){ ativarAba(b.getAttribute("data-tab")); });
@@ -3178,14 +3494,16 @@
     state.unidades = storageGet("gpv_unidades", []);
     state.encaminhamentos = storageGet("gpv_encaminhamentos", []);
     state.ntesHabilitados = storageGet("gpv_ntes_habilitados", {});
+    state.substituicoes = storageGet("gpv_substituicoes", []);
     atualizarContadorBase();
     atualizarContadorUnidades();
+    atualizarContadorSubstituicoes();
     renderCandidatos();
     renderRelatorios();
     renderEncaminhamentos();
   }
 
-  var _unsubAvaliacoes = null, _unsubCandidatos = null, _unsubUnidades = null, _unsubEncaminhamentos = null, _unsubNtesHabilitados = null, _unsubUsuarios = null, _unsubAcessos = null;
+  var _unsubAvaliacoes = null, _unsubCandidatos = null, _unsubUnidades = null, _unsubEncaminhamentos = null, _unsubNtesHabilitados = null, _unsubUsuarios = null, _unsubAcessos = null, _unsubSubstituicoes = null;
   var _tentativasReconexao = 0;
   function pararListeners(){
     if(_unsubAvaliacoes){ try{ _unsubAvaliacoes(); }catch(e){} _unsubAvaliacoes = null; }
@@ -3195,6 +3513,7 @@
     if(_unsubNtesHabilitados){ try{ _unsubNtesHabilitados(); }catch(e){} _unsubNtesHabilitados = null; }
     if(_unsubUsuarios){ try{ _unsubUsuarios(); }catch(e){} _unsubUsuarios = null; }
     if(_unsubAcessos){ try{ _unsubAcessos(); }catch(e){} _unsubAcessos = null; }
+    if(_unsubSubstituicoes){ try{ _unsubSubstituicoes(); }catch(e){} _unsubSubstituicoes = null; }
   }
   function iniciarListeners(){
     pararListeners();
@@ -3227,6 +3546,15 @@
       console.error("Firestore (unidades):", err);
       agendarReconexao();
     });
+    _unsubSubstituicoes = db.collection("substituicoes").onSnapshot(function(snap){
+      state.substituicoes = snap.docs.map(function(doc){
+        var x = doc.data(); x.id = doc.id; return x;
+      });
+      atualizarContadorSubstituicoes();
+    }, function(err){
+      console.error("Firestore (substituicoes):", err);
+      agendarReconexao();
+    });
     _unsubEncaminhamentos = db.collection("encaminhamentos").limit(1000).onSnapshot(function(snap){
       state.encaminhamentos = snap.docs.map(function(doc){
         var x = doc.data(); x.id = doc.id; return x;
@@ -3241,7 +3569,7 @@
     _unsubNtesHabilitados = db.collection("config").doc("ntesHabilitados").onSnapshot(function(doc){
       state.ntesHabilitados = doc.exists ? doc.data() : {};
       document.getElementById("encUnidBaseCount").textContent = unidadesHabilitadas().length+" unidades habilitadas";
-      if(document.getElementById("encsub-habilitarnte").classList.contains("active")) renderHabilitarNte();
+      if(document.getElementById("cfgsub-habilitarnte").classList.contains("active")) renderHabilitarNte();
     }, function(err){
       console.error("Firestore (ntesHabilitados):", err);
       agendarReconexao();
@@ -3308,15 +3636,10 @@
   function aplicarRestricoesPapel(){
     var admin = state.usuarioAtual && state.usuarioAtual.role==="admin";
     document.getElementById("tabBtnUsuarios").style.display = admin ? "" : "none";
-    var subBtnHabilitarNte = document.querySelector('#panel-encaminhamento .subtab-btn[data-subtab="habilitarnte"]');
-    if(subBtnHabilitarNte) subBtnHabilitarNte.style.display = admin ? "" : "none";
-    var subBtnBackup = document.querySelector('#panel-candidatos .subtab-btn[data-subtab="backup"]');
-    if(subBtnBackup) subBtnBackup.style.display = admin ? "" : "none";
+    document.getElementById("tabBtnConfiguracoes").style.display = admin ? "" : "none";
     // Se um usuário sem papel de administrador estiver com essas telas abertas, volta para uma aba permitida.
     if(!admin){
-      if(state.ativeTab==="usuarios") ativarAba("nova");
-      if(document.getElementById("encsub-habilitarnte").classList.contains("active")) ativarSubTabEncaminhamento("encaminhar");
-      if(document.getElementById("subpanel-backup").classList.contains("active")) ativarSubTabCandidatos("base");
+      if(state.ativeTab==="usuarios" || state.ativeTab==="configuracoes") ativarAba("nova");
     }
     // Conveniência: pré-preenche o NTE do usuário nos formulários de cadastro (ele pode digitar outro, se precisar).
     if(!admin && state.usuarioAtual && state.usuarioAtual.ntes && state.usuarioAtual.ntes.length){
@@ -3325,6 +3648,8 @@
       if(campoAddNte && !campoAddNte.value) campoAddNte.value = nteNumero(primeiroNte);
       var campoUniNte = document.getElementById("uniNte");
       if(campoUniNte && !campoUniNte.value) campoUniNte.value = primeiroNte;
+      var campoSubstNte = document.getElementById("substNte");
+      if(campoSubstNte && !campoSubstNte.value) campoSubstNte.value = nteNumero(primeiroNte);
     }
   }
   function mensagemErroAuth(err){
@@ -3384,12 +3709,26 @@
   document.getElementById("formLogin").addEventListener("submit", function(e){
     e.preventDefault();
     var erroEl = document.getElementById("loginErro");
-    var email = document.getElementById("loginEmail").value.trim();
+    var digitado = document.getElementById("loginEmail").value.trim();
     var senha = document.getElementById("loginSenha").value;
     erroEl.style.display = "none";
     var btn = document.getElementById("btnEntrar");
     btn.disabled = true; btn.textContent = "Entrando…";
-    firebase.auth().signInWithEmailAndPassword(email, senha).catch(function(err){
+
+    var resolverEmail = digitado.indexOf("@")!==-1
+      ? Promise.resolve(digitado)
+      : db.collection("usuarios").where("login","==",digitado.toLowerCase()).limit(1).get().then(function(snap){
+          if(snap.empty){
+            var e = new Error("login-nao-encontrado");
+            e.code = "auth/user-not-found";
+            throw e;
+          }
+          return snap.docs[0].data().email;
+        });
+
+    resolverEmail.then(function(emailReal){
+      return firebase.auth().signInWithEmailAndPassword(emailReal, senha);
+    }).catch(function(err){
       console.error("Auth (login):", err);
       erroEl.textContent = mensagemErroAuth(err);
       erroEl.style.display = "block";
