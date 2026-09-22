@@ -1087,8 +1087,14 @@
         <div class="hist-actions">
           <h2 style="font-size:15px;">Funcionários REDA cadastrados <span id="substCountLabel"></span></h2>
         </div>
-        <div class="field" style="max-width:340px;">
-          <input type="text" id="substBusca" placeholder="Buscar por nome, NTE, município, código, UEE ou bairro…">
+        <div class="row2" style="align-items:flex-end;">
+          <div class="field" style="max-width:340px; margin-bottom:0;">
+            <input type="text" id="substBusca" placeholder="Buscar por nome, NTE, município, código, UEE ou bairro…">
+          </div>
+          <label style="display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text-muted); margin-bottom:9px; cursor:pointer; user-select:none;">
+            <input type="checkbox" id="substMostrarVinculados" style="width:auto;">
+            Mostrar também os já vinculados a um encaminhamento
+          </label>
         </div>
         <div class="table-scroll">
           <table class="hist" id="substTable">
@@ -3022,8 +3028,6 @@
   });
 
   function atualizarContadorSubstituicoes(){
-    var n = todasSubstituicoes().length;
-    document.getElementById("substCountLabel").textContent = "("+n+")";
     renderSubstituicoes();
   }
 
@@ -3060,8 +3064,11 @@
     var tbody = document.getElementById("substBody");
     if(!tbody) return;
     var termo = normaliza(document.getElementById("substBusca").value);
+    var mostrarVinculados = document.getElementById("substMostrarVinculados").checked;
     var todas = todasSubstituicoes();
-    var lista = !termo ? todas.slice() : todas.filter(function(p){
+    var disponiveisTotal = todas.filter(function(p){ return !p.vinculadoA; }).length;
+    var base = mostrarVinculados ? todas : todas.filter(function(p){ return !p.vinculadoA; });
+    var lista = !termo ? base.slice() : base.filter(function(p){
       return normaliza(p.nome).indexOf(termo)!==-1 ||
              normaliza(p.nte).indexOf(termo)!==-1 ||
              normaliza(p.mun).indexOf(termo)!==-1 ||
@@ -3071,11 +3078,17 @@
              normaliza(p.nPessoal).indexOf(termo)!==-1;
     });
     lista.sort(function(a,b){ return (a.nome||"").localeCompare(b.nome||""); });
+    document.getElementById("substCountLabel").textContent = mostrarVinculados
+      ? "("+todas.length+" no total)"
+      : "("+disponiveisTotal+" disponíveis de "+todas.length+")";
 
     var table = document.getElementById("substTable");
     var empty = document.getElementById("substEmpty");
     if(lista.length===0){
       table.style.display="none"; tbody.innerHTML=""; empty.style.display="block";
+      empty.textContent = (todas.length>0 && !mostrarVinculados)
+        ? "Nenhum servidor REDA disponível encontrado. Marque \"Mostrar também os já vinculados\" para ver os que já foram usados em um encaminhamento."
+        : "Nenhum servidor REDA cadastrado ainda.";
       return;
     }
     table.style.display="table"; empty.style.display="none";
@@ -3118,6 +3131,7 @@
     });
   }
   document.getElementById("substBusca").addEventListener("input", renderSubstituicoes);
+  document.getElementById("substMostrarVinculados").addEventListener("change", renderSubstituicoes);
 
   /* ---- Base de Unidades: listagem ---- */
   var LIMITE_LISTA_UNIDADES = 150;
