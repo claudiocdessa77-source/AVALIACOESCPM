@@ -3243,6 +3243,7 @@
         });
       }).then(function(){
         marcarFeito(editandoId ? "Salvo ✓" : "Registrado ✓");
+        recarregarSubstituicoes();
         resetEncaminhamentoForm();
       }).catch(function(err){
         console.error("Firestore (registrar encaminhamento):", err);
@@ -3442,7 +3443,10 @@
       // NTE mantido (facilita cadastrar varias pessoas da mesma regiao em sequencia)
     }
     if(firebaseAtivo && db){
-      db.collection("substituicoes").add(novo).then(limparForm).catch(function(err){
+      db.collection("substituicoes").add(novo).then(function(){
+        limparForm();
+        recarregarSubstituicoes();
+      }).catch(function(err){
         console.error("Firestore (adicionar substituição):", err);
         erroEl.textContent = "Não foi possível adicionar ao Firebase.";
         erroEl.style.display = "block";
@@ -3509,6 +3513,7 @@
               msg += " "+r.falhas+" falharam"+(r.primeiroErro && r.primeiroErro.code ? " ("+r.primeiroErro.code+")" : "")+".";
             }
             document.getElementById("importSubstStatus").textContent = msg;
+            recarregarSubstituicoes();
           });
         }else{
           importadas.forEach(function(p){ p.id = uid(); });
@@ -3528,11 +3533,26 @@
   function atualizarContadorSubstituicoes(){
     renderSubstituicoes();
   }
+  /* Substituições (REDA) não usam onSnapshot em tempo real — é a coleção mais
+     pesada de leitura (centenas de documentos) e recarregar em toda alteração
+     de tela custaria caro na cota do Firestore. Em vez disso, busca uma vez ao
+     entrar no sistema e se atualiza sozinha logo após qualquer escrita própria. */
+  function recarregarSubstituicoes(){
+    if(!(firebaseAtivo && db)) return Promise.resolve();
+    return db.collection("substituicoes").get().then(function(snap){
+      state.substituicoes = snap.docs.map(function(doc){
+        var x = doc.data(); x.id = doc.id; return x;
+      });
+      atualizarContadorSubstituicoes();
+      atualizarVagasEnc();
+      renderDashboardSeAtiva();
+    }).catch(function(err){ console.error("Firestore (recarregar substituições):", err); });
+  }
 
   function excluirSubstituicao(p){
     if(!p.id) return;
     if(firebaseAtivo && db){
-      db.collection("substituicoes").doc(p.id).delete().catch(function(err){
+      db.collection("substituicoes").doc(p.id).delete().then(recarregarSubstituicoes).catch(function(err){
         console.error("Firestore (excluir substituição):", err);
         alert("Não foi possível excluir esta pessoa.");
       });
@@ -3546,7 +3566,7 @@
   function desvincularSubstituicao(p){
     if(!confirm("Desvincular "+p.nome+" do encaminhamento atual? A vaga associada a esse encaminhamento não é alterada — use isso só para corrigir um vínculo errado.")) return;
     if(firebaseAtivo && db){
-      db.collection("substituicoes").doc(p.id).update({vinculadoA: null}).catch(function(err){
+      db.collection("substituicoes").doc(p.id).update({vinculadoA: null}).then(recarregarSubstituicoes).catch(function(err){
         console.error("Firestore (desvincular substituição):", err);
         alert("Não foi possível desvincular esta pessoa.");
       });
@@ -3917,9 +3937,16 @@
     if(firebaseAtivo && db){
       db.collection("substituicoes").where("vinculadoA","==",id).get().then(function(snap){
         var batch = db.batch();
+        var idsDesvinculados = snap.docs.map(function(d){ return d.id; });
         snap.docs.forEach(function(d){ batch.update(d.ref, {vinculadoA: null}); });
         batch.delete(db.collection("encaminhamentos").doc(id));
-        return batch.commit();
+        return batch.commit().then(function(){
+          // já sabemos exatamente quais REDA foram desvinculados — atualiza local
+          // sem precisar rebuscar a coleção inteira de novo.
+          state.substituicoes.forEach(function(s){ if(idsDesvinculados.indexOf(s.id)!==-1) s.vinculadoA = null; });
+          atualizarContadorSubstituicoes();
+          atualizarVagasEnc();
+        });
       }).catch(function(err){
         console.error("Firestore (excluir encaminhamento):", err);
         alert("Não foi possível excluir este encaminhamento.");
@@ -4532,16 +4559,7 @@
         renderDashboardSeAtiva();
       }, onErro);
     });
-    criarListenerResiliente("substituicoes", function(onErro){
-      return db.collection("substituicoes").onSnapshot(function(snap){
-        state.substituicoes = snap.docs.map(function(doc){
-          var x = doc.data(); x.id = doc.id; return x;
-        });
-        atualizarContadorSubstituicoes();
-        atualizarVagasEnc();
-        renderDashboardSeAtiva();
-      }, onErro);
-    });
+    recarregarSubstituicoes();
     criarListenerResiliente("encaminhamentos", function(onErro){
       return db.collection("encaminhamentos").limit(1000).onSnapshot(function(snap){
         state.encaminhamentos = snap.docs.map(function(doc){
