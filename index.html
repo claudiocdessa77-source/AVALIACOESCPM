@@ -835,6 +835,10 @@
 
     <!-- ---- Sub-módulo: Encaminhar ---- -->
     <div class="subtab-panel active" id="encsub-encaminhar">
+      <div class="edit-banner no-print" id="encEditBanner" style="display:none">
+        <span id="encEditBannerTexto"></span>
+        <button class="link-btn" type="button" id="btnCancelarEdicaoEnc">Cancelar edição</button>
+      </div>
 
       <!-- Passo 1: Servidor -->
       <div class="card">
@@ -851,6 +855,7 @@
           </div>
         </div>
         <div id="encCandidatoSelecionado" style="display:none"></div>
+        <div id="encJaEncaminhadoAviso" style="display:none"></div>
       </div>
 
       <!-- Passo 2: Unidade de destino -->
@@ -923,7 +928,7 @@
         </div>
         <div class="table-scroll">
           <table class="hist" id="encTable">
-            <thead><tr><th>Data</th><th>Servidor</th><th>Unidade de destino</th><th>Código</th><th>Município / NTE</th><th>Registrado por</th><th></th></tr></thead>
+            <thead><tr><th>Data</th><th>Servidor</th><th>Unidade de destino</th><th>Código</th><th>Município / NTE</th><th>Substituído</th><th>Matrícula</th><th>Registrado por</th><th></th></tr></thead>
             <tbody id="encBody"></tbody>
           </table>
         </div>
@@ -1279,6 +1284,8 @@
     editandoId: null,
     ativeTab: "dashboard",
     candPagina: 1,
+    encEditandoId: null,
+    encRegistroOriginal: null,
     unidades: [],              // {nte,mun,cod,unidade,sexo}
     encaminhamentos: [],       // {id,data,candidato,unidade}
     substituicoes: [],         // {id,nome,nte,mun,cod,unidade,selecionado}
@@ -1380,7 +1387,12 @@
     return base.filter(function(c){ return meus.indexOf(nteNumero(c.nte)) !== -1; });
   }
   function todasUnidades(){
-    var base = UNIDADES_BASE.concat(state.unidades);
+    var porCod = {}, semCod = [];
+    UNIDADES_BASE.concat(state.unidades).forEach(function(u){
+      if(u.cod){ porCod[u.cod] = u; } // último ganha (state.unidades vem depois, então tem prioridade em empate)
+      else{ semCod.push(u); }
+    });
+    var base = Object.keys(porCod).map(function(c){ return porCod[c]; }).concat(semCod);
     var meus = meusNtesNumeros();
     if(meus===null) return base;
     return base.filter(function(u){ return meus.indexOf(nteNumero(u.nte)) !== -1; });
@@ -2549,13 +2561,36 @@
       '  <button class="chip-x" type="button" id="btnTrocarCandidatoEnc" title="Trocar servidor" aria-label="Trocar servidor">✕</button>'+
       '</div>';
     document.getElementById("btnTrocarCandidatoEnc").addEventListener("click", limparCandidatoEnc);
-    document.getElementById("cardEncUnidade").style.display = "block";
+
+    var existentes = registrosEncaminhamentoDoCandidato(c);
+    var avisoBox = document.getElementById("encJaEncaminhadoAviso");
+    if(existentes.length>0){
+      var e0 = existentes[0];
+      avisoBox.style.display = "block";
+      avisoBox.innerHTML =
+        '<div class="field-erro" style="display:block; margin-top:12px;">'+
+        'Este servidor já foi encaminhado para <b>'+escapeHtml((e0.unidade&&e0.unidade.unidade)||"—")+'</b> em '+fmtDataBR(e0.data)+
+        (existentes.length>1 ? ' (e mais '+(existentes.length-1)+' registro(s) anterior(es))' : '')+
+        '. Não é possível registrar um novo encaminhamento para a mesma pessoa — edite o encaminhamento existente se precisar corrigir algo.'+
+        '</div>'+
+        '<button class="btn btn-sm" type="button" id="btnIrEditarExistente" style="margin-top:8px;">Editar encaminhamento existente</button>';
+      document.getElementById("btnIrEditarExistente").addEventListener("click", function(){
+        carregarEncaminhamentoParaEdicao(e0);
+      });
+      document.getElementById("cardEncUnidade").style.display = "none";
+    }else{
+      avisoBox.style.display = "none";
+      avisoBox.innerHTML = "";
+      document.getElementById("cardEncUnidade").style.display = "block";
+    }
     atualizarPassoConfirmarEnc();
   }
   function limparCandidatoEnc(){
     state.encCandidato = null;
     document.getElementById("encCandidatoSelecionado").style.display = "none";
     document.getElementById("encCandidatoSelecionado").innerHTML = "";
+    document.getElementById("encJaEncaminhadoAviso").style.display = "none";
+    document.getElementById("encJaEncaminhadoAviso").innerHTML = "";
     document.getElementById("encBuscaBox").style.display = "block";
     document.getElementById("cardEncUnidade").style.display = "none";
     limparUnidadeEnc();
@@ -2630,12 +2665,14 @@
 
   /* ---- Vagas REDA (substituição 1:1) ---- */
   function vagasDisponiveis(cod){
+    var idExcluir = state.encEditandoId;
     var totalReda = (state.substituicoes||[]).filter(function(s){ return s.cod===cod; }).length;
-    var totalEnc = (state.encaminhamentos||[]).filter(function(e){ return e.unidade && e.unidade.cod===cod; }).length;
+    var totalEnc = (state.encaminhamentos||[]).filter(function(e){ return e.unidade && e.unidade.cod===cod && e.id!==idExcluir; }).length;
     return Math.max(0, totalReda - totalEnc);
   }
   function redaDisponiveisDaUnidade(cod){
-    return (state.substituicoes||[]).filter(function(s){ return s.cod===cod && !s.vinculadoA; });
+    var idEditando = state.encEditandoId;
+    return (state.substituicoes||[]).filter(function(s){ return s.cod===cod && (!s.vinculadoA || s.vinculadoA===idEditando); });
   }
   function atualizarVagasEnc(){
     var info = document.getElementById("encVagasInfo");
@@ -2706,8 +2743,48 @@
     document.getElementById("encData").value = hojeISO();
     document.getElementById("encSexo").value = "";
     document.getElementById("encErro").style.display = "none";
+    state.encEditandoId = null;
+    state.encRegistroOriginal = null;
+    document.getElementById("encEditBanner").style.display = "none";
+    document.getElementById("btnRegistrarEncaminhamento").textContent = "Registrar encaminhamento";
   }
   document.getElementById("btnCancelarEncaminhamento").addEventListener("click", resetEncaminhamentoForm);
+  document.getElementById("btnCancelarEdicaoEnc").addEventListener("click", resetEncaminhamentoForm);
+
+  function carregarEncaminhamentoParaEdicao(h){
+    ativarAba("encaminhamento");
+    ativarSubTabEncaminhamento("encaminhar");
+    state.encEditandoId = h.id;
+    state.encRegistroOriginal = h;
+
+    state.encCandidato = h.candidato;
+    document.getElementById("encBuscaBox").style.display = "none";
+    document.getElementById("encJaEncaminhadoAviso").style.display = "none";
+    document.getElementById("encJaEncaminhadoAviso").innerHTML = "";
+    var boxCand = document.getElementById("encCandidatoSelecionado");
+    boxCand.style.display = "block";
+    boxCand.innerHTML =
+      '<div class="candidato-chip">'+
+      '  <div class="info">'+
+      '    <div class="nome">'+escapeHtml(h.candidato.nome)+'</div>'+
+      '    <div class="meta">'+maskCPF(h.candidato.cpf)+(h.candidato.insc? ' · Insc. '+escapeHtml(h.candidato.insc):'')+'</div>'+
+      '  </div>'+
+      '</div>';
+    document.getElementById("cardEncUnidade").style.display = "block";
+
+    selecionarUnidadeEnc(h.unidade);
+    document.getElementById("encData").value = h.data || hojeISO();
+    document.getElementById("encSexo").value = h.sexo || "";
+    if(h.redaSubstituido && h.redaSubstituido.id){
+      document.getElementById("encRedaSelect").value = h.redaSubstituido.id;
+    }
+    atualizarMatriculaSubstituido();
+
+    document.getElementById("encEditBanner").style.display = "flex";
+    document.getElementById("encEditBannerTexto").textContent = "Editando encaminhamento de "+h.candidato.nome+".";
+    document.getElementById("btnRegistrarEncaminhamento").textContent = "Salvar alterações";
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
 
   document.getElementById("btnRegistrarEncaminhamento").addEventListener("click", function(){
     var erroEl = document.getElementById("encErro");
@@ -2723,6 +2800,7 @@
       document.getElementById("encSexo").focus();
       return;
     }
+    var editandoId = state.encEditandoId;
     var cod = state.encUnidade.cod;
     if(vagasDisponiveis(cod)<=0){
       erroEl.textContent = "Limite de vagas ativas excedido para esta Unidade Escolar.";
@@ -2731,51 +2809,56 @@
     }
     erroEl.style.display = "none";
     var redaId = document.getElementById("encRedaSelect").value || null;
+    var redaSelecionado = redaId ? (state.substituicoes||[]).filter(function(s){ return s.id===redaId; })[0] : null;
+    var redaIdAntigo = (editandoId && state.encRegistroOriginal.redaSubstituido) ? state.encRegistroOriginal.redaSubstituido.id : null;
     var registro = {
       data: document.getElementById("encData").value || hojeISO(),
       candidato: state.encCandidato,
       unidade: state.encUnidade,
       sexo: sexo,
-      confirmado: false,
-      criadoPor: quemSouEu()
+      confirmado: editandoId ? !!state.encRegistroOriginal.confirmado : false,
+      criadoPor: editandoId ? state.encRegistroOriginal.criadoPor : quemSouEu(),
+      redaSubstituido: redaSelecionado ? { id: redaSelecionado.id, nome: redaSelecionado.nome, nPessoal: redaSelecionado.nPessoal||"" } : null
     };
+    if(editandoId && state.encRegistroOriginal.confirmadoPor) registro.confirmadoPor = state.encRegistroOriginal.confirmadoPor;
     var btn = document.getElementById("btnRegistrarEncaminhamento");
     function marcarFeito(msg){
       btn.textContent = msg;
-      setTimeout(function(){ btn.textContent = "Registrar encaminhamento"; }, 1600);
+      setTimeout(function(){ btn.textContent = editandoId ? "Salvar alterações" : "Registrar encaminhamento"; }, 1600);
     }
     if(firebaseAtivo && db){
-      registro.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
+      if(!editandoId) registro.criadoEm = firebase.firestore.FieldValue.serverTimestamp();
       // O SDK web do Firestore só permite ler DOCUMENTOS ÚNICOS dentro de uma
       // transação (transaction.get só aceita DocumentReference, não Query) — por
       // isso a recontagem de vagas é feita logo antes da gravação (não dentro da
-      // transação em si). Isso reduz bastante a janela de corrida em relação ao
-      // código anterior (que não recontava nada). O vínculo do REDA específico,
-      // por usar um único documento, esse sim fica 100% atômico via transação.
+      // transação em si). O vínculo do REDA específico, por usar um único
+      // documento, esse sim fica 100% atômico via transação.
       Promise.all([
         db.collection("substituicoes").where("cod","==",cod).get(),
         db.collection("encaminhamentos").where("unidade.cod","==",cod).get()
       ]).then(function(resultados){
         var totalRedaAgora = resultados[0].size;
-        var totalEncAgora = resultados[1].size;
+        var totalEncAgora = resultados[1].docs.filter(function(d){ return d.id!==editandoId; }).length;
         if(totalRedaAgora - totalEncAgora <= 0){
           var e = new Error("vagas-esgotadas"); e.code = "vagas-esgotadas"; throw e;
         }
         return db.runTransaction(function(tx){
-          var redaRef = redaId ? db.collection("substituicoes").doc(redaId) : null;
-          var redaGet = redaRef ? tx.get(redaRef) : Promise.resolve(null);
-          return redaGet.then(function(redaDoc){
-            if(redaDoc && redaDoc.exists && redaDoc.data().vinculadoA){
+          var novoRef = redaId ? db.collection("substituicoes").doc(redaId) : null;
+          var antigoRef = (redaIdAntigo && redaIdAntigo!==redaId) ? db.collection("substituicoes").doc(redaIdAntigo) : null;
+          var novoGet = novoRef ? tx.get(novoRef) : Promise.resolve(null);
+          return novoGet.then(function(novoDoc){
+            if(novoDoc && novoDoc.exists && novoDoc.data().vinculadoA && novoDoc.data().vinculadoA!==editandoId){
               var e2 = new Error("reda-ja-vinculado"); e2.code = "reda-ja-vinculado"; throw e2;
             }
-            var novoRef = db.collection("encaminhamentos").doc();
-            tx.set(novoRef, registro);
-            if(redaRef) tx.update(redaRef, { vinculadoA: novoRef.id });
-            return novoRef.id;
+            var encRef = editandoId ? db.collection("encaminhamentos").doc(editandoId) : db.collection("encaminhamentos").doc();
+            if(editandoId) tx.update(encRef, registro); else tx.set(encRef, registro);
+            if(novoRef) tx.update(novoRef, { vinculadoA: encRef.id });
+            if(antigoRef) tx.update(antigoRef, { vinculadoA: null });
+            return encRef.id;
           });
         });
       }).then(function(){
-        marcarFeito("Registrado ✓");
+        marcarFeito(editandoId ? "Salvo ✓" : "Registrado ✓");
         resetEncaminhamentoForm();
       }).catch(function(err){
         console.error("Firestore (registrar encaminhamento):", err);
@@ -2790,25 +2873,34 @@
         atualizarVagasEnc();
       });
     }else{
-      if(redaId){
+      if(redaId && redaId!==redaIdAntigo){
         var redaLocal = state.substituicoes.filter(function(s){ return s.id===redaId; })[0];
-        if(redaLocal && redaLocal.vinculadoA){
+        if(redaLocal && redaLocal.vinculadoA && redaLocal.vinculadoA!==editandoId){
           erroEl.textContent = "Este servidor REDA já foi vinculado a outro encaminhamento.";
           erroEl.style.display = "block";
           return;
         }
       }
-      registro.id = uid();
-      registro.criadoEm = new Date().toISOString();
-      state.encaminhamentos.unshift(registro);
-      if(redaId){
-        state.substituicoes.forEach(function(s){ if(s.id===redaId) s.vinculadoA = registro.id; });
-        storageSet("gpv_substituicoes", state.substituicoes);
+      if(editandoId){
+        var idx = state.encaminhamentos.findIndex(function(e){ return e.id===editandoId; });
+        if(idx!==-1) state.encaminhamentos[idx] = Object.assign({}, state.encaminhamentos[idx], registro);
+      }else{
+        registro.id = uid();
+        registro.criadoEm = new Date().toISOString();
+        state.encaminhamentos.unshift(registro);
       }
+      var idFinal = editandoId || registro.id;
+      if(redaIdAntigo && redaIdAntigo!==redaId){
+        state.substituicoes.forEach(function(s){ if(s.id===redaIdAntigo) s.vinculadoA = null; });
+      }
+      if(redaId){
+        state.substituicoes.forEach(function(s){ if(s.id===redaId) s.vinculadoA = idFinal; });
+      }
+      storageSet("gpv_substituicoes", state.substituicoes);
       storageSet("gpv_encaminhamentos", state.encaminhamentos);
       renderEncaminhamentos();
       atualizarContadorSubstituicoes();
-      marcarFeito("Registrado ✓");
+      marcarFeito(editandoId ? "Salvo ✓" : "Registrado ✓");
       resetEncaminhamentoForm();
     }
   });
@@ -3294,15 +3386,19 @@
       var registradoPor = (h.criadoPor && h.criadoPor.nome) || "—";
       var tituloRegistrado = (confirmado && h.confirmadoPor && h.confirmadoPor.nome && h.confirmadoPor.nome!==registradoPor)
         ? "Confirmado por "+h.confirmadoPor.nome : "";
+      var subst = h.redaSubstituido;
       return '<tr>'+
         '<td>'+fmtDataBR(h.data)+'</td>'+
         '<td>'+escapeHtml(c.nome||"—")+'</td>'+
         '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
         '<td>'+escapeHtml(u.cod||"—")+'</td>'+
         '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
+        '<td>'+(subst?escapeHtml(subst.nome):'—')+'</td>'+
+        '<td>'+(subst?escapeHtml(subst.nPessoal||"—"):'—')+'</td>'+
         '<td style="font-size:11.5px;" title="'+escapeHtml(tituloRegistrado)+'">'+escapeHtml(registradoPor)+'</td>'+
         '<td><span class="row-actions">'+
         '  <button class="btn-icon btn-icon-confirmar'+(confirmado?' on':'')+'" type="button" data-confirmar-enc="'+i+'" title="'+(confirmado?'Encaminhado — compareceu (clique para desmarcar)':'Marcar como encaminhado (compareceu)')+'" aria-label="Marcar como encaminhado" aria-pressed="'+(confirmado?'true':'false')+'">✓</button>'+
+        '  <button class="btn-icon" type="button" data-editar-enc="'+i+'" title="Editar" aria-label="Editar">✎</button>'+
         '  <button class="btn-icon" type="button" data-imprimir-enc="'+i+'" title="Imprimir ofício" aria-label="Imprimir ofício">🖨</button>'+
         (souAdmin() ? '  <button class="btn-icon" type="button" data-excluir-enc="'+i+'" title="Excluir" aria-label="Excluir">✕</button>' : '')+
         '</span></td>'+
@@ -3312,6 +3408,12 @@
       btn.addEventListener("click", function(){
         var h = lista[parseInt(btn.getAttribute("data-confirmar-enc"),10)];
         alternarConfirmadoEncaminhamento(h);
+      });
+    });
+    tbody.querySelectorAll("[data-editar-enc]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var h = lista[parseInt(btn.getAttribute("data-editar-enc"),10)];
+        carregarEncaminhamentoParaEdicao(h);
       });
     });
     tbody.querySelectorAll("[data-imprimir-enc]").forEach(function(btn){
