@@ -246,6 +246,21 @@
   .dash-progress-label{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:5px; }
   .dash-progress-track{ background:var(--bg); border-radius:20px; height:16px; overflow:hidden; display:flex; }
 
+  /* ---- Menu de relatórios ---- */
+  .rel-menu-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:14px; }
+  .report-menu-card{
+    appearance:none; text-align:left; cursor:pointer; font-family:inherit;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:18px 20px; transition:border-color .15s, transform .1s;
+  }
+  .report-menu-card:hover{ border-color:var(--blue); transform:translateY(-1px); }
+  .report-menu-card .rmc-num{ font-size:26px; font-weight:800; color:var(--blue); line-height:1.1; }
+  .report-menu-card .rmc-label{ font-size:13.5px; font-weight:700; color:var(--text); margin-top:6px; }
+  .report-menu-card .rmc-sub{ font-size:11px; color:var(--text-muted); margin-top:3px; }
+  .rel-perfil-secao{ margin-bottom:22px; }
+  .rel-perfil-secao:last-child{ margin-bottom:0; }
+  .rel-perfil-secao h3{ font-size:13.5px; margin:0 0 10px; }
+
   .conn-status{
     display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
     padding:4px 10px; border-radius:20px; margin-left:10px; vertical-align:middle;
@@ -785,45 +800,64 @@
 
   <!-- ===================== ABA: RELATÓRIOS ===================== -->
   <div class="tab-panel no-print" id="panel-relatorios">
-    <div class="card">
-      <div class="card-head">
-        <h2>Filtrar avaliações</h2>
-        <span class="hint" id="relCount"></span>
+
+    <div id="relMenu">
+      <div class="rel-menu-grid">
+        <button class="report-menu-card" type="button" data-relatorio="perfil">
+          <div class="rmc-num" id="rmCount-perfil">—</div>
+          <div class="rmc-label">Relatório por Perfil</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="vagas">
+          <div class="rmc-num" id="rmCount-vagas">—</div>
+          <div class="rmc-label">Vagas Disponíveis</div>
+          <div class="rmc-sub">Unidades com REDA ainda não usado</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="encaminhados">
+          <div class="rmc-num" id="rmCount-encaminhados">—</div>
+          <div class="rmc-label">Encaminhados</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="confirmados">
+          <div class="rmc-num" id="rmCount-confirmados">—</div>
+          <div class="rmc-label">Encaminhados Confirmados</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="naoencaminhados">
+          <div class="rmc-num" id="rmCount-naoencaminhados">—</div>
+          <div class="rmc-label">Não Encaminhados</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="naocompareceu">
+          <div class="rmc-num" id="rmCount-naocompareceu">—</div>
+          <div class="rmc-label">Não Compareceu</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="avaliados">
+          <div class="rmc-num" id="rmCount-avaliados">—</div>
+          <div class="rmc-label">Avaliados</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="naoavaliados">
+          <div class="rmc-num" id="rmCount-naoavaliados">—</div>
+          <div class="rmc-label">Não Avaliados</div>
+        </button>
       </div>
-      <div class="row3">
-        <div class="field">
-          <label for="filtroPerfil">Perfil</label>
-          <select id="filtroPerfil">
-            <option value="">Todos</option>
-            <option value="escola">Escola / Atendimento Direto</option>
-            <option value="gestao">Gestão / Unidade Administrativa</option>
-            <option value="hibrido">Perfil Coringa / Híbrido</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="filtroMunicipio">Município</label>
-          <select id="filtroMunicipio"><option value="">Todos</option></select>
-        </div>
-        <div class="field">
-          <label for="filtroNte">NTE</label>
-          <select id="filtroNte"><option value="">Todos</option></select>
-        </div>
-      </div>
-      <div class="table-scroll">
-        <table class="hist" id="relTable">
-          <thead><tr>
-            <th><input type="checkbox" id="relSelAll"></th>
-            <th>Data</th><th>Candidato</th><th>Município</th><th>NTE</th><th>Perfil</th>
-          </tr></thead>
-          <tbody id="relBody"></tbody>
-        </table>
-      </div>
-      <div class="hist-empty" id="relEmpty">Nenhuma avaliação encontrada.</div>
     </div>
 
-    <div class="report-toolbar no-print" style="justify-content:flex-start;">
-      <button class="btn btn-primary" type="button" id="btnImprimirLote" disabled>Imprimir selecionados (<span id="relSelCount">0</span>)</button>
+    <div id="relDetalhe" style="display:none">
+      <button class="link-btn" type="button" id="btnVoltarRelMenu" style="margin-bottom:14px;">‹ Voltar aos relatórios</button>
+      <div class="card">
+        <div class="card-head">
+          <h2 id="relDetalheTitulo">Relatório</h2>
+          <span class="hint" id="relCount"></span>
+        </div>
+        <div class="row3" id="relDetalheFiltros"></div>
+        <div class="field" id="relDetalheBuscaBox" style="max-width:340px;">
+          <input type="text" id="relDetalheBusca" placeholder="Buscar…">
+        </div>
+        <div id="relCorpo"></div>
+        <div class="hist-empty" id="relEmpty" style="display:none"></div>
+      </div>
+      <div class="report-toolbar no-print" id="relToolbarImprimir" style="justify-content:flex-start; display:none;">
+        <button class="btn btn-primary" type="button" id="btnImprimirLote" disabled>Imprimir selecionados (<span id="relSelCount">0</span>)</button>
+      </div>
     </div>
+
   </div>
 
   <!-- ===================== ABA: ENCAMINHAMENTO ===================== -->
@@ -1286,6 +1320,7 @@
     candPagina: 1,
     encEditandoId: null,
     encRegistroOriginal: null,
+    relatorioAtivo: null,
     unidades: [],              // {nte,mun,cod,unidade,sexo}
     encaminhamentos: [],       // {id,data,candidato,unidade}
     substituicoes: [],         // {id,nome,nte,mun,cod,unidade,selecionado}
@@ -1962,7 +1997,7 @@
       state.historico = state.historico.filter(function(h){ return idsRemover.indexOf(h.id)===-1; });
       storageSet("gpv_historico", state.historico);
       renderCandidatos();
-      renderRelatorios();
+      atualizarRelatoriosSeAtiva();
     }
     document.getElementById("dupBanner").style.display = "none";
   });
@@ -2108,7 +2143,7 @@
         storageSet("gpv_encaminhamentos", state.encaminhamentos);
         storageSet("gpv_ntes_habilitados", state.ntesHabilitados);
         renderCandidatos();
-        renderRelatorios();
+        atualizarRelatoriosSeAtiva();
         atualizarContadorBase();
         atualizarContadorUnidades();
         renderEncaminhamentos();
@@ -2332,7 +2367,7 @@
         marcarFeito("Atualizado ✓");
         sairModoEdicao();
         renderCandidatos();
-        renderRelatorios();
+        atualizarRelatoriosSeAtiva();
       }
     }else{
       registro.criadoPor = quemSouEu();
@@ -2348,7 +2383,7 @@
         state.historico.unshift(registro);
         storageSet("gpv_historico", state.historico);
         renderCandidatos();
-        renderRelatorios();
+        atualizarRelatoriosSeAtiva();
         marcarFeito("Salvo ✓");
       }
     }
@@ -2381,87 +2416,273 @@
       state.historico = state.historico.filter(function(h){ return h.id!==id; });
       storageSet("gpv_historico", state.historico);
       renderCandidatos();
-      renderRelatorios();
+      atualizarRelatoriosSeAtiva();
     }
     if(state.editandoId===id) sairModoEdicao();
   }
 
-  /* ================= Aba Relatórios (filtro + impressão em lote) ================= */
-  function preencherFiltro(id, valores){
-    var sel = document.getElementById(id);
-    var atual = sel.value;
-    sel.innerHTML = '<option value="">Todos</option>'+valores.map(function(v){
-      return '<option value="'+escapeHtml(v)+'">'+escapeHtml(v)+'</option>';
-    }).join("");
-    if(valores.indexOf(atual)!==-1) sel.value = atual;
+  /* ================= Aba Relatórios (menu de relatórios prontos) ================= */
+  function imprimirOficiosLote(lista){
+    var stage = document.getElementById("printStage");
+    stage.innerHTML = lista.map(function(h){ return '<div class="print-page">'+renderOficioEncaminhamentoHTML(h)+'</div>'; }).join("");
+    setTimeout(function(){ window.print(); }, 60);
   }
-  function renderRelatorios(){
-    var body = document.getElementById("relBody");
-    if(!body) return;
-    var todos = historicoVisivel();
 
-    var municipios = Array.from(new Set(todos.map(function(h){ return (h.candidato&&h.candidato.mun)||""; }).filter(Boolean))).sort();
-    var ntes = Array.from(new Set(todos.map(function(h){ return (h.candidato&&h.candidato.nte)||""; }).filter(Boolean))).sort();
-    preencherFiltro("filtroMunicipio", municipios);
-    preencherFiltro("filtroNte", ntes);
+  var RELATORIOS_CONFIG = {
+    avaliados: {
+      titulo: "Relatório de Avaliados",
+      getDados: function(){ return historicoVisivel(); },
+      colunas: ["Data","Candidato","Município","NTE","Perfil"],
+      temSelecao: true,
+      montarLinha: function(h){
+        var diag = DIAGNOSTICOS[h.chave];
+        return '<td>'+fmtDataBR(h.data)+'</td>'+
+          '<td>'+escapeHtml(h.candidato.nome)+'</td>'+
+          '<td>'+escapeHtml((h.candidato&&h.candidato.mun)||"—")+'</td>'+
+          '<td>'+escapeHtml((h.candidato&&h.candidato.nte)||"—")+'</td>'+
+          '<td><span class="badge '+h.chave+'">'+diag.perfil+'</span></td>';
+      },
+      buscaTexto: function(h){ return (h.candidato&&h.candidato.nome||"")+" "+(h.candidato&&h.candidato.mun||"")+" "+(h.candidato&&h.candidato.nte||""); },
+      imprimirLote: imprimirRelatorios
+    },
+    naoavaliados: {
+      titulo: "Relatório — Não Avaliados",
+      getDados: function(){ return todosCandidatos().filter(function(c){ return !avaliadoInfo(c).avaliado; }); },
+      colunas: ["Nome","CPF","Inscrição","Município","Formação",""],
+      temSelecao: false,
+      montarLinha: function(c, i){
+        return '<td>'+escapeHtml(c.nome)+'</td>'+
+          '<td>'+(c.cpf?maskCPF(c.cpf):'—')+'</td>'+
+          '<td>'+escapeHtml(c.insc||"—")+'</td>'+
+          '<td>'+escapeHtml(c.mun||"—")+'</td>'+
+          '<td>'+escapeHtml(c.formacao||"—")+'</td>'+
+          '<td><button class="btn btn-sm" type="button" data-acao-avaliar="'+i+'">Avaliar</button></td>';
+      },
+      buscaTexto: function(c){ return c.nome+" "+(c.mun||"")+" "+(c.formacao||""); },
+      posRender: function(lista){
+        document.querySelectorAll("[data-acao-avaliar]").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            var c = lista[parseInt(btn.getAttribute("data-acao-avaliar"),10)];
+            ativarAba("nova"); iniciarAvaliacao(c); window.scrollTo({top:0, behavior:"smooth"});
+          });
+        });
+      }
+    },
+    encaminhados: {
+      titulo: "Relatório de Encaminhados",
+      getDados: function(){ return encaminhamentosVisiveis(); },
+      colunas: ["Data","Servidor","Unidade","Código","Município/NTE","Substituído","Status"],
+      temSelecao: true,
+      montarLinha: function(h){
+        var c=h.candidato||{}, u=h.unidade||{};
+        return '<td>'+fmtDataBR(h.data)+'</td>'+
+          '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(u.cod||"—")+'</td>'+
+          '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
+          '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>'+
+          '<td>'+(h.confirmado?'<span class="status-pill ok">✓ Confirmado</span>':'<span class="status-pill pend">— Pendente</span>')+'</td>';
+      },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      imprimirLote: imprimirOficiosLote
+    },
+    confirmados: {
+      titulo: "Relatório de Encaminhados Confirmados",
+      getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return !!h.confirmado; }); },
+      colunas: ["Data","Servidor","Unidade","Código","Município/NTE","Substituído"],
+      temSelecao: true,
+      montarLinha: function(h){
+        var c=h.candidato||{}, u=h.unidade||{};
+        return '<td>'+fmtDataBR(h.data)+'</td>'+
+          '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(u.cod||"—")+'</td>'+
+          '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
+          '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>';
+      },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      imprimirLote: imprimirOficiosLote
+    },
+    naocompareceu: {
+      titulo: "Relatório — Não Compareceu",
+      getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return !h.confirmado; }); },
+      colunas: ["Data","Servidor","Unidade","Código","Município/NTE","Substituído"],
+      temSelecao: true,
+      montarLinha: function(h){
+        var c=h.candidato||{}, u=h.unidade||{};
+        return '<td>'+fmtDataBR(h.data)+'</td>'+
+          '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(u.cod||"—")+'</td>'+
+          '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
+          '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>';
+      },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      imprimirLote: imprimirOficiosLote
+    },
+    naoencaminhados: {
+      titulo: "Relatório — Não Encaminhados",
+      getDados: function(){ return todosCandidatos().filter(function(c){ return registrosEncaminhamentoDoCandidato(c).length===0; }); },
+      colunas: ["Nome","CPF","Inscrição","Município","Formação",""],
+      temSelecao: false,
+      montarLinha: function(c, i){
+        return '<td>'+escapeHtml(c.nome)+'</td>'+
+          '<td>'+(c.cpf?maskCPF(c.cpf):'—')+'</td>'+
+          '<td>'+escapeHtml(c.insc||"—")+'</td>'+
+          '<td>'+escapeHtml(c.mun||"—")+'</td>'+
+          '<td>'+escapeHtml(c.formacao||"—")+'</td>'+
+          '<td><button class="btn btn-sm" type="button" data-acao-encaminhar="'+i+'">Encaminhar</button></td>';
+      },
+      buscaTexto: function(c){ return c.nome+" "+(c.mun||"")+" "+(c.formacao||""); },
+      posRender: function(lista){
+        document.querySelectorAll("[data-acao-encaminhar]").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            var c = lista[parseInt(btn.getAttribute("data-acao-encaminhar"),10)];
+            ativarAba("encaminhamento"); ativarSubTabEncaminhamento("encaminhar");
+            selecionarCandidatoEnc(c);
+            window.scrollTo({top:0, behavior:"smooth"});
+          });
+        });
+      }
+    },
+    vagas: {
+      titulo: "Relatório de Vagas Disponíveis",
+      getDados: function(){
+        return todasUnidades().filter(function(u){ return vagasDisponiveis(u.cod) > 0; })
+          .sort(function(a,b){ return vagasDisponiveis(b.cod)-vagasDisponiveis(a.cod); });
+      },
+      colunas: ["Unidade","Código","Município","NTE","Vagas disponíveis"],
+      temSelecao: false,
+      montarLinha: function(u){
+        return '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(u.cod||"—")+'</td>'+
+          '<td>'+escapeHtml(u.mun||"—")+'</td>'+
+          '<td>'+escapeHtml(u.nte||"—")+'</td>'+
+          '<td><span class="vagas-badge ok">'+vagasDisponiveis(u.cod)+'</span></td>';
+      },
+      buscaTexto: function(u){ return (u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); }
+    }
+  };
 
-    var fPerfil = document.getElementById("filtroPerfil").value;
-    var fMun = document.getElementById("filtroMunicipio").value;
-    var fNte = document.getElementById("filtroNte").value;
-
-    var lista = todos.filter(function(h){
-      if(fPerfil && h.chave!==fPerfil) return false;
-      if(fMun && (h.candidato&&h.candidato.mun)!==fMun) return false;
-      if(fNte && (h.candidato&&h.candidato.nte)!==fNte) return false;
-      return true;
+  function atualizarRelatoriosSeAtiva(){
+    if(state.ativeTab!=="relatorios") return;
+    if(state.relatorioAtivo) renderRelatorioDetalhe();
+    else atualizarContadoresRelMenu();
+  }
+  function atualizarContadoresRelMenu(){
+    Object.keys(RELATORIOS_CONFIG).forEach(function(tipo){
+      var el = document.getElementById("rmCount-"+tipo);
+      if(el) el.textContent = RELATORIOS_CONFIG[tipo].getDados().length;
     });
+    var elPerfil = document.getElementById("rmCount-perfil");
+    if(elPerfil) elPerfil.textContent = historicoVisivel().length;
+  }
 
-    document.getElementById("relCount").textContent = lista.length+" de "+todos.length+" avaliação(ões)";
-    var table = document.getElementById("relTable");
+  function abrirRelatorio(tipo){
+    state.relatorioAtivo = tipo;
+    document.getElementById("relMenu").style.display = "none";
+    document.getElementById("relDetalhe").style.display = "block";
+    renderRelatorioDetalhe();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  function voltarMenuRelatorios(){
+    state.relatorioAtivo = null;
+    document.getElementById("relDetalhe").style.display = "none";
+    document.getElementById("relMenu").style.display = "block";
+    atualizarContadoresRelMenu();
+  }
+  document.getElementById("btnVoltarRelMenu").addEventListener("click", voltarMenuRelatorios);
+  document.querySelectorAll(".report-menu-card").forEach(function(btn){
+    btn.addEventListener("click", function(){ abrirRelatorio(btn.getAttribute("data-relatorio")); });
+  });
+  document.getElementById("relDetalheBusca").addEventListener("input", renderRelatorioDetalhe);
+
+  function renderRelatorioDetalhe(){
+    var tipo = state.relatorioAtivo;
+    if(!tipo) return;
+    document.getElementById("relDetalheTitulo").textContent = tipo==="perfil" ? "Relatório por Perfil" : RELATORIOS_CONFIG[tipo].titulo;
+    var corpo = document.getElementById("relCorpo");
     var empty = document.getElementById("relEmpty");
-    if(lista.length===0){
-      table.style.display="none"; body.innerHTML=""; empty.style.display="block";
-      atualizarSelecaoLote();
+    var termo = normaliza(document.getElementById("relDetalheBusca").value);
+
+    if(tipo==="perfil"){
+      document.getElementById("relToolbarImprimir").style.display = "flex";
+      var todos = historicoVisivel().filter(function(h){
+        if(!termo) return true;
+        return normaliza((h.candidato&&h.candidato.nome)||"").indexOf(termo)!==-1;
+      });
+      document.getElementById("relCount").textContent = todos.length+" avaliação(ões)";
+      if(todos.length===0){
+        corpo.innerHTML = ""; empty.style.display="block"; empty.textContent="Nenhuma avaliação encontrada.";
+        atualizarSelecaoLoteRel();
+        return;
+      }
+      empty.style.display = "none";
+      var grupos = [["escola","Escola / Atendimento Direto"],["gestao","Gestão / Unidade Administrativa"],["hibrido","Perfil Coringa / Híbrido"]];
+      var idxGlobal = 0;
+      var listaOrdenada = [];
+      corpo.innerHTML = grupos.map(function(g){
+        var doGrupo = todos.filter(function(h){ return h.chave===g[0]; });
+        if(doGrupo.length===0) return "";
+        var linhasHtml = doGrupo.map(function(h){
+          var i = idxGlobal++;
+          listaOrdenada.push(h);
+          return '<tr><td><input type="checkbox" class="rel-check" data-idx="'+i+'"></td>'+
+            '<td>'+fmtDataBR(h.data)+'</td><td>'+escapeHtml(h.candidato.nome)+'</td>'+
+            '<td>'+escapeHtml((h.candidato&&h.candidato.mun)||"—")+'</td><td>'+escapeHtml((h.candidato&&h.candidato.nte)||"—")+'</td></tr>';
+        }).join("");
+        return '<div class="rel-perfil-secao"><h3>'+g[1]+' ('+doGrupo.length+')</h3>'+
+          '<div class="table-scroll"><table class="hist"><thead><tr><th></th><th>Data</th><th>Candidato</th><th>Município</th><th>NTE</th></tr></thead>'+
+          '<tbody>'+linhasHtml+'</tbody></table></div></div>';
+      }).join("");
+      corpo.querySelectorAll(".rel-check").forEach(function(cb){ cb.addEventListener("change", atualizarSelecaoLoteRel); });
+      corpo._listaAtual = listaOrdenada;
+      atualizarSelecaoLoteRel();
       return;
     }
-    table.style.display="table"; empty.style.display="none";
 
-    body.innerHTML = lista.map(function(h){
-      var diag = DIAGNOSTICOS[h.chave];
-      return '<tr>'+
-        '<td><input type="checkbox" class="rel-check" data-id="'+h.id+'"></td>'+
-        '<td>'+fmtDataBR(h.data)+'</td>'+
-        '<td>'+escapeHtml(h.candidato.nome)+'</td>'+
-        '<td>'+escapeHtml((h.candidato&&h.candidato.mun)||"—")+'</td>'+
-        '<td>'+escapeHtml((h.candidato&&h.candidato.nte)||"—")+'</td>'+
-        '<td><span class="badge '+h.chave+'">'+diag.perfil+'</span></td>'+
-        '</tr>';
+    var cfg = RELATORIOS_CONFIG[tipo];
+    if(!cfg) return;
+    var dados = cfg.getDados();
+    var lista = !termo ? dados.slice() : dados.filter(function(item){ return normaliza(cfg.buscaTexto(item)).indexOf(termo)!==-1; });
+    document.getElementById("relCount").textContent = lista.length+" de "+dados.length+" registro(s)";
+    document.getElementById("relToolbarImprimir").style.display = cfg.temSelecao ? "flex" : "none";
+
+    if(lista.length===0){
+      corpo.innerHTML = "";
+      empty.style.display = "block";
+      empty.textContent = "Nenhum registro encontrado.";
+      if(cfg.temSelecao) atualizarSelecaoLoteRel();
+      return;
+    }
+    empty.style.display = "none";
+    var theadHtml = "<tr>"+(cfg.temSelecao?"<th></th>":"")+cfg.colunas.map(function(c){ return "<th>"+c+"</th>"; }).join("")+"</tr>";
+    var tbodyHtml = lista.map(function(item, i){
+      var check = cfg.temSelecao ? '<td><input type="checkbox" class="rel-check" data-idx="'+i+'"></td>' : "";
+      return "<tr>"+check+cfg.montarLinha(item, i)+"</tr>";
     }).join("");
-
-    document.getElementById("relSelAll").checked = false;
-    body.querySelectorAll(".rel-check").forEach(function(cb){
-      cb.addEventListener("change", atualizarSelecaoLote);
-    });
-    atualizarSelecaoLote();
+    corpo.innerHTML = '<div class="table-scroll"><table class="hist"><thead>'+theadHtml+'</thead><tbody>'+tbodyHtml+'</tbody></table></div>';
+    corpo._listaAtual = lista;
+    if(cfg.temSelecao){
+      corpo.querySelectorAll(".rel-check").forEach(function(cb){ cb.addEventListener("change", atualizarSelecaoLoteRel); });
+      atualizarSelecaoLoteRel();
+    }
+    if(cfg.posRender) cfg.posRender(lista);
   }
-  function atualizarSelecaoLote(){
-    var marcados = document.querySelectorAll("#relBody .rel-check:checked");
+  function atualizarSelecaoLoteRel(){
+    var corpo = document.getElementById("relCorpo");
+    var marcados = corpo.querySelectorAll(".rel-check:checked");
     document.getElementById("relSelCount").textContent = marcados.length;
     document.getElementById("btnImprimirLote").disabled = marcados.length===0;
   }
-  document.getElementById("filtroPerfil").addEventListener("change", renderRelatorios);
-  document.getElementById("filtroMunicipio").addEventListener("change", renderRelatorios);
-  document.getElementById("filtroNte").addEventListener("change", renderRelatorios);
-  document.getElementById("relSelAll").addEventListener("change", function(){
-    var marcar = this.checked;
-    document.querySelectorAll("#relBody .rel-check").forEach(function(cb){ cb.checked = marcar; });
-    atualizarSelecaoLote();
-  });
   document.getElementById("btnImprimirLote").addEventListener("click", function(){
-    var ids = Array.from(document.querySelectorAll("#relBody .rel-check:checked")).map(function(cb){ return cb.getAttribute("data-id"); });
-    var lista = (state.historico||[]).filter(function(h){ return ids.indexOf(h.id)!==-1; });
+    var corpo = document.getElementById("relCorpo");
+    var idxs = Array.from(corpo.querySelectorAll(".rel-check:checked")).map(function(cb){ return parseInt(cb.getAttribute("data-idx"),10); });
+    var lista = (corpo._listaAtual||[]).filter(function(item,i){ return idxs.indexOf(i)!==-1; });
     if(lista.length===0) return;
-    imprimirRelatorios(lista);
+    var tipo = state.relatorioAtivo;
+    var imprimirFn = tipo==="perfil" ? imprimirRelatorios : (RELATORIOS_CONFIG[tipo]&&RELATORIOS_CONFIG[tipo].imprimirLote);
+    if(imprimirFn) imprimirFn(lista);
   });
 
   /* ================= Sub-abas do módulo Candidatos ================= */
@@ -3862,9 +4083,9 @@
     document.getElementById("panel-usuarios").classList.toggle("active", nome==="usuarios");
     document.getElementById("panel-configuracoes").classList.toggle("active", nome==="configuracoes");
     state.ativeTab = nome;
-    if(nome==="dashboard") renderDashboard();
+    if(nome==="dashboard"){ renderDashboard(); window.scrollTo({top:0, behavior:"instant"}); }
     if(nome==="candidatos") renderCandidatos();
-    if(nome==="relatorios") renderRelatorios();
+    if(nome==="relatorios") voltarMenuRelatorios();
     if(nome==="encaminhamento"){ renderEncaminhamentos(); }
     if(nome==="usuarios"){ renderUsuarios(); renderAcessos(); }
     if(nome==="configuracoes"){ renderUnidades(); }
@@ -4029,7 +4250,7 @@
     atualizarContadorUnidades();
     atualizarContadorSubstituicoes();
     renderCandidatos();
-    renderRelatorios();
+    atualizarRelatoriosSeAtiva();
     renderEncaminhamentos();
     atualizarVagasEnc();
     renderDashboardSeAtiva();
@@ -4080,7 +4301,7 @@
         });
         state.historico.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
         renderCandidatos();
-        renderRelatorios();
+        atualizarRelatoriosSeAtiva();
         renderDashboardSeAtiva();
       }, onErro);
     }, function(){ atualizarStatusConexao("erro"); }, function(){ atualizarStatusConexao("falha"); });
@@ -4159,6 +4380,7 @@
   }
   function esconderLogin(){
     document.getElementById("loginOverlay").classList.add("hide");
+    window.scrollTo(0,0);
   }
   function atualizarTopbarUsuario(){
     var el = document.getElementById("topbarUser");
@@ -4380,6 +4602,8 @@
 
   /* ================= Inicialização ================= */
   function init(){
+    if("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0,0);
     document.getElementById("dataAvaliacao").value = hojeISO();
     document.getElementById("encData").value = hojeISO();
     renderQuestionario();
