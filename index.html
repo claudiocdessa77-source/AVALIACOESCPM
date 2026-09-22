@@ -17,6 +17,7 @@
     --hibrido:#966017; --hibrido-soft:#FBF0DC;
     --danger:#B3261E; --danger-soft:#FBEAE9;
     --focus:#2E5395;
+    --dc1:#2E5395; --dc2:#1F7A5C; --dc3:#966017; --dc4:#7C3AED; --dc5:#DB2777; --dc6:#0891B2; --dc7:#EA580C; --dc8:#4338CA;
     --radius:10px; --radius-sm:7px;
     --shadow:0 1px 2px rgba(16,24,32,.06), 0 6px 18px rgba(16,24,32,.07);
     --font-ui:'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -32,6 +33,7 @@
       --gestao:#7FA3D6; --gestao-soft:#1E2C3E;
       --hibrido:#E0A945; --hibrido-soft:#332707;
       --danger:#E5837B; --danger-soft:#3A1E1C;
+      --dc1:#5A82BC; --dc2:#3FBE93; --dc3:#E0A945; --dc4:#A78BFA; --dc5:#F472B6; --dc6:#22D3EE; --dc7:#FB923C; --dc8:#818CF8;
       --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 22px rgba(0,0,0,.4);
       color-scheme: dark;
     }
@@ -218,6 +220,31 @@
   .vagas-badge{ display:inline-block; padding:6px 13px; border-radius:20px; font-size:12.5px; font-weight:700; }
   .vagas-badge.ok{ background:var(--escola-soft); color:var(--escola); }
   .vagas-badge.zero{ background:var(--danger-soft); color:var(--danger); }
+
+  /* ---- Dashboard ---- */
+  .dash-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:14px; margin-bottom:20px; }
+  .dash-card{ background:var(--surface); border:1px solid var(--border); border-left:5px solid var(--dc); border-radius:var(--radius-sm); padding:16px 18px; }
+  .dash-card .num{ font-size:28px; font-weight:800; color:var(--text); line-height:1.1; }
+  .dash-card .num small{ font-size:15px; font-weight:600; color:var(--text-muted); }
+  .dash-card .lbl{ font-size:12.5px; color:var(--text-muted); margin-top:4px; font-weight:600; }
+  .dash-charts{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:16px; }
+  .dash-chart-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:18px; }
+  .dash-chart-card h3{ font-size:14px; margin:0 0 14px; color:var(--text); }
+  .dash-chart-empty{ font-size:12.5px; color:var(--text-muted); text-align:center; padding:30px 0; }
+  .dash-donut-wrap{ display:flex; align-items:center; gap:22px; flex-wrap:wrap; justify-content:center; }
+  .dash-legend{ display:flex; flex-direction:column; gap:9px; }
+  .dash-legend-item{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text); }
+  .dash-legend-dot{ width:11px; height:11px; border-radius:50%; flex:none; }
+  .dash-legend-item b{ margin-left:auto; padding-left:14px; }
+  .dash-bar-row{ margin-bottom:11px; }
+  .dash-bar-row:last-child{ margin-bottom:0; }
+  .dash-bar-top{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
+  .dash-bar-top .n{ color:var(--text); font-weight:600; }
+  .dash-bar-top .v{ color:var(--text-muted); font-weight:700; }
+  .dash-bar-track{ background:var(--bg); border-radius:20px; height:9px; overflow:hidden; }
+  .dash-bar-fill{ height:100%; border-radius:20px; }
+  .dash-progress-label{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:5px; }
+  .dash-progress-track{ background:var(--bg); border-radius:20px; height:16px; overflow:hidden; display:flex; }
 
   .conn-status{
     display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
@@ -522,16 +549,22 @@
 <div class="wrap">
 
   <div class="tabs no-print">
-    <button class="tab-btn active" data-tab="nova" type="button">Nova avaliação</button>
+    <button class="tab-btn active" data-tab="dashboard" type="button">Dashboard</button>
+    <button class="tab-btn" data-tab="nova" type="button">Nova avaliação</button>
     <button class="tab-btn" data-tab="candidatos" type="button">Candidatos <span id="candCount"></span></button>
-    <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
     <button class="tab-btn" data-tab="encaminhamento" type="button">Encaminhamento</button>
+    <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
     <button class="tab-btn" data-tab="usuarios" type="button" id="tabBtnUsuarios" style="display:none">Usuários</button>
     <button class="tab-btn" data-tab="configuracoes" type="button" id="tabBtnConfiguracoes" style="display:none">Configurações</button>
   </div>
 
+  <!-- ===================== ABA: DASHBOARD ===================== -->
+  <div class="tab-panel active no-print" id="panel-dashboard">
+    <div id="dashboardConteudo"></div>
+  </div>
+
   <!-- ===================== ABA: NOVA AVALIAÇÃO ===================== -->
-  <div class="tab-panel active" id="panel-nova">
+  <div class="tab-panel" id="panel-nova">
 
     <div class="edit-banner no-print" id="editBanner" style="display:none">
       <span id="editBannerTexto"></span>
@@ -679,14 +712,34 @@
             <button class="btn btn-sm" type="button" id="btnVerificarDup">Verificar duplicados</button>
           </span>
         </div>
-        <div class="field" style="max-width:340px;">
-          <input type="text" id="candBusca" placeholder="Buscar por nome, CPF ou inscrição…">
+        <div class="row2" style="align-items:flex-end; max-width:520px;">
+          <div class="field" style="margin-bottom:0;">
+            <input type="text" id="candBusca" placeholder="Buscar por nome, CPF ou inscrição…">
+          </div>
+          <div class="field" style="max-width:150px; margin-bottom:0;">
+            <label for="candPorPagina" style="font-size:11px;">Mostrar</label>
+            <select id="candPorPagina">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+              <option value="40">40</option>
+              <option value="50">50</option>
+              <option value="todos">Todos</option>
+            </select>
+          </div>
         </div>
         <div class="table-scroll">
           <table class="hist" id="candTable">
             <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Formação</th><th>Avaliação</th><th>PcD</th><th>Encaminhado</th><th></th></tr></thead>
             <tbody id="candBody"></tbody>
           </table>
+        </div>
+        <div class="hist-actions no-print" id="candPaginacao" style="margin-top:12px;">
+          <span class="count" id="candPaginaInfo"></span>
+          <span class="row-actions">
+            <button class="btn btn-sm" type="button" id="candPagAnterior">‹ Anterior</button>
+            <button class="btn btn-sm" type="button" id="candPagProxima">Próxima ›</button>
+          </span>
         </div>
       </div>
     </div>
@@ -1211,7 +1264,8 @@
     historico: [],
     deficiencia: {possui:false, tipo:"", especificacao:""},
     editandoId: null,
-    ativeTab: "nova",
+    ativeTab: "dashboard",
+    candPagina: 1,
     unidades: [],              // {nte,mun,cod,unidade,sexo}
     encaminhamentos: [],       // {id,data,candidato,unidade}
     substituicoes: [],         // {id,nome,nte,mun,cod,unidade,selecionado}
@@ -1231,6 +1285,20 @@
   }
   function souAdmin(){
     return !!(state.usuarioAtual && state.usuarioAtual.role==="admin");
+  }
+  /* Grava vários documentos de uma vez, mas cada um de forma INDEPENDENTE (não em
+     lote atômico). Se um documento tiver algum problema, os outros ainda são
+     gravados — e devolve o motivo do primeiro erro, em vez de só "falhou". */
+  function gravarEmLoteResiliente(colecaoNome, itens){
+    var promessas = itens.map(function(item){
+      return db.collection(colecaoNome).add(item).then(function(){ return {ok:true}; })
+        .catch(function(err){ console.error('Firestore (importar '+colecaoNome+'):', err); return {ok:false, erro:err}; });
+    });
+    return Promise.all(promessas).then(function(resultados){
+      var sucesso = resultados.filter(function(r){ return r.ok; }).length;
+      var falhas = resultados.filter(function(r){ return !r.ok; });
+      return { sucesso: sucesso, falhas: falhas.length, primeiroErro: falhas[0] ? falhas[0].erro : null };
+    });
   }
   function digits(s){ return (s||"").toString().replace(/\D/g,""); }
   function maskCPF(cpf){
@@ -1585,15 +1653,13 @@
         }
 
         if(firebaseAtivo && db){
-          var batch = db.batch();
-          importados.forEach(function(c){
-            batch.set(db.collection("candidatosExtra").doc(), c);
-          });
-          batch.commit().then(function(){
-            document.getElementById("importStatus").textContent = importados.length+" candidato(s) adicionado(s) e sincronizado(s) via Firebase.";
-          }).catch(function(err){
-            console.error("Firestore (importar):", err);
-            document.getElementById("importStatus").textContent = "Não foi possível sincronizar com o Firebase.";
+          document.getElementById("importStatus").textContent = "Importando "+importados.length+" registro(s)…";
+          gravarEmLoteResiliente("candidatosExtra", importados).then(function(r){
+            var msg = r.sucesso+" de "+importados.length+" candidato(s) importado(s).";
+            if(r.falhas>0){
+              msg += " "+r.falhas+" falharam"+(r.primeiroErro && r.primeiroErro.code ? " ("+r.primeiroErro.code+")" : "")+".";
+            }
+            document.getElementById("importStatus").textContent = msg;
           });
         }else{
           state.candidatosExtra = state.candidatosExtra.concat(importados);
@@ -1670,7 +1736,22 @@
       return matchNome || matchCpf || matchInsc || matchFormacao;
     });
 
-    tbody.innerHTML = lista.map(function(c, i){
+    var porPaginaSel = document.getElementById("candPorPagina").value;
+    var porPagina = porPaginaSel==="todos" ? lista.length||1 : parseInt(porPaginaSel,10);
+    var totalPaginas = Math.max(1, Math.ceil(lista.length/porPagina));
+    if(state.candPagina>totalPaginas) state.candPagina = totalPaginas;
+    if(state.candPagina<1) state.candPagina = 1;
+    var inicio = (state.candPagina-1)*porPagina;
+    var listaPagina = lista.slice(inicio, inicio+porPagina);
+
+    document.getElementById("candPaginaInfo").textContent = lista.length===0
+      ? "Nenhum candidato encontrado."
+      : "Mostrando "+(inicio+1)+"–"+Math.min(inicio+porPagina,lista.length)+" de "+lista.length+" · página "+state.candPagina+" de "+totalPaginas;
+    document.getElementById("candPagAnterior").disabled = state.candPagina<=1;
+    document.getElementById("candPagProxima").disabled = state.candPagina>=totalPaginas;
+    document.getElementById("candPaginacao").style.display = lista.length>porPagina ? "flex" : (lista.length===0?"none":"flex");
+
+    tbody.innerHTML = listaPagina.map(function(c, i){
       var av = avaliadoInfo(c);
       var statusHtml = av.avaliado
         ? '<span class="status-pill ok" title="'+av.total+' avaliação(ões) — última em '+fmtDataBR(av.data)+(av.por?' · por '+escapeHtml(av.por.nome):'')+'">✓ Avaliado ('+fmtDataBR(av.data)+')</span>'
@@ -1704,7 +1785,7 @@
 
     tbody.querySelectorAll("[data-avaliar]").forEach(function(btn){
       btn.addEventListener("click", function(){
-        var c = lista[parseInt(btn.getAttribute("data-avaliar"),10)];
+        var c = listaPagina[parseInt(btn.getAttribute("data-avaliar"),10)];
         ativarAba("nova");
         iniciarAvaliacao(c);
         window.scrollTo({top:0, behavior:"smooth"});
@@ -1712,7 +1793,7 @@
     });
     tbody.querySelectorAll("[data-editar]").forEach(function(btn){
       btn.addEventListener("click", function(){
-        var c = lista[parseInt(btn.getAttribute("data-editar"),10)];
+        var c = listaPagina[parseInt(btn.getAttribute("data-editar"),10)];
         var reg = avaliacaoMaisRecente(c);
         if(!reg) return;
         ativarAba("nova");
@@ -1722,7 +1803,7 @@
     });
     tbody.querySelectorAll("[data-imprimir]").forEach(function(btn){
       btn.addEventListener("click", function(){
-        var c = lista[parseInt(btn.getAttribute("data-imprimir"),10)];
+        var c = listaPagina[parseInt(btn.getAttribute("data-imprimir"),10)];
         var reg = avaliacaoMaisRecente(c);
         if(!reg) return;
         imprimirRelatorios([reg]);
@@ -1730,7 +1811,7 @@
     });
     tbody.querySelectorAll("[data-excluir]").forEach(function(btn){
       btn.addEventListener("click", function(){
-        var c = lista[parseInt(btn.getAttribute("data-excluir"),10)];
+        var c = listaPagina[parseInt(btn.getAttribute("data-excluir"),10)];
         var reg = avaliacaoMaisRecente(c);
         if(!reg) return;
         if(!confirm("Excluir a avaliação de "+c.nome+"? Esta ação não pode ser desfeita.")) return;
@@ -1738,7 +1819,10 @@
       });
     });
   }
-  document.getElementById("candBusca").addEventListener("input", renderCandidatos);
+  document.getElementById("candBusca").addEventListener("input", function(){ state.candPagina = 1; renderCandidatos(); });
+  document.getElementById("candPorPagina").addEventListener("change", function(){ state.candPagina = 1; renderCandidatos(); });
+  document.getElementById("candPagAnterior").addEventListener("click", function(){ state.candPagina--; renderCandidatos(); window.scrollTo({top:0, behavior:"smooth"}); });
+  document.getElementById("candPagProxima").addEventListener("click", function(){ state.candPagina++; renderCandidatos(); window.scrollTo({top:0, behavior:"smooth"}); });
   document.getElementById("irParaCandidatos").addEventListener("click", function(){ ativarAba("candidatos"); ativarSubTabCandidatos("adicionar"); });
   document.getElementById("btnAtualizarAgora").addEventListener("click", function(){
     if(firebaseAtivo && db){
@@ -2785,15 +2869,13 @@
         }
 
         if(firebaseAtivo && db){
-          var batch = db.batch();
-          importadas.forEach(function(u){
-            batch.set(db.collection("unidades").doc(), u);
-          });
-          batch.commit().then(function(){
-            document.getElementById("importUniStatus").textContent = importadas.length+" unidade(s) adicionada(s) e sincronizada(s) via Firebase.";
-          }).catch(function(err){
-            console.error("Firestore (importar unidades):", err);
-            document.getElementById("importUniStatus").textContent = "Não foi possível sincronizar com o Firebase.";
+          document.getElementById("importUniStatus").textContent = "Importando "+importadas.length+" registro(s)…";
+          gravarEmLoteResiliente("unidades", importadas).then(function(r){
+            var msg = r.sucesso+" de "+importadas.length+" unidade(s) importada(s).";
+            if(r.falhas>0){
+              msg += " "+r.falhas+" falharam"+(r.primeiroErro && r.primeiroErro.code ? " ("+r.primeiroErro.code+")" : "")+".";
+            }
+            document.getElementById("importUniStatus").textContent = msg;
           });
         }else{
           importadas.forEach(function(u){ u.id = uid(); });
@@ -2911,15 +2993,13 @@
         }
 
         if(firebaseAtivo && db){
-          var batch = db.batch();
-          importadas.forEach(function(p){
-            batch.set(db.collection("substituicoes").doc(), p);
-          });
-          batch.commit().then(function(){
-            document.getElementById("importSubstStatus").textContent = importadas.length+" pessoa(s) adicionada(s) e sincronizada(s) via Firebase.";
-          }).catch(function(err){
-            console.error("Firestore (importar substituições):", err);
-            document.getElementById("importSubstStatus").textContent = "Não foi possível sincronizar com o Firebase.";
+          document.getElementById("importSubstStatus").textContent = "Importando "+importadas.length+" registro(s)…";
+          gravarEmLoteResiliente("substituicoes", importadas).then(function(r){
+            var msg = r.sucesso+" de "+importadas.length+" pessoa(s) importada(s).";
+            if(r.falhas>0){
+              msg += " "+r.falhas+" falharam"+(r.primeiroErro && r.primeiroErro.code ? " ("+r.primeiroErro.code+")" : "")+".";
+            }
+            document.getElementById("importSubstStatus").textContent = msg;
           });
         }else{
           importadas.forEach(function(p){ p.id = uid(); });
@@ -3620,6 +3700,7 @@
     document.querySelectorAll(".tab-btn").forEach(function(b){
       b.classList.toggle("active", b.getAttribute("data-tab")===nome);
     });
+    document.getElementById("panel-dashboard").classList.toggle("active", nome==="dashboard");
     document.getElementById("panel-nova").classList.toggle("active", nome==="nova");
     document.getElementById("panel-candidatos").classList.toggle("active", nome==="candidatos");
     document.getElementById("panel-relatorios").classList.toggle("active", nome==="relatorios");
@@ -3627,6 +3708,7 @@
     document.getElementById("panel-usuarios").classList.toggle("active", nome==="usuarios");
     document.getElementById("panel-configuracoes").classList.toggle("active", nome==="configuracoes");
     state.ativeTab = nome;
+    if(nome==="dashboard") renderDashboard();
     if(nome==="candidatos") renderCandidatos();
     if(nome==="relatorios") renderRelatorios();
     if(nome==="encaminhamento"){ renderEncaminhamentos(); }
@@ -3658,6 +3740,125 @@
       el.innerHTML = '<span class="dot"></span>Modo local';
     }
   }
+  function renderDashboardSeAtiva(){
+    if(state.ativeTab==="dashboard") renderDashboard();
+  }
+  function svgDonut(segmentos){
+    var total = segmentos.reduce(function(s,x){ return s+x.valor; }, 0);
+    if(total===0) return '<div class="dash-chart-empty">Sem dados ainda.</div>';
+    var R = 60, C = 2*Math.PI*R, offset = 0, circulos = "";
+    segmentos.forEach(function(s){
+      if(s.valor<=0) return;
+      var frac = s.valor/total;
+      var comprimento = frac*C;
+      circulos += '<circle cx="90" cy="90" r="'+R+'" fill="none" stroke="'+s.cor+'" stroke-width="26" '+
+        'stroke-dasharray="'+comprimento.toFixed(2)+' '+(C-comprimento).toFixed(2)+'" '+
+        'stroke-dashoffset="'+(-offset).toFixed(2)+'" transform="rotate(-90 90 90)"></circle>';
+      offset += comprimento;
+    });
+    var svg = '<svg viewBox="0 0 180 180" width="170" height="170">'+circulos+
+      '<circle cx="90" cy="90" r="40" fill="var(--surface)"></circle>'+
+      '<text x="90" y="85" text-anchor="middle" font-size="24" font-weight="800" fill="var(--text)">'+total+'</text>'+
+      '<text x="90" y="103" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">avaliações</text>'+
+      '</svg>';
+    var legenda = '<div class="dash-legend">'+segmentos.map(function(s){
+      var pct = total ? Math.round(s.valor/total*100) : 0;
+      return '<div class="dash-legend-item"><span class="dash-legend-dot" style="background:'+s.cor+'"></span>'+escapeHtml(s.nome)+'<b>'+s.valor+' ('+pct+'%)</b></div>';
+    }).join("")+'</div>';
+    return '<div class="dash-donut-wrap">'+svg+legenda+'</div>';
+  }
+  function barrasHorizontais(itens, corPadrao){
+    if(itens.length===0) return '<div class="dash-chart-empty">Sem dados ainda.</div>';
+    var max = Math.max.apply(null, itens.map(function(i){ return i.valor; }));
+    var cores = ["var(--dc1)","var(--dc2)","var(--dc3)","var(--dc4)","var(--dc5)","var(--dc6)","var(--dc7)","var(--dc8)"];
+    return itens.map(function(it, i){
+      var pct = max ? Math.round(it.valor/max*100) : 0;
+      var cor = corPadrao || cores[i % cores.length];
+      return '<div class="dash-bar-row">'+
+        '<div class="dash-bar-top"><span class="n">'+escapeHtml(it.nome)+'</span><span class="v">'+it.valor+'</span></div>'+
+        '<div class="dash-bar-track"><div class="dash-bar-fill" style="width:'+pct+'%; background:'+cor+'"></div></div>'+
+        '</div>';
+    }).join("");
+  }
+  function barraProgresso(feito, total, corFeito, rotulo){
+    var pct = total ? Math.round(feito/total*100) : 0;
+    return '<div class="dash-bar-row">'+
+      '<div class="dash-progress-label"><span>'+escapeHtml(rotulo)+'</span><b>'+feito+' de '+total+' ('+pct+'%)</b></div>'+
+      '<div class="dash-progress-track"><div style="width:'+pct+'%; background:'+corFeito+'"></div><div style="width:'+(100-pct)+'%; background:var(--bg)"></div></div>'+
+      '</div>';
+  }
+  function renderDashboard(){
+    var el = document.getElementById("dashboardConteudo");
+    if(!el) return;
+
+    var candidatosTotal = todosCandidatos().length;
+    var avaliacoes = state.historico || [];
+    var avaliadosTotal = avaliacoes.length;
+    var pcdTotal = avaliacoes.filter(function(h){ return h.deficiencia && h.deficiencia.possui; }).length;
+    var perfilCount = {escola:0, gestao:0, hibrido:0};
+    avaliacoes.forEach(function(h){ if(perfilCount[h.chave]!==undefined) perfilCount[h.chave]++; });
+
+    var encTotal = (state.encaminhamentos||[]).length;
+    var encConfirmados = (state.encaminhamentos||[]).filter(function(h){ return h.confirmado; }).length;
+
+    var redaTotal = (state.substituicoes||[]).length;
+    var redaVinculados = (state.substituicoes||[]).filter(function(s){ return s.vinculadoA; }).length;
+
+    var nteSet = {};
+    todasUnidades().forEach(function(u){ if(u.nte) nteSet[u.nte]=true; });
+    var ntesTotal = Object.keys(nteSet).length;
+    var ntesHabilitadosTotal = Object.keys(nteSet).filter(function(n){ return nteHabilitado(n); }).length;
+
+    var porMunicipio = {};
+    avaliacoes.forEach(function(h){
+      var m = (h.candidato&&h.candidato.mun) || "Não informado";
+      porMunicipio[m] = (porMunicipio[m]||0)+1;
+    });
+    var municipiosOrdenados = Object.keys(porMunicipio).map(function(m){ return {nome:m, valor:porMunicipio[m]}; })
+      .sort(function(a,b){ return b.valor-a.valor; }).slice(0,8);
+
+    var porUnidadeReda = {};
+    (state.substituicoes||[]).forEach(function(s){
+      if(!s.unidade) return;
+      porUnidadeReda[s.unidade] = porUnidadeReda[s.unidade]||{total:0, vinculados:0};
+      porUnidadeReda[s.unidade].total++;
+      if(s.vinculadoA) porUnidadeReda[s.unidade].vinculados++;
+    });
+    var vagasOrdenadas = Object.keys(porUnidadeReda).map(function(u){
+      var d = porUnidadeReda[u];
+      return {nome:u, valor: Math.max(0, d.total-d.vinculados)};
+    }).sort(function(a,b){ return b.valor-a.valor; }).slice(0,8);
+
+    el.innerHTML =
+      '<div class="dash-grid">'+
+        '<div class="dash-card" style="--dc:var(--dc1)"><div class="num">'+candidatosTotal+'</div><div class="lbl">Candidatos na base</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc2)"><div class="num">'+avaliadosTotal+' <small>de '+candidatosTotal+'</small></div><div class="lbl">Avaliados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc4)"><div class="num">'+pcdTotal+'</div><div class="lbl">PcD identificados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc3)"><div class="num">'+encConfirmados+' <small>de '+encTotal+'</small></div><div class="lbl">Encaminhados confirmados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc6)"><div class="num">'+redaVinculados+' <small>de '+redaTotal+'</small></div><div class="lbl">REDA vinculados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc5)"><div class="num">'+ntesHabilitadosTotal+' <small>de '+ntesTotal+'</small></div><div class="lbl">NTEs habilitados</div></div>'+
+      '</div>'+
+      '<div class="dash-charts">'+
+        '<div class="dash-chart-card"><h3>Distribuição de perfil</h3>'+
+          svgDonut([
+            {nome:"Escola / Atendimento Direto", valor:perfilCount.escola, cor:"var(--escola)"},
+            {nome:"Gestão / Unidade Administrativa", valor:perfilCount.gestao, cor:"var(--gestao)"},
+            {nome:"Perfil Coringa / Híbrido", valor:perfilCount.hibrido, cor:"var(--hibrido)"}
+          ])+
+        '</div>'+
+        '<div class="dash-chart-card"><h3>Avaliações por município</h3>'+
+          barrasHorizontais(municipiosOrdenados)+
+        '</div>'+
+        '<div class="dash-chart-card"><h3>Vagas REDA disponíveis por unidade</h3>'+
+          barrasHorizontais(vagasOrdenadas, "var(--dc6)")+
+        '</div>'+
+        '<div class="dash-chart-card"><h3>Progresso geral</h3>'+
+          barraProgresso(avaliadosTotal, candidatosTotal, "var(--dc2)", "Candidatos avaliados")+
+          barraProgresso(encConfirmados, encTotal||1, "var(--dc3)", "Encaminhamentos confirmados")+
+          barraProgresso(redaVinculados, redaTotal||1, "var(--dc6)", "Servidores REDA vinculados")+
+        '</div>'+
+      '</div>';
+  }
   function carregarDadosLocais(){
     state.historico = storageGet("gpv_historico", []);
     state.candidatosExtra = storageGet("gpv_candidatos_extra", []);
@@ -3672,6 +3873,7 @@
     renderRelatorios();
     renderEncaminhamentos();
     atualizarVagasEnc();
+    renderDashboardSeAtiva();
   }
 
   var _listenersAtivos = [];
@@ -3720,12 +3922,14 @@
         state.historico.sort(function(a,b){ return (b.data||"").localeCompare(a.data||""); });
         renderCandidatos();
         renderRelatorios();
+        renderDashboardSeAtiva();
       }, onErro);
     }, function(){ atualizarStatusConexao("erro"); }, function(){ atualizarStatusConexao("falha"); });
     criarListenerResiliente("candidatosExtra", function(onErro){
       return db.collection("candidatosExtra").onSnapshot(function(snap){
         state.candidatosExtra = snap.docs.map(function(doc){ return doc.data(); });
         atualizarContadorBase();
+        renderDashboardSeAtiva();
       }, onErro);
     });
     criarListenerResiliente("unidades", function(onErro){
@@ -3734,6 +3938,7 @@
           var x = doc.data(); x.id = doc.id; return x;
         });
         atualizarContadorUnidades();
+        renderDashboardSeAtiva();
       }, onErro);
     });
     criarListenerResiliente("substituicoes", function(onErro){
@@ -3743,6 +3948,7 @@
         });
         atualizarContadorSubstituicoes();
         atualizarVagasEnc();
+        renderDashboardSeAtiva();
       }, onErro);
     });
     criarListenerResiliente("encaminhamentos", function(onErro){
@@ -3754,6 +3960,7 @@
         renderEncaminhamentos();
         renderCandidatos();
         atualizarVagasEnc();
+        renderDashboardSeAtiva();
       }, onErro);
     });
     criarListenerResiliente("ntesHabilitados", function(onErro){
