@@ -2634,17 +2634,31 @@
       getDados: function(){
         return todasUnidades().filter(function(u){ return vagasDisponiveis(u.cod) > 0; });
       },
-      colunas: [{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município",c:"mun"},{l:"NTE",c:"nte"},{l:"Vagas disponíveis",c:"vagas"}],
+      colunas: [{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município",c:"mun"},{l:"NTE",c:"nte"},{l:"Total REDA",c:"totalreda"},{l:"Vinculados",c:"vinculados"},{l:"Vagas disponíveis",c:"vagas"}],
       getValor: function(u, campo){
         if(campo==="vagas") return vagasDisponiveis(u.cod);
+        if(campo==="totalreda") return todasSubstituicoes().filter(function(s){ return s.cod===u.cod; }).length;
+        if(campo==="vinculados") return todasSubstituicoes().filter(function(s){ return s.cod===u.cod && s.vinculadoA; }).length;
         return u[campo];
       },
       temSelecao: false,
+      resumoExtra: function(){
+        var todasReda = todasSubstituicoes();
+        var totalReda = todasReda.length;
+        var totalVinculados = todasReda.filter(function(s){ return s.vinculadoA; }).length;
+        var totalUnidadesComReda = new Set(todasReda.map(function(s){ return s.cod; })).size;
+        var totalEnc = encaminhamentosVisiveis().length;
+        return '<p class="pcd-base-legal" style="margin:-4px 0 12px;">Conferência: '+totalReda+' servidor(es) REDA cadastrado(s) no total, distribuídos em '+totalUnidadesComReda+' unidade(s) · '+totalEnc+' encaminhamento(s) registrado(s) ao todo · destes, '+totalVinculados+' indicaram um REDA específico no momento do encaminhamento (os outros '+(totalEnc-totalVinculados)+' também abatem a vaga da unidade, mas sem marcar uma pessoa como vinculada, já que esse campo é opcional).</p>';
+      },
       montarLinha: function(u){
+        var totalReda = todasSubstituicoes().filter(function(s){ return s.cod===u.cod; }).length;
+        var vinculados = todasSubstituicoes().filter(function(s){ return s.cod===u.cod && s.vinculadoA; }).length;
         return '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+'</td>'+
           '<td>'+escapeHtml(u.nte||"—")+'</td>'+
+          '<td>'+totalReda+'</td>'+
+          '<td>'+vinculados+'</td>'+
           '<td><span class="vagas-badge ok">'+vagasDisponiveis(u.cod)+'</span></td>';
       },
       buscaTexto: function(u){ return (u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
@@ -2795,7 +2809,7 @@
       var check = cfg.temSelecao ? '<td><input type="checkbox" class="rel-check" data-idx="'+i+'"></td>' : "";
       return "<tr>"+check+cfg.montarLinha(item, i)+"</tr>";
     }).join("");
-    corpo.innerHTML = '<div class="table-scroll"><table class="hist"><thead>'+theadHtml+'</thead><tbody>'+tbodyHtml+'</tbody></table></div>';
+    corpo.innerHTML = (cfg.resumoExtra ? cfg.resumoExtra() : "")+'<div class="table-scroll"><table class="hist"><thead>'+theadHtml+'</thead><tbody>'+tbodyHtml+'</tbody></table></div>';
     corpo._listaAtual = lista;
     tornarOrdenavel(corpo.querySelector("thead"), estado, cfg.getValor, function(){ renderRelatorioDetalhe(); });
     if(cfg.temSelecao){
@@ -3391,7 +3405,10 @@
 
   /* ================= Sub-módulo: Substituição ================= */
   function todasSubstituicoes(){
-    return state.substituicoes || [];
+    var base = state.substituicoes || [];
+    var meus = meusNtesNumeros();
+    if(meus===null) return base;
+    return base.filter(function(s){ return meus.indexOf(nteNumero(s.nte)) !== -1; });
   }
 
   document.getElementById("btnAddSubstituicao").addEventListener("click", function(){
