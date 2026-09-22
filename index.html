@@ -1067,6 +1067,9 @@
         </div>
         <div class="row2">
           <div class="field"><label for="substUnidade">Nome da UEE *</label><input type="text" id="substUnidade" placeholder="Obrigatório"></div>
+          <div class="field"><label for="substMatricula">Matrícula</label><input type="text" id="substMatricula" placeholder="Nº pessoal (opcional)"></div>
+        </div>
+        <div class="row2">
           <div class="field" style="display:flex; align-items:flex-end;">
             <button class="btn btn-primary btn-sm" type="button" id="btnAddSubstituicao">Adicionar à base</button>
           </div>
@@ -1089,7 +1092,7 @@
         </div>
         <div class="table-scroll">
           <table class="hist" id="substTable">
-            <thead><tr><th>Nome</th><th>NTE</th><th>Município</th><th>Código</th><th>UEE</th><th>Bairro</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Nome</th><th>Matrícula</th><th>NTE</th><th>Município</th><th>Código</th><th>UEE</th><th>Bairro</th><th>Status</th><th></th></tr></thead>
             <tbody id="substBody"></tbody>
           </table>
         </div>
@@ -2911,6 +2914,7 @@
     var mun = document.getElementById("substMun").value.trim();
     var cod = document.getElementById("substCod").value.trim();
     var unidade = document.getElementById("substUnidade").value.trim();
+    var matricula = document.getElementById("substMatricula").value.trim();
     var faltando = [];
     if(!nome) faltando.push("Nome");
     if(!nte) faltando.push("NTE");
@@ -2924,12 +2928,13 @@
       return;
     }
     erroEl.style.display = "none";
-    var novo = { nome: nome, nte: nte, mun: mun, cod: cod, unidade: unidade, bairro: "", nPessoal: "", sexo: "", email: "", vinculadoA: null };
+    var novo = { nome: nome, nte: nte, mun: mun, cod: cod, unidade: unidade, bairro: "", nPessoal: matricula, sexo: "", email: "", vinculadoA: null };
     function limparForm(){
       document.getElementById("substNome").value = "";
       document.getElementById("substMun").value = "";
       document.getElementById("substCod").value = "";
       document.getElementById("substUnidade").value = "";
+      document.getElementById("substMatricula").value = "";
       // NTE mantido (facilita cadastrar varias pessoas da mesma regiao em sequencia)
     }
     if(firebaseAtivo && db){
@@ -3062,7 +3067,8 @@
              normaliza(p.mun).indexOf(termo)!==-1 ||
              normaliza(p.cod).indexOf(termo)!==-1 ||
              normaliza(p.unidade).indexOf(termo)!==-1 ||
-             normaliza(p.bairro).indexOf(termo)!==-1;
+             normaliza(p.bairro).indexOf(termo)!==-1 ||
+             normaliza(p.nPessoal).indexOf(termo)!==-1;
     });
     lista.sort(function(a,b){ return (a.nome||"").localeCompare(b.nome||""); });
 
@@ -3084,6 +3090,7 @@
         : '';
       return '<tr>'+
         '<td>'+escapeHtml(p.nome)+'</td>'+
+        '<td>'+escapeHtml(p.nPessoal||"—")+'</td>'+
         '<td>'+escapeHtml(p.nte||"—")+'</td>'+
         '<td>'+escapeHtml(p.mun||"—")+'</td>'+
         '<td>'+escapeHtml(p.cod||"—")+'</td>'+
@@ -3458,6 +3465,8 @@
         criadoPor: state.usuarioAtual ? state.usuarioAtual.email : ""
       });
     }).then(function(){
+      return db.collection("loginsPublicos").doc(login).set({ email: email });
+    }).then(function(){
       document.getElementById("novoUsuNome").value = "";
       document.getElementById("novoUsuLogin").value = "";
       document.getElementById("novoUsuEmail").value = "";
@@ -3597,6 +3606,7 @@
     }
     erroEl.style.display = "none";
     var uidAtual = _usuarioEditando.uid;
+    var loginAntigo = _usuarioEditando.login || "";
     db.collection("usuarios").where("login","==",login).limit(2).get().then(function(snap){
       var conflito = snap.docs.some(function(d){ return d.id !== uidAtual; });
       if(conflito){
@@ -3607,6 +3617,12 @@
       return db.collection("usuarios").doc(uidAtual).update({
         nome: nome, login: login, email: email, role: role, ntes: ntes
       });
+    }).then(function(){
+      var tarefas = [db.collection("loginsPublicos").doc(login).set({ email: email })];
+      if(loginAntigo && loginAntigo!==login){
+        tarefas.push(db.collection("loginsPublicos").doc(loginAntigo).delete());
+      }
+      return Promise.all(tarefas);
     }).then(function(){
       fecharModalUsuario();
     }).catch(function(err){
@@ -3638,7 +3654,10 @@
     if(!confirm('Excluir '+nomeConfirma+'? Isso remove o acesso dele ao sistema imediatamente. Esta ação não pode ser desfeita por aqui.')) return;
     var btn = document.getElementById("btnExcluirUsuario");
     btn.disabled = true;
+    var loginAtual = _usuarioEditando.login || "";
     db.collection("usuarios").doc(_usuarioEditando.uid).delete().then(function(){
+      if(loginAtual) return db.collection("loginsPublicos").doc(loginAtual).delete();
+    }).then(function(){
       fecharModalUsuario();
     }).catch(function(err){
       console.error("Firestore (excluir usuário):", err);
@@ -4105,13 +4124,13 @@
 
     var resolverEmail = digitado.indexOf("@")!==-1
       ? Promise.resolve(digitado)
-      : db.collection("usuarios").where("login","==",digitado.toLowerCase()).limit(1).get().then(function(snap){
-          if(snap.empty){
+      : db.collection("loginsPublicos").doc(digitado.toLowerCase()).get().then(function(doc){
+          if(!doc.exists){
             var e = new Error("login-nao-encontrado");
             e.code = "auth/user-not-found";
             throw e;
           }
-          return snap.docs[0].data().email;
+          return doc.data().email;
         });
 
     resolverEmail.then(function(emailReal){
