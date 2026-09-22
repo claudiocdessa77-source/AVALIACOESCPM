@@ -448,7 +448,7 @@
 
     <form id="formLogin" style="display:none">
       <div class="field">
-        <label for="loginEmail">Login ou e-mail</label>
+        <label for="loginEmail">Login</label>
         <input type="text" id="loginEmail" autocomplete="username" required>
       </div>
       <div class="field">
@@ -458,6 +458,17 @@
       <div class="field-erro" id="loginErro" style="display:none"></div>
       <button class="btn btn-primary" type="submit" id="btnEntrar" style="width:100%;">Entrar</button>
       <button class="link-btn" type="button" id="btnEsqueciSenha" style="display:block; margin:12px auto 0; font-size:12px;">Esqueci minha senha</button>
+    </form>
+
+    <form id="formRecuperarSenha" style="display:none">
+      <p class="login-hint">Informe o e-mail cadastrado. Enviaremos um link para você criar uma nova senha.</p>
+      <div class="field">
+        <label for="recuperarEmail">E-mail</label>
+        <input type="email" id="recuperarEmail" autocomplete="email" required>
+      </div>
+      <div class="field-erro" id="recuperarErro" style="display:none"></div>
+      <button class="btn btn-primary" type="submit" id="btnEnviarRecuperacao" style="width:100%;">Enviar link de redefinição</button>
+      <button class="link-btn" type="button" id="btnVoltarLogin" style="display:block; margin:12px auto 0; font-size:12px;">Voltar ao login</button>
     </form>
 
     <form id="formBootstrap" style="display:none">
@@ -673,7 +684,7 @@
         </div>
         <div class="table-scroll">
           <table class="hist" id="candTable">
-            <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Formação</th><th>Avaliação</th><th>Encaminhado</th><th></th></tr></thead>
+            <thead><tr><th>Nome</th><th>CPF</th><th>Inscrição</th><th>Município</th><th>Formação</th><th>Avaliação</th><th>PcD</th><th>Encaminhado</th><th></th></tr></thead>
             <tbody id="candBody"></tbody>
           </table>
         </div>
@@ -767,7 +778,6 @@
 
     <div class="subtabs">
       <button class="subtab-btn active" data-subtab="encaminhar" type="button">Encaminhar</button>
-      <button class="subtab-btn" data-subtab="substituicao" type="button">Substituição</button>
     </div>
 
     <!-- ---- Sub-módulo: Encaminhar ---- -->
@@ -865,53 +875,7 @@
     </div>
 
     <!-- ---- Sub-módulo: Substituição ---- -->
-    <div class="subtab-panel" id="encsub-substituicao">
-
-      <div class="card">
-        <div class="card-head">
-          <h2>Adicionar pessoa</h2>
-          <span class="hint">Individual ou por planilha</span>
-        </div>
-        <div class="row2">
-          <div class="field"><label for="substNome">Nome *</label><input type="text" id="substNome" placeholder="Nome completo"></div>
-          <div class="field"><label for="substNte">NTE *</label><input type="text" id="substNte" placeholder="Obrigatório"></div>
-        </div>
-        <div class="row2">
-          <div class="field"><label for="substMun">Município *</label><input type="text" id="substMun" placeholder="Obrigatório"></div>
-          <div class="field"><label for="substCod">Código UEE *</label><input type="text" id="substCod" placeholder="Obrigatório"></div>
-        </div>
-        <div class="row2">
-          <div class="field"><label for="substUnidade">Nome da UEE *</label><input type="text" id="substUnidade" placeholder="Obrigatório"></div>
-          <div class="field" style="display:flex; align-items:flex-end;">
-            <button class="btn btn-primary btn-sm" type="button" id="btnAddSubstituicao">Adicionar à base</button>
-          </div>
-        </div>
-        <div class="field-erro" id="substErro" style="display:none"></div>
-
-        <div class="import-row">
-          <button class="btn btn-sm" type="button" id="btnImportarSubstituicao">Importar planilha (.xlsx / .csv)</button>
-          <input type="file" id="fileImportarSubstituicao" accept=".xlsx,.xls,.csv" style="display:none">
-          <span class="count" id="importSubstStatus"></span>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="hist-actions">
-          <h2 style="font-size:15px;">Pessoas para substituição <span id="substCountLabel"></span></h2>
-        </div>
-        <div class="field" style="max-width:340px;">
-          <input type="text" id="substBusca" placeholder="Buscar por nome, NTE, município, código ou UEE…">
-        </div>
-        <div class="table-scroll">
-          <table class="hist" id="substTable">
-            <thead><tr><th>Nome</th><th>NTE</th><th>Município</th><th>Código</th><th>UEE</th><th>Status</th><th></th></tr></thead>
-            <tbody id="substBody"></tbody>
-          </table>
-        </div>
-        <div class="hist-empty" id="substEmpty" style="display:none">Nenhuma pessoa cadastrada ainda.</div>
-      </div>
-
-    </div>
+    
 
   </div>
 
@@ -982,6 +946,7 @@
 
     <div class="subtabs">
       <button class="subtab-btn active" data-subtab="baseunidades" type="button">Base de Unidades</button>
+      <button class="subtab-btn" data-subtab="reda" type="button">Base de REDA</button>
       <button class="subtab-btn" data-subtab="habilitarnte" type="button">Habilitar NTE</button>
       <button class="subtab-btn" data-subtab="backup" type="button">Backup e recuperação</button>
     </div>
@@ -1030,6 +995,54 @@
         </div>
         <div class="hist-empty" id="uniListaAviso" style="display:none"></div>
       </div>
+    </div>
+
+<div class="subtab-panel" id="cfgsub-reda">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Adicionar servidor REDA</h2>
+          <span class="hint">Individual ou por planilha</span>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="substNome">Nome *</label><input type="text" id="substNome" placeholder="Nome completo"></div>
+          <div class="field"><label for="substNte">NTE *</label><input type="text" id="substNte" placeholder="Obrigatório"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="substMun">Município *</label><input type="text" id="substMun" placeholder="Obrigatório"></div>
+          <div class="field"><label for="substCod">Código UEE *</label><input type="text" id="substCod" placeholder="Obrigatório"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="substUnidade">Nome da UEE *</label><input type="text" id="substUnidade" placeholder="Obrigatório"></div>
+          <div class="field" style="display:flex; align-items:flex-end;">
+            <button class="btn btn-primary btn-sm" type="button" id="btnAddSubstituicao">Adicionar à base</button>
+          </div>
+        </div>
+        <div class="field-erro" id="substErro" style="display:none"></div>
+
+        <div class="import-row">
+          <button class="btn btn-sm" type="button" id="btnImportarSubstituicao">Importar planilha (.xlsx / .csv)</button>
+          <input type="file" id="fileImportarSubstituicao" accept=".xlsx,.xls,.csv" style="display:none">
+          <span class="count" id="importSubstStatus"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hist-actions">
+          <h2 style="font-size:15px;">Funcionários REDA cadastrados <span id="substCountLabel"></span></h2>
+        </div>
+        <div class="field" style="max-width:340px;">
+          <input type="text" id="substBusca" placeholder="Buscar por nome, NTE, município, código, UEE ou bairro…">
+        </div>
+        <div class="table-scroll">
+          <table class="hist" id="substTable">
+            <thead><tr><th>Nome</th><th>NTE</th><th>Município</th><th>Código</th><th>UEE</th><th>Bairro</th><th>Status</th><th></th></tr></thead>
+            <tbody id="substBody"></tbody>
+          </table>
+        </div>
+        <div class="hist-empty" id="substEmpty" style="display:none">Nenhum servidor REDA cadastrado ainda.</div>
+      </div>
+
     </div>
 
     <div class="subtab-panel" id="cfgsub-habilitarnte">
@@ -1215,6 +1228,9 @@
   /* ================= Utilidades ================= */
   function normaliza(s){
     return (s||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  }
+  function souAdmin(){
+    return !!(state.usuarioAtual && state.usuarioAtual.role==="admin");
   }
   function digits(s){ return (s||"").toString().replace(/\D/g,""); }
   function maskCPF(cpf){
@@ -1659,6 +1675,9 @@
       var statusHtml = av.avaliado
         ? '<span class="status-pill ok" title="'+av.total+' avaliação(ões) — última em '+fmtDataBR(av.data)+(av.por?' · por '+escapeHtml(av.por.nome):'')+'">✓ Avaliado ('+fmtDataBR(av.data)+')</span>'
         : '<span class="status-pill pend">— Pendente</span>';
+      var pcdHtml = av.avaliado
+        ? escapeHtml(textoPcdResumo((avaliacaoMaisRecente(c)||{}).deficiencia))
+        : '—';
       var enc = encaminhadoInfo(c);
       var encHtml = enc.encaminhado
         ? '<span class="status-pill ok" title="'+enc.total+' encaminhamento(s) confirmado(s) — mais recente em '+fmtDataBR(enc.data)+' para '+escapeHtml(enc.unidade.unidade||"")+(enc.por?' · confirmado por '+escapeHtml(enc.por.nome):'')+'">✓ Encaminhado ('+fmtDataBR(enc.data)+')</span>'
@@ -1667,7 +1686,7 @@
         ? '<span class="row-actions">'+
           '<button class="btn btn-sm" type="button" data-editar="'+i+'">Editar</button>'+
           '<button class="btn btn-sm" type="button" data-imprimir="'+i+'">Imprimir</button>'+
-          '<button class="btn-icon" type="button" data-excluir="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'+
+          (souAdmin() ? '<button class="btn-icon" type="button" data-excluir="'+i+'" title="Excluir" aria-label="Excluir">✕</button>' : '')+
           '</span>'
         : '<button class="btn btn-sm" type="button" data-avaliar="'+i+'">Avaliar</button>';
       return '<tr>'+
@@ -1677,6 +1696,7 @@
         '<td>'+escapeHtml(c.mun||"—")+'</td>'+
         '<td>'+escapeHtml(c.formacao||"—")+'</td>'+
         '<td>'+statusHtml+'</td>'+
+        '<td>'+pcdHtml+'</td>'+
         '<td>'+encHtml+'</td>'+
         '<td>'+acaoHtml+'</td>'+
         '</tr>';
@@ -2354,8 +2374,6 @@
       b.classList.toggle("active", b.getAttribute("data-subtab")===nome);
     });
     document.getElementById("encsub-encaminhar").classList.toggle("active", nome==="encaminhar");
-    document.getElementById("encsub-substituicao").classList.toggle("active", nome==="substituicao");
-    if(nome==="substituicao") renderSubstituicoes();
   }
   document.querySelectorAll("#panel-encaminhamento .subtab-btn").forEach(function(b){
     b.addEventListener("click", function(){ ativarSubTabEncaminhamento(b.getAttribute("data-subtab")); });
@@ -2367,9 +2385,11 @@
       b.classList.toggle("active", b.getAttribute("data-subtab")===nome);
     });
     document.getElementById("cfgsub-baseunidades").classList.toggle("active", nome==="baseunidades");
+    document.getElementById("cfgsub-reda").classList.toggle("active", nome==="reda");
     document.getElementById("cfgsub-habilitarnte").classList.toggle("active", nome==="habilitarnte");
     document.getElementById("cfgsub-backup").classList.toggle("active", nome==="backup");
     if(nome==="baseunidades") renderUnidades();
+    if(nome==="reda") renderSubstituicoes();
     if(nome==="habilitarnte") renderHabilitarNte();
   }
   document.querySelectorAll("#panel-configuracoes .subtab-btn").forEach(function(b){
@@ -2822,7 +2842,7 @@
       return;
     }
     erroEl.style.display = "none";
-    var novo = { nome: nome, nte: nte, mun: mun, cod: cod, unidade: unidade, vinculadoA: null };
+    var novo = { nome: nome, nte: nte, mun: mun, cod: cod, unidade: unidade, bairro: "", nPessoal: "", sexo: "", email: "", vinculadoA: null };
     function limparForm(){
       document.getElementById("substNome").value = "";
       document.getElementById("substMun").value = "";
@@ -2868,12 +2888,19 @@
             }
             return "";
           }
+          var nteBruto = String(pick(["nte"])||"").trim();
+          var nteNum = (nteBruto.match(/\d+/)||[])[0] || nteBruto;
+          var sexoBruto = String(pick(["sexo"])||"").trim();
           return {
             nome: String(pick(["nome"])||"").trim(),
-            nte: String(pick(["nte"])||"").trim(),
+            nte: nteNum,
             mun: String(pick(["municipio"])||"").trim(),
-            cod: String(pick(["codsecul","codigo","cod inep","inep","codsap","cod uee"])||"").trim(),
-            unidade: String(pick(["nome uee","nome sistema escolar","unidade escolar","unidade","escola","nome da unidade","nome da escola"])||"").trim(),
+            cod: String(pick(["codsec","codsecul","codigo","cod inep","inep","codsap","cod uee"])||"").trim(),
+            unidade: String(pick(["unid.organizacional","unidade organizacional","nome uee","nome sistema escolar","unidade escolar","unidade","escola","nome da unidade","nome da escola"])||"").trim(),
+            bairro: String(pick(["bairro"])||"").trim(),
+            nPessoal: String(pick(["pessoal","matricula"])||"").trim(),
+            sexo: sexoBruto ? sexoBruto.charAt(0).toUpperCase()+sexoBruto.slice(1).toLowerCase() : "",
+            email: String(pick(["email","e-mail"])||"").trim(),
             vinculadoA: null
           };
         }).filter(function(p){ return p.nome; });
@@ -2954,7 +2981,8 @@
              normaliza(p.nte).indexOf(termo)!==-1 ||
              normaliza(p.mun).indexOf(termo)!==-1 ||
              normaliza(p.cod).indexOf(termo)!==-1 ||
-             normaliza(p.unidade).indexOf(termo)!==-1;
+             normaliza(p.unidade).indexOf(termo)!==-1 ||
+             normaliza(p.bairro).indexOf(termo)!==-1;
     });
     lista.sort(function(a,b){ return (a.nome||"").localeCompare(b.nome||""); });
 
@@ -2980,10 +3008,11 @@
         '<td>'+escapeHtml(p.mun||"—")+'</td>'+
         '<td>'+escapeHtml(p.cod||"—")+'</td>'+
         '<td>'+escapeHtml(p.unidade||"—")+'</td>'+
+        '<td>'+escapeHtml(p.bairro||"—")+'</td>'+
         '<td>'+statusHtml+'</td>'+
         '<td><span class="row-actions">'+
         acaoVinculo+
-        '  <button class="btn-icon" type="button" data-excluir-subst="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'+
+        (souAdmin() ? '  <button class="btn-icon" type="button" data-excluir-subst="'+i+'" title="Excluir" aria-label="Excluir">✕</button>' : '')+
         '</span></td>'+
         '</tr>';
     }).join("");
@@ -3030,7 +3059,7 @@
       avisoEl.style.display = "none";
     }
     tbody.innerHTML = lista.map(function(u, i){
-      var acaoHtml = u.id
+      var acaoHtml = (u.id && souAdmin())
         ? '<button class="btn-icon" type="button" data-excluir-uni="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'
         : '';
       return '<tr>'+
@@ -3155,7 +3184,7 @@
         '<td><span class="row-actions">'+
         '  <button class="btn-icon btn-icon-confirmar'+(confirmado?' on':'')+'" type="button" data-confirmar-enc="'+i+'" title="'+(confirmado?'Encaminhado — compareceu (clique para desmarcar)':'Marcar como encaminhado (compareceu)')+'" aria-label="Marcar como encaminhado" aria-pressed="'+(confirmado?'true':'false')+'">✓</button>'+
         '  <button class="btn-icon" type="button" data-imprimir-enc="'+i+'" title="Imprimir ofício" aria-label="Imprimir ofício">🖨</button>'+
-        '  <button class="btn-icon" type="button" data-excluir-enc="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'+
+        (souAdmin() ? '  <button class="btn-icon" type="button" data-excluir-enc="'+i+'" title="Excluir" aria-label="Excluir">✕</button>' : '')+
         '</span></td>'+
         '</tr>';
     }).join("");
@@ -3554,21 +3583,32 @@
   });
 
   document.getElementById("btnEsqueciSenha").addEventListener("click", function(){
-    var email = document.getElementById("loginEmail").value.trim();
-    var erroEl = document.getElementById("loginErro");
-    if(!email){
-      erroEl.textContent = "Digite seu e-mail no campo acima e clique novamente em \"Esqueci minha senha\".";
-      erroEl.style.display = "block";
-      return;
-    }
-    var btn = document.getElementById("btnEsqueciSenha");
+    document.getElementById("formLogin").style.display = "none";
+    document.getElementById("formRecuperarSenha").style.display = "block";
+    document.getElementById("recuperarErro").style.display = "none";
+    document.getElementById("recuperarEmail").value = "";
+    document.getElementById("recuperarEmail").focus();
+  });
+  document.getElementById("btnVoltarLogin").addEventListener("click", function(){
+    document.getElementById("formRecuperarSenha").style.display = "none";
+    document.getElementById("formLogin").style.display = "block";
+  });
+  document.getElementById("formRecuperarSenha").addEventListener("submit", function(e){
+    e.preventDefault();
+    var email = document.getElementById("recuperarEmail").value.trim();
+    var erroEl = document.getElementById("recuperarErro");
+    var btn = document.getElementById("btnEnviarRecuperacao");
     btn.disabled = true;
     firebase.auth().sendPasswordResetEmail(email).then(function(){
       erroEl.style.display = "none";
       btn.textContent = "E-mail de redefinição enviado ✓";
-      setTimeout(function(){ btn.textContent = "Esqueci minha senha"; btn.disabled = false; }, 3000);
+      setTimeout(function(){
+        btn.textContent = "Enviar link de redefinição"; btn.disabled = false;
+        document.getElementById("formRecuperarSenha").style.display = "none";
+        document.getElementById("formLogin").style.display = "block";
+      }, 2500);
     }).catch(function(err){
-      console.error("Auth (esqueci senha):", err);
+      console.error("Auth (recuperar senha):", err);
       erroEl.textContent = mensagemErroAuth(err);
       erroEl.style.display = "block";
       btn.disabled = false;
@@ -3747,6 +3787,7 @@
     document.getElementById("loginOverlay").classList.remove("hide");
     document.getElementById("loginCarregando").style.display = modo==="carregando" ? "block" : "none";
     document.getElementById("formLogin").style.display = modo==="login" ? "block" : "none";
+    document.getElementById("formRecuperarSenha").style.display = "none";
     document.getElementById("formBootstrap").style.display = modo==="bootstrap" ? "block" : "none";
     document.getElementById("loginSemAcesso").style.display = modo==="semAcesso" ? "block" : "none";
   }
