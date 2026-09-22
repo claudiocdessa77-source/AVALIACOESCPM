@@ -875,6 +875,10 @@
             <select id="encRedaSelect"><option value="">Nenhum (não informar agora)</option></select>
             <div class="pcd-base-legal">Opcional no momento do encaminhamento.</div>
           </div>
+          <div class="field" id="encRedaMatriculaBox" style="margin-top:10px; display:none;">
+            <label for="encRedaMatricula">Matrícula do substituído</label>
+            <input type="text" id="encRedaMatricula" readonly>
+          </div>
         </div>
         <div class="import-row" id="encSemUnidadeAviso">
           <span class="count">Unidade fora da base ou NTE não aparece? Veja <button class="link-btn" type="button" id="irParaBaseUnidades">Base de Unidades</button> ou <button class="link-btn" type="button" id="irParaHabilitarNte">Habilitar NTE</button>.</span>
@@ -2656,6 +2660,7 @@
     select.innerHTML = '<option value="">Nenhum (não informar agora)</option>' +
       disponiveis.map(function(r){ return '<option value="'+r.id+'">'+escapeHtml(r.nome)+'</option>'; }).join("");
     if(disponiveis.some(function(r){ return r.id===valorAtual; })) select.value = valorAtual;
+    atualizarMatriculaSubstituido();
 
     if(btn) btn.disabled = vagas<=0;
     var erroEl = document.getElementById("encErro");
@@ -2666,6 +2671,20 @@
       erroEl.style.display = "none";
     }
   }
+  function atualizarMatriculaSubstituido(){
+    var id = document.getElementById("encRedaSelect").value;
+    var box = document.getElementById("encRedaMatriculaBox");
+    var campo = document.getElementById("encRedaMatricula");
+    var reda = id ? (state.substituicoes||[]).filter(function(s){ return s.id===id; })[0] : null;
+    if(reda){
+      campo.value = reda.nPessoal || "Não informada";
+      box.style.display = "block";
+    }else{
+      campo.value = "";
+      box.style.display = "none";
+    }
+  }
+  document.getElementById("encRedaSelect").addEventListener("change", atualizarMatriculaSubstituido);
 
   function atualizarPassoConfirmarEnc(){
     document.getElementById("cardEncConfirmar").style.display = (state.encCandidato && state.encUnidade) ? "block" : "none";
@@ -3825,7 +3844,12 @@
     if(!el) return;
 
     var candidatosTotal = todosCandidatos().length;
-    var avaliacoes = state.historico || [];
+    // Uma avaliação por candidato distinto (a mais recente dele) — em vez do total
+    // bruto de registros em avaliacoes, que pode ter duplicatas (ex.: a mesma pessoa
+    // avaliada em mais de uma máquina antes de sincronizar) e infla a contagem.
+    var avaliacoes = todosCandidatos()
+      .map(function(c){ return avaliacaoMaisRecente(c); })
+      .filter(function(r){ return r; });
     var avaliadosTotal = avaliacoes.length;
     var pcdTotal = avaliacoes.filter(function(h){ return h.deficiencia && h.deficiencia.possui; }).length;
     var perfilCount = {escola:0, gestao:0, hibrido:0};
