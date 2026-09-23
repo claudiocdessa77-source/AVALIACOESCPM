@@ -1327,6 +1327,7 @@
     encEditandoId: null,
     encRegistroOriginal: null,
     relatorioAtivo: null,
+    nomesUnidadesEditados: {},
     unidades: [],              // {nte,mun,cod,unidade,sexo}
     encaminhamentos: [],       // {id,data,candidato,unidade}
     substituicoes: [],         // {id,nome,nte,mun,cod,unidade,selecionado}
@@ -1464,7 +1465,11 @@
       if(u.cod){ porCod[u.cod] = u; } // último ganha (state.unidades vem depois, então tem prioridade em empate)
       else{ semCod.push(u); }
     });
-    var base = Object.keys(porCod).map(function(c){ return porCod[c]; }).concat(semCod);
+    var base = Object.keys(porCod).map(function(c){
+      var u = porCod[c];
+      var nomeEditado = state.nomesUnidadesEditados[c];
+      return nomeEditado ? Object.assign({}, u, {unidade: nomeEditado, unidadeOriginal: u.unidade}) : u;
+    }).concat(semCod);
     var meus = meusNtesNumeros();
     if(meus===null) return base;
     return base.filter(function(u){ return meus.indexOf(nteNumero(u.nte)) !== -1; });
@@ -3022,20 +3027,48 @@
     encUnidBuscaResultados.innerHTML = "";
     document.getElementById("encUnidBuscaBox").style.display = "none";
     document.getElementById("encSemUnidadeAviso").style.display = "none";
-
+    renderUnidadeEncSelecionada(u);
+    atualizarVagasEnc();
+    atualizarPassoConfirmarEnc();
+  }
+  function renderUnidadeEncSelecionada(u){
     var box = document.getElementById("encUnidadeSelecionada");
     box.style.display = "block";
     box.innerHTML =
-      '<div class="candidato-chip">'+
+      '<div class="candidato-chip" id="encUnidChipView">'+
       '  <div class="info">'+
-      '    <div class="nome">'+escapeHtml(u.unidade)+'</div>'+
+      '    <div class="nome">'+escapeHtml(u.unidade)+' <button class="link-btn" type="button" id="btnEditarNomeUnidEnc" style="font-size:11px;">✎ Editar nome</button></div>'+
       '    <div class="meta">'+(u.cod? 'Cód. '+escapeHtml(u.cod)+' · ':'')+escapeHtml(u.mun||"")+' · NTE '+escapeHtml(u.nte||"—")+'</div>'+
       '  </div>'+
       '  <button class="chip-x" type="button" id="btnTrocarUnidadeEnc" title="Trocar unidade" aria-label="Trocar unidade">✕</button>'+
+      '</div>'+
+      '<div id="encUnidChipEdit" style="display:none; margin-top:8px;">'+
+      '  <div class="row2" style="align-items:flex-end;">'+
+      '    <div class="field" style="margin-bottom:0;"><label>Nome completo da unidade</label><input type="text" id="inputNomeUnidEnc" value="'+escapeHtml(u.unidade)+'"></div>'+
+      '    <div class="field" style="display:flex; gap:8px; margin-bottom:0;">'+
+      '      <button class="btn btn-primary btn-sm" type="button" id="btnSalvarNomeUnidEnc">Salvar</button>'+
+      '      <button class="btn btn-sm" type="button" id="btnCancelarNomeUnidEnc">Cancelar</button>'+
+      '    </div>'+
+      '  </div>'+
+      '  <p class="pcd-base-legal">Isso corrige o nome permanentemente para todo o sistema, não só nesta tela.</p>'+
       '</div>';
     document.getElementById("btnTrocarUnidadeEnc").addEventListener("click", limparUnidadeEnc);
-    atualizarVagasEnc();
-    atualizarPassoConfirmarEnc();
+    document.getElementById("btnEditarNomeUnidEnc").addEventListener("click", function(){
+      document.getElementById("encUnidChipView").style.display = "none";
+      document.getElementById("encUnidChipEdit").style.display = "block";
+      document.getElementById("inputNomeUnidEnc").focus();
+    });
+    document.getElementById("btnCancelarNomeUnidEnc").addEventListener("click", function(){
+      renderUnidadeEncSelecionada(state.encUnidade);
+    });
+    document.getElementById("btnSalvarNomeUnidEnc").addEventListener("click", function(){
+      var novo = document.getElementById("inputNomeUnidEnc").value.trim();
+      if(!novo) return;
+      salvarNomeUnidadeEditado(u.cod, novo, function(){
+        state.encUnidade = Object.assign({}, state.encUnidade, {unidade: novo});
+        renderUnidadeEncSelecionada(state.encUnidade);
+      });
+    });
   }
   function limparUnidadeEnc(){
     state.encUnidade = null;
@@ -3403,6 +3436,42 @@
     document.getElementById("encUnidBaseCount").textContent = unidadesHabilitadas().length+" unidades habilitadas";
     renderUnidades();
   }
+  /* Nomes de unidades corrigidos manualmente (ex.: sigla -> nome por extenso).
+     Coleção pequena e que muda raramente — carregada uma vez só, sem onSnapshot,
+     pra não pesar na cota de leitura do Firestore. */
+  function carregarNomesUnidadesEditados(){
+    if(!(firebaseAtivo && db)) return Promise.resolve();
+    return db.collection("unidadesRenomeadas").get().then(function(snap){
+      var mapa = {};
+      snap.docs.forEach(function(doc){ mapa[doc.id] = (doc.data()||{}).nome; });
+      state.nomesUnidadesEditados = mapa;
+      atualizarContadorUnidades();
+      renderDashboardSeAtiva();
+      atualizarRelatoriosSeAtiva();
+      atualizarVagasEnc();
+    }).catch(function(err){ console.error("Firestore (nomes de unidades):", err); });
+  }
+  function salvarNomeUnidadeEditado(cod, novoNome, aoTerminar){
+    novoNome = (novoNome||"").trim();
+    if(!cod || !novoNome) return;
+    if(firebaseAtivo && db){
+      db.collection("unidadesRenomeadas").doc(cod).set({ nome: novoNome }).then(function(){
+        state.nomesUnidadesEditados[cod] = novoNome;
+        atualizarContadorUnidades();
+        atualizarVagasEnc();
+        if(aoTerminar) aoTerminar();
+      }).catch(function(err){
+        console.error("Firestore (salvar nome de unidade):", err);
+        alert("Não foi possível salvar o novo nome.");
+      });
+    }else{
+      state.nomesUnidadesEditados[cod] = novoNome;
+      storageSet("gpv_nomes_unidades", state.nomesUnidadesEditados);
+      atualizarContadorUnidades();
+      atualizarVagasEnc();
+      if(aoTerminar) aoTerminar();
+    }
+  }
 
   /* ================= Sub-módulo: Substituição ================= */
   function todasSubstituicoes(){
@@ -3693,7 +3762,7 @@
     }
     tornarOrdenavel(document.querySelector("#uniTable thead"), estadoUni, valorUni, renderUnidades);
     tbody.innerHTML = lista.map(function(u, i){
-      var acaoHtml = (u.id && souAdmin())
+      var acaoExcluir = (u.id && souAdmin())
         ? '<button class="btn-icon" type="button" data-excluir-uni="'+i+'" title="Excluir" aria-label="Excluir">✕</button>'
         : '';
       return '<tr>'+
@@ -3701,7 +3770,7 @@
         '<td>'+escapeHtml(u.mun||"—")+'</td>'+
         '<td>'+escapeHtml(u.cod||"—")+'</td>'+
         '<td>'+escapeHtml(u.unidade)+'</td>'+
-        '<td>'+acaoHtml+'</td>'+
+        '<td><span class="row-actions"><button class="btn-icon" type="button" data-editar-nome-uni="'+i+'" title="Editar nome" aria-label="Editar nome">✎</button>'+acaoExcluir+'</span></td>'+
         '</tr>';
     }).join("");
     tbody.querySelectorAll("[data-excluir-uni]").forEach(function(btn){
@@ -3709,6 +3778,16 @@
         var u = lista[parseInt(btn.getAttribute("data-excluir-uni"),10)];
         if(!confirm("Excluir a unidade "+u.unidade+"? Esta ação não pode ser desfeita.")) return;
         excluirUnidade(u);
+      });
+    });
+    tbody.querySelectorAll("[data-editar-nome-uni]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var u = lista[parseInt(btn.getAttribute("data-editar-nome-uni"),10)];
+        var novo = prompt("Nome completo da unidade (código "+(u.cod||"—")+"):", u.unidade);
+        if(novo===null) return;
+        novo = novo.trim();
+        if(!novo || novo===u.unidade) return;
+        salvarNomeUnidadeEditado(u.cod, novo);
       });
     });
   }
@@ -4484,6 +4563,7 @@
     state.encaminhamentos = storageGet("gpv_encaminhamentos", []);
     state.ntesHabilitados = storageGet("gpv_ntes_habilitados", {});
     state.substituicoes = storageGet("gpv_substituicoes", []);
+    state.nomesUnidadesEditados = storageGet("gpv_nomes_unidades", {});
     atualizarContadorBase();
     atualizarContadorUnidades();
     atualizarContadorSubstituicoes();
@@ -4531,6 +4611,7 @@
   }
   function iniciarListeners(){
     pararListeners();
+    carregarNomesUnidadesEditados();
     criarListenerResiliente("avaliacoes", function(onErro){
       return db.collection("avaliacoes").limit(1000).onSnapshot(function(snap){
         atualizarStatusConexao("on");
