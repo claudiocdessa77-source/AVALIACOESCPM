@@ -220,6 +220,7 @@
   .vagas-badge{ display:inline-block; padding:6px 13px; border-radius:20px; font-size:12.5px; font-weight:700; }
   .vagas-badge.ok{ background:var(--escola-soft); color:var(--escola); }
   .vagas-badge.zero{ background:var(--danger-soft); color:var(--danger); }
+  .vagas-badge.neutro{ background:var(--blue-soft); color:var(--blue); }
 
   /* ---- Dashboard ---- */
   .dash-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:14px; margin-bottom:20px; }
@@ -832,6 +833,10 @@
         <button class="report-menu-card" type="button" data-relatorio="naocompareceu">
           <div class="rmc-num" id="rmCount-naocompareceu">—</div>
           <div class="rmc-label">Não Compareceu</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="semreda">
+          <div class="rmc-num" id="rmCount-semreda">—</div>
+          <div class="rmc-label">Encaminhados sem REDA na Unidade</div>
         </button>
         <button class="report-menu-card" type="button" data-relatorio="avaliados">
           <div class="rmc-num" id="rmCount-avaliados">—</div>
@@ -1504,6 +1509,13 @@
   function dataExtensoHoje(){
     var d = new Date();
     return d.getDate()+" de "+MESES_EXTENSO[d.getMonth()]+" de "+d.getFullYear();
+  }
+  function dataExtenso(dataISO){
+    var partes = (dataISO||"").split("-");
+    if(partes.length!==3) return dataExtensoHoje();
+    var ano = parseInt(partes[0],10), mes = parseInt(partes[1],10)-1, dia = parseInt(partes[2],10);
+    if(isNaN(ano)||isNaN(mes)||isNaN(dia)||!MESES_EXTENSO[mes]) return dataExtensoHoje();
+    return dia+" de "+MESES_EXTENSO[mes]+" de "+ano;
   }
 
   /* ================= Classificação (gabarito) ================= */
@@ -2608,6 +2620,32 @@
       buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
+    semreda: {
+      titulo: "Relatório — Encaminhados para Unidade sem REDA",
+      getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return h.unidade && !unidadeTemRedaCadastrado(h.unidade.cod); }); },
+      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Status",c:"status"}],
+      getValor: function(h, campo){
+        var c=h.candidato||{}, u=h.unidade||{};
+        if(campo==="data") return h.data;
+        if(campo==="servidor") return c.nome;
+        if(campo==="unidade") return u.unidade;
+        if(campo==="cod") return u.cod;
+        if(campo==="mun") return u.mun;
+        if(campo==="status") return h.confirmado?1:0;
+      },
+      temSelecao: true,
+      montarLinha: function(h){
+        var c=h.candidato||{}, u=h.unidade||{};
+        return '<td>'+fmtDataBR(h.data)+'</td>'+
+          '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(u.cod||"—")+'</td>'+
+          '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
+          '<td>'+(h.confirmado?'<span class="status-pill ok">✓ Confirmado</span>':'<span class="status-pill pend">— Pendente</span>')+'</td>';
+      },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      imprimirLote: imprimirOficiosLote
+    },
     naoencaminhados: {
       titulo: "Relatório — Não Encaminhados",
       getDados: function(){ return todosCandidatos().filter(function(c){ return registrosEncaminhamentoDoCandidato(c).length===0; }); },
@@ -3087,6 +3125,9 @@
     var totalEnc = (state.encaminhamentos||[]).filter(function(e){ return e.unidade && e.unidade.cod===cod && e.id!==idExcluir; }).length;
     return Math.max(0, totalReda - totalEnc);
   }
+  function unidadeTemRedaCadastrado(cod){
+    return (state.substituicoes||[]).filter(function(s){ return s.cod===cod; }).length > 0;
+  }
   function redaDisponiveisDaUnidade(cod){
     var idEditando = state.encEditandoId;
     return (state.substituicoes||[]).filter(function(s){ return s.cod===cod && (!s.vinculadoA || s.vinculadoA===idEditando); });
@@ -3103,10 +3144,16 @@
     var cod = state.encUnidade.cod;
     var totalReda = (state.substituicoes||[]).filter(function(s){ return s.cod===cod; }).length;
     var vagas = vagasDisponiveis(cod);
+    var semRedaCadastrado = totalReda===0;
 
     var badge = document.getElementById("encVagasBadge");
-    badge.textContent = "Vagas REDA Disponíveis: "+vagas+" de "+totalReda;
-    badge.className = "vagas-badge " + (vagas>0 ? "ok" : "zero");
+    if(semRedaCadastrado){
+      badge.textContent = "Unidade sem REDA cadastrado — encaminhamento sem controle de vaga";
+      badge.className = "vagas-badge neutro";
+    }else{
+      badge.textContent = "Vagas REDA Disponíveis: "+vagas+" de "+totalReda;
+      badge.className = "vagas-badge " + (vagas>0 ? "ok" : "zero");
+    }
 
     var valorAtual = document.getElementById("encRedaSelect").value;
     var disponiveis = redaDisponiveisDaUnidade(cod);
@@ -3116,9 +3163,10 @@
     if(disponiveis.some(function(r){ return r.id===valorAtual; })) select.value = valorAtual;
     atualizarMatriculaSubstituido();
 
-    if(btn) btn.disabled = vagas<=0;
+    var bloqueado = !semRedaCadastrado && vagas<=0;
+    if(btn) btn.disabled = bloqueado;
     var erroEl = document.getElementById("encErro");
-    if(vagas<=0){
+    if(bloqueado){
       erroEl.textContent = "Limite de vagas ativas excedido para esta Unidade Escolar.";
       erroEl.style.display = "block";
     }else if(erroEl.textContent==="Limite de vagas ativas excedido para esta Unidade Escolar."){
@@ -3219,7 +3267,7 @@
     }
     var editandoId = state.encEditandoId;
     var cod = state.encUnidade.cod;
-    if(vagasDisponiveis(cod)<=0){
+    if(vagasDisponiveis(cod)<=0 && unidadeTemRedaCadastrado(cod)){
       erroEl.textContent = "Limite de vagas ativas excedido para esta Unidade Escolar.";
       erroEl.style.display = "block";
       return;
@@ -3256,7 +3304,7 @@
       ]).then(function(resultados){
         var totalRedaAgora = resultados[0].size;
         var totalEncAgora = resultados[1].docs.filter(function(d){ return d.id!==editandoId; }).length;
-        if(totalRedaAgora - totalEncAgora <= 0){
+        if(totalRedaAgora>0 && totalRedaAgora - totalEncAgora <= 0){
           var e = new Error("vagas-esgotadas"); e.code = "vagas-esgotadas"; throw e;
         }
         return db.runTransaction(function(tx){
@@ -3993,7 +4041,7 @@
     '  </div>'+
     '  <div class="oficio-linha-divisoria"></div>'+
     '  <div class="oficio-corpo">'+
-    '    <div class="oficio-data">Salvador, '+dataExtensoHoje()+'</div>'+
+    '    <div class="oficio-data">Salvador, '+dataExtenso(h.data)+'</div>'+
     '    <div class="oficio-destinatario">'+escapeHtml(u.unidade||"")+(u.mun? ' – '+escapeHtml(u.mun):'')+'</div>'+
     '    <p>Senhor(a) Diretor(a),</p>'+
     '    <p>Encaminhamos '+artigo+' '+palavraServidor+' <strong>'+escapeHtml(c.nome||"")+'</strong>, CPF nº '+maskCPF(c.cpf)+', com carga horária de 40 horas, para atuar na função de técnico administrativo, através do Regime Especial de Direito Administrativo - REDA.</p>'+
