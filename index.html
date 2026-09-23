@@ -3081,14 +3081,13 @@
       '  <button class="chip-x" type="button" id="btnTrocarUnidadeEnc" title="Trocar unidade" aria-label="Trocar unidade">✕</button>'+
       '</div>'+
       '<div id="encUnidChipEdit" style="display:none; margin-top:8px;">'+
-      '  <div class="row2" style="align-items:flex-end;">'+
-      '    <div class="field" style="margin-bottom:0;"><label>Nome completo da unidade</label><input type="text" id="inputNomeUnidEnc" value="'+escapeHtml(u.unidade)+'"></div>'+
-      '    <div class="field" style="display:flex; gap:8px; margin-bottom:0;">'+
-      '      <button class="btn btn-primary btn-sm" type="button" id="btnSalvarNomeUnidEnc">Salvar</button>'+
-      '      <button class="btn btn-sm" type="button" id="btnCancelarNomeUnidEnc">Cancelar</button>'+
-      '    </div>'+
+      '  <div class="field"><label>Nome completo da unidade</label><input type="text" id="inputNomeUnidEnc" value="'+escapeHtml(u.unidade)+'"></div>'+
+      '  <div class="btn-row">'+
+      '    <button class="btn btn-primary btn-sm" type="button" id="btnCorrigirNomeUnidEnc">Corrigir esta unidade</button>'+
+      '    <button class="btn btn-sm" type="button" id="btnCriarNovaUnidEnc">Criar como unidade nova</button>'+
+      '    <button class="btn btn-sm" type="button" id="btnCancelarNomeUnidEnc">Cancelar</button>'+
       '  </div>'+
-      '  <p class="pcd-base-legal">Isso corrige o nome permanentemente para todo o sistema, não só nesta tela.</p>'+
+      '  <p class="pcd-base-legal">"Corrigir" altera o nome desta unidade (cód. '+escapeHtml(u.cod||"—")+') para todo o sistema. "Criar como unidade nova" mantém "'+escapeHtml(u.unidade)+'" como está e cadastra este nome como um destino separado.</p>'+
       '</div>';
     document.getElementById("btnTrocarUnidadeEnc").addEventListener("click", limparUnidadeEnc);
     document.getElementById("btnEditarNomeUnidEnc").addEventListener("click", function(){
@@ -3099,12 +3098,19 @@
     document.getElementById("btnCancelarNomeUnidEnc").addEventListener("click", function(){
       renderUnidadeEncSelecionada(state.encUnidade);
     });
-    document.getElementById("btnSalvarNomeUnidEnc").addEventListener("click", function(){
+    document.getElementById("btnCorrigirNomeUnidEnc").addEventListener("click", function(){
       var novo = document.getElementById("inputNomeUnidEnc").value.trim();
       if(!novo) return;
       salvarNomeUnidadeEditado(u.cod, novo, function(){
         state.encUnidade = Object.assign({}, state.encUnidade, {unidade: novo});
         renderUnidadeEncSelecionada(state.encUnidade);
+      });
+    });
+    document.getElementById("btnCriarNovaUnidEnc").addEventListener("click", function(){
+      var novo = document.getElementById("inputNomeUnidEnc").value.trim();
+      if(!novo) return;
+      criarUnidadeComoNova(u, novo, function(nova){
+        selecionarUnidadeEnc(nova);
       });
     });
   }
@@ -3520,6 +3526,37 @@
       if(aoTerminar) aoTerminar();
     }
   }
+  function proximoCodigoDisponivel(codBase){
+    codBase = codBase || "SEMCOD";
+    var existentes = {};
+    todasUnidades().forEach(function(u){ if(u.cod) existentes[u.cod] = true; });
+    var n = 2;
+    while(existentes[codBase+"-"+n]) n++;
+    return codBase+"-"+n;
+  }
+  function criarUnidadeComoNova(unidadeOriginal, novoNome, aoTerminar){
+    novoNome = (novoNome||"").trim();
+    if(!novoNome) return;
+    var novoCod = proximoCodigoDisponivel(unidadeOriginal.cod);
+    var nova = { nte: unidadeOriginal.nte||"", mun: unidadeOriginal.mun||"", cod: novoCod, unidade: novoNome };
+    if(firebaseAtivo && db){
+      db.collection("unidades").add(nova).then(function(docRef){
+        nova.id = docRef.id;
+        state.unidades.push(nova);
+        atualizarContadorUnidades();
+        if(aoTerminar) aoTerminar(nova);
+      }).catch(function(err){
+        console.error("Firestore (criar unidade nova):", err);
+        alert("Não foi possível criar a nova unidade.");
+      });
+    }else{
+      nova.id = uid();
+      state.unidades.push(nova);
+      storageSet("gpv_unidades", state.unidades);
+      atualizarContadorUnidades();
+      if(aoTerminar) aoTerminar(nova);
+    }
+  }
 
   /* ================= Sub-módulo: Substituição ================= */
   function todasSubstituicoes(){
@@ -3835,7 +3872,16 @@
         if(novo===null) return;
         novo = novo.trim();
         if(!novo || novo===u.unidade) return;
-        salvarNomeUnidadeEditado(u.cod, novo);
+        var corrigir = confirm(
+          "Corrigir o nome desta unidade (código "+(u.cod||"—")+") para \""+novo+"\" em todo o sistema?\n\n"+
+          "OK = corrige esta unidade.\n"+
+          "Cancelar = em vez disso, cria \""+novo+"\" como uma unidade nova e separada, mantendo \""+u.unidade+"\" como está."
+        );
+        if(corrigir){
+          salvarNomeUnidadeEditado(u.cod, novo);
+        }else{
+          criarUnidadeComoNova(u, novo);
+        }
       });
     });
   }
