@@ -232,7 +232,8 @@
 
   /* ---- Dashboard ---- */
   .dash-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:14px; margin-bottom:20px; }
-  .dash-card{ background:var(--surface); border:1px solid var(--border); border-left:5px solid var(--dc); border-radius:var(--radius-sm); padding:16px 18px; }
+  .dash-card{ background:var(--surface); border:1px solid var(--border); border-left:5px solid var(--dc); border-radius:var(--radius-sm); padding:16px 18px; cursor:pointer; transition:border-color .15s, transform .1s; }
+  .dash-card:hover{ border-color:var(--dc); transform:translateY(-1px); }
   .dash-card .num{ font-size:28px; font-weight:800; color:var(--text); line-height:1.1; }
   .dash-card .num small{ font-size:15px; font-weight:600; color:var(--text-muted); }
   .dash-card .lbl{ font-size:12.5px; color:var(--text-muted); margin-top:4px; font-weight:600; }
@@ -4989,16 +4990,18 @@
     }).sort(function(a,b){ return b.valor-a.valor; }).slice(0,8);
 
     var unidadesComVaga = todasUnidades().filter(function(u){ return vagasDisponiveis(u.cod) > 0; }).length;
+    var naoCompareceuTotal = todosCandidatos().filter(function(c){ return !!candidatoNaoCompareceuAvaliacao(c); }).length;
 
     el.innerHTML =
       '<div class="dash-grid">'+
-        '<div class="dash-card" style="--dc:var(--dc1)"><div class="num">'+candidatosTotal+'</div><div class="lbl">Candidatos na base</div></div>'+
-        '<div class="dash-card" style="--dc:var(--dc2)"><div class="num">'+avaliadosTotal+' <small>de '+candidatosTotal+'</small></div><div class="lbl">Avaliados</div></div>'+
-        '<div class="dash-card" style="--dc:var(--dc4)"><div class="num">'+pcdTotal+'</div><div class="lbl">PcD identificados</div></div>'+
-        '<div class="dash-card" style="--dc:var(--dc7)"><div class="num">'+encNaoConfirmados+' <small>de '+encTotal+'</small></div><div class="lbl">Encaminhados e não confirmados</div></div>'+
-        '<div class="dash-card" style="--dc:var(--dc3)"><div class="num">'+encConfirmados+' <small>de '+encTotal+'</small></div><div class="lbl">Encaminhados confirmados</div></div>'+
-        '<div class="dash-card" style="--dc:var(--dc6)"><div class="num">'+redaVinculados+' <small>de '+redaTotal+'</small></div><div class="lbl">REDA vinculados</div></div>'+
-        '<div class="dash-card" style="--dc:var(--dc5)"><div class="num">'+unidadesComVaga+'</div><div class="lbl">Vagas Disponíveis</div><div class="rmc-sub" style="margin-top:2px;">Unidades com REDA ainda não usado</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc1)" data-dash-nav="candidatos"><div class="num">'+candidatosTotal+'</div><div class="lbl">Candidatos na base</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc2)" data-dash-nav="avaliados"><div class="num">'+avaliadosTotal+' <small>de '+candidatosTotal+'</small></div><div class="lbl">Avaliados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc4)" data-dash-nav="candidatos-pcd"><div class="num">'+pcdTotal+'</div><div class="lbl">PcD identificados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc8)" data-dash-nav="naocompareceuavaliacao"><div class="num">'+naoCompareceuTotal+'</div><div class="lbl">Não Compareceu (Avaliação)</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc7)" data-dash-nav="encaminhados"><div class="num">'+encNaoConfirmados+' <small>de '+encTotal+'</small></div><div class="lbl">Encaminhados e não confirmados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc3)" data-dash-nav="confirmados"><div class="num">'+encConfirmados+' <small>de '+encTotal+'</small></div><div class="lbl">Encaminhados confirmados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc6)" data-dash-nav="vagas"><div class="num">'+redaVinculados+' <small>de '+redaTotal+'</small></div><div class="lbl">REDA vinculados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc5)" data-dash-nav="vagas"><div class="num">'+unidadesComVaga+'</div><div class="lbl">Vagas Disponíveis</div><div class="rmc-sub" style="margin-top:2px;">Unidades com REDA ainda não usado</div></div>'+
       '</div>'+
       '<div class="dash-charts">'+
         '<div class="dash-chart-card"><h3>Distribuição de perfil</h3>'+
@@ -5020,6 +5023,22 @@
           barraProgresso(redaVinculados, redaTotal||1, "var(--dc6)", "Servidores REDA vinculados")+
         '</div>'+
       '</div>';
+    el.querySelectorAll("[data-dash-nav]").forEach(function(card){
+      card.addEventListener("click", function(){ navegarDoCardDashboard(card.getAttribute("data-dash-nav")); });
+    });
+  }
+  function navegarDoCardDashboard(destino){
+    if(destino==="candidatos"){
+      ativarAba("candidatos");
+      return;
+    }
+    if(destino==="candidatos-pcd"){
+      document.getElementById("candFiltroPcd").value = "sim";
+      ativarAba("candidatos");
+      return;
+    }
+    ativarAba("relatorios");
+    abrirRelatorio(destino);
   }
   function carregarDadosLocais(){
     state.historico = storageGet("gpv_historico", []);
