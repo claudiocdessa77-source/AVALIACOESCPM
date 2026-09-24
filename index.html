@@ -125,6 +125,8 @@
     max-width:170px;
   }
   .situacao-inline-select:disabled{ opacity:.6; cursor:wait; }
+  tr.linha-nao-compareceu{ background:var(--danger-soft); }
+  table.hist tbody tr.linha-nao-compareceu:hover{ background:var(--danger-soft); }
   select option{ background:var(--surface); color:var(--text); }
   .field{ margin-bottom:14px; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
@@ -774,6 +776,7 @@
               <option value="">Todos</option>
               <option value="avaliado">Avaliado</option>
               <option value="pendente">Pendente</option>
+              <option value="naoCompareceu">Não Compareceu</option>
             </select>
           </div>
           <div class="field" style="margin-bottom:0;">
@@ -792,7 +795,6 @@
               <option value="pendente">Pendente</option>
               <option value="confirmado">Encaminhado</option>
               <option value="naoAssumiu">Não Assumiu</option>
-              <option value="naoCompareceu">Não Compareceu</option>
             </select>
           </div>
           <button class="link-btn" type="button" id="btnLimparFiltrosCand" style="align-self:center;">Limpar filtros</button>
@@ -897,6 +899,10 @@
         <button class="report-menu-card" type="button" data-relatorio="naoavaliados">
           <div class="rmc-num" id="rmCount-naoavaliados">—</div>
           <div class="rmc-label">Não Avaliados</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="naocompareceuavaliacao">
+          <div class="rmc-num" id="rmCount-naocompareceuavaliacao">—</div>
+          <div class="rmc-label">Não Compareceu (Avaliação)</div>
         </button>
       </div>
     </div>
@@ -1014,7 +1020,6 @@
             <option value="pendente">Pendente</option>
             <option value="confirmado">Encaminhado (compareceu)</option>
             <option value="naoAssumiu">Não Assumiu</option>
-            <option value="naoCompareceu">Não Compareceu</option>
           </select>
         </div>
         <div class="btn-row" style="margin-top:6px;">
@@ -1397,6 +1402,7 @@
     encRegistroOriginal: null,
     relatorioAtivo: null,
     nomesUnidadesEditados: {},
+    naoCompareceuAvaliacao: {},
     unidades: [],              // {nte,mun,cod,unidade,sexo}
     encaminhamentos: [],       // {id,data,candidato,unidade}
     substituicoes: [],         // {id,nome,nte,mun,cod,unidade,selecionado}
@@ -1559,8 +1565,7 @@
   var SITUACOES_ENCAMINHAMENTO = {
     pendente:      { label:"Pendente",        classe:"pend",   icone:"—" },
     confirmado:    { label:"Encaminhado",     classe:"ok",     icone:"✓" },
-    naoAssumiu:    { label:"Não Assumiu",     classe:"alerta", icone:"⚠" },
-    naoCompareceu: { label:"Não Compareceu",  classe:"risco",  icone:"✕" }
+    naoAssumiu:    { label:"Não Assumiu",     classe:"alerta", icone:"⚠" }
   };
   function situacaoEncaminhamento(h){
     if(h.situacao && SITUACOES_ENCAMINHAMENTO[h.situacao]) return h.situacao;
@@ -1954,8 +1959,10 @@
       if(fFormacao && c.formacao!==fFormacao) return false;
       if(fAvaliacao){
         var av = avaliadoInfo(c).avaliado;
+        var marcado = !!candidatoNaoCompareceuAvaliacao(c);
         if(fAvaliacao==="avaliado" && !av) return false;
-        if(fAvaliacao==="pendente" && av) return false;
+        if(fAvaliacao==="pendente" && (av || marcado)) return false;
+        if(fAvaliacao==="naoCompareceu" && !marcado) return false;
       }
       if(fPcd){
         var temPcd = avaliadoInfo(c).avaliado && (avaliacaoMaisRecente(c)||{}).deficiencia && (avaliacaoMaisRecente(c)||{}).deficiencia.possui;
@@ -1997,9 +2004,12 @@
 
     tbody.innerHTML = listaPagina.map(function(c, i){
       var av = avaliadoInfo(c);
-      var statusHtml = av.avaliado
-        ? '<span class="status-pill ok" title="'+av.total+' avaliação(ões) — última em '+fmtDataBR(av.data)+(av.por?' · por '+escapeHtml(av.por.nome):'')+'">✓ Avaliado ('+fmtDataBR(av.data)+')</span>'
-        : '<span class="status-pill pend">— Pendente</span>';
+      var naoCompareceu = candidatoNaoCompareceuAvaliacao(c);
+      var statusHtml = naoCompareceu
+        ? '<span class="status-pill risco" title="Marcado por '+escapeHtml(naoCompareceu.marcadoPor?naoCompareceu.marcadoPor.nome:"—")+'">✕ Não Compareceu</span>'
+        : av.avaliado
+          ? '<span class="status-pill ok" title="'+av.total+' avaliação(ões) — última em '+fmtDataBR(av.data)+(av.por?' · por '+escapeHtml(av.por.nome):'')+'">✓ Avaliado ('+fmtDataBR(av.data)+')</span>'
+          : '<span class="status-pill pend">— Pendente</span>';
       var pcdHtml = av.avaliado
         ? escapeHtml(textoPcdResumo((avaliacaoMaisRecente(c)||{}).deficiencia))
         : '—';
@@ -2012,14 +2022,24 @@
           }).join("")+
           '</select>'
         : '<span class="status-pill pend">— Pendente</span>';
-      var acaoHtml = av.avaliado
-        ? '<span class="row-actions">'+
+      var acaoHtml;
+      if(naoCompareceu){
+        acaoHtml = souAdmin()
+          ? '<button class="btn btn-sm" type="button" data-desfazer-naocompareceu="'+i+'">Desfazer</button>'
+          : '<span class="hint">Somente admin desfaz</span>';
+      }else if(av.avaliado){
+        acaoHtml = '<span class="row-actions">'+
           '<button class="btn btn-sm" type="button" data-editar="'+i+'">Editar</button>'+
           '<button class="btn btn-sm" type="button" data-imprimir="'+i+'">Imprimir</button>'+
           (souAdmin() ? '<button class="btn-icon" type="button" data-excluir="'+i+'" title="Excluir" aria-label="Excluir">✕</button>' : '')+
-          '</span>'
-        : '<button class="btn btn-sm" type="button" data-avaliar="'+i+'">Avaliar</button>';
-      return '<tr>'+
+          '</span>';
+      }else{
+        acaoHtml = '<span class="row-actions">'+
+          '<button class="btn btn-sm" type="button" data-avaliar="'+i+'">Avaliar</button>'+
+          '<button class="btn btn-sm" type="button" data-naocompareceu="'+i+'">Não Compareceu</button>'+
+          '</span>';
+      }
+      return '<tr'+(naoCompareceu?' class="linha-nao-compareceu"':'')+'>'+
         '<td>'+escapeHtml(c.nome)+'</td>'+
         '<td>'+(c.cpf?maskCPF(c.cpf):'—')+'</td>'+
         '<td>'+escapeHtml(c.insc||"—")+'</td>'+
@@ -2051,6 +2071,19 @@
         ativarAba("nova");
         iniciarAvaliacao(c);
         window.scrollTo({top:0, behavior:"smooth"});
+      });
+    });
+    tbody.querySelectorAll("[data-naocompareceu]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var c = listaPagina[parseInt(btn.getAttribute("data-naocompareceu"),10)];
+        if(!confirm(c.nome+" não compareceu à avaliação?\n\nIsso desabilita a avaliação para esta pessoa até que um administrador desfaça a marcação.")) return;
+        marcarNaoCompareceuAvaliacao(c);
+      });
+    });
+    tbody.querySelectorAll("[data-desfazer-naocompareceu]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var c = listaPagina[parseInt(btn.getAttribute("data-desfazer-naocompareceu"),10)];
+        desmarcarNaoCompareceuAvaliacao(c);
       });
     });
     tbody.querySelectorAll("[data-editar]").forEach(function(btn){
@@ -2667,7 +2700,7 @@
     },
     naoavaliados: {
       titulo: "Relatório — Não Avaliados",
-      getDados: function(){ return todosCandidatos().filter(function(c){ return !avaliadoInfo(c).avaliado; }); },
+      getDados: function(){ return todosCandidatos().filter(function(c){ return !avaliadoInfo(c).avaliado && !candidatoNaoCompareceuAvaliacao(c); }); },
       colunas: [{l:"Nome",c:"nome"},{l:"CPF",c:"cpf"},{l:"Inscrição",c:"insc"},{l:"Município",c:"mun"},{l:"Formação",c:"formacao"},{l:"",c:null}],
       getValor: function(c, campo){ return c[campo]; },
       temSelecao: false,
@@ -2688,6 +2721,21 @@
           });
         });
       }
+    },
+    naocompareceuavaliacao: {
+      titulo: "Relatório — Não Compareceu (Avaliação)",
+      getDados: function(){ return todosCandidatos().filter(function(c){ return !!candidatoNaoCompareceuAvaliacao(c); }); },
+      colunas: [{l:"Nome",c:"nome"},{l:"CPF",c:"cpf"},{l:"Inscrição",c:"insc"},{l:"Município",c:"mun"},{l:"Formação",c:"formacao"}],
+      getValor: function(c, campo){ return c[campo]; },
+      temSelecao: false,
+      montarLinha: function(c){
+        return '<td>'+escapeHtml(c.nome)+'</td>'+
+          '<td>'+(c.cpf?maskCPF(c.cpf):'—')+'</td>'+
+          '<td>'+escapeHtml(c.insc||"—")+'</td>'+
+          '<td>'+escapeHtml(c.mun||"—")+'</td>'+
+          '<td>'+escapeHtml(c.formacao||"—")+'</td>';
+      },
+      buscaTexto: function(c){ return c.nome+" "+(c.mun||"")+" "+(c.formacao||""); }
     },
     encaminhados: {
       titulo: "Relatório de Encaminhados",
@@ -3700,6 +3748,71 @@
       atualizarRelatoriosSeAtiva();
       atualizarVagasEnc();
     }).catch(function(err){ console.error("Firestore (nomes de unidades):", err); });
+  }
+  /* ---- Não compareceu à avaliação (marca o candidato, sem exigir um registro de avaliação) ---- */
+  function chaveCandidato(c){
+    var cpfC = digits(c.cpf);
+    if(cpfC) return cpfC;
+    return "insc_"+(c.insc||"").trim();
+  }
+  function candidatoNaoCompareceuAvaliacao(c){
+    var info = state.naoCompareceuAvaliacao[chaveCandidato(c)];
+    return info || null;
+  }
+  function carregarNaoCompareceuAvaliacao(){
+    if(!(firebaseAtivo && db)) return Promise.resolve();
+    return db.collection("avaliacaoNaoCompareceu").get().then(function(snap){
+      var mapa = {};
+      snap.docs.forEach(function(doc){ mapa[doc.id] = doc.data()||{}; });
+      state.naoCompareceuAvaliacao = mapa;
+      renderCandidatos();
+      renderDashboardSeAtiva();
+      atualizarRelatoriosSeAtiva();
+    }).catch(function(err){ console.error("Firestore (não compareceu avaliação):", err); });
+  }
+  function marcarNaoCompareceuAvaliacao(c){
+    var chave = chaveCandidato(c);
+    var info = { nome: c.nome, cpf: c.cpf||"", insc: c.insc||"", marcadoPor: quemSouEu() };
+    if(firebaseAtivo && db){
+      info.marcadoEm = firebase.firestore.FieldValue.serverTimestamp();
+      db.collection("avaliacaoNaoCompareceu").doc(chave).set(info).then(function(){
+        state.naoCompareceuAvaliacao[chave] = info;
+        renderCandidatos();
+        renderDashboardSeAtiva();
+        atualizarRelatoriosSeAtiva();
+      }).catch(function(err){
+        console.error("Firestore (marcar não compareceu):", err);
+        alert("Não foi possível marcar esta pessoa como não compareceu.");
+      });
+    }else{
+      info.marcadoEm = new Date().toISOString();
+      state.naoCompareceuAvaliacao[chave] = info;
+      storageSet("gpv_nao_compareceu_avaliacao", state.naoCompareceuAvaliacao);
+      renderCandidatos();
+      renderDashboardSeAtiva();
+      atualizarRelatoriosSeAtiva();
+    }
+  }
+  function desmarcarNaoCompareceuAvaliacao(c){
+    if(!souAdmin()){ alert("Somente administrador pode desfazer esta marcação."); return; }
+    var chave = chaveCandidato(c);
+    if(firebaseAtivo && db){
+      db.collection("avaliacaoNaoCompareceu").doc(chave).delete().then(function(){
+        delete state.naoCompareceuAvaliacao[chave];
+        renderCandidatos();
+        renderDashboardSeAtiva();
+        atualizarRelatoriosSeAtiva();
+      }).catch(function(err){
+        console.error("Firestore (desfazer não compareceu):", err);
+        alert("Não foi possível desfazer esta marcação.");
+      });
+    }else{
+      delete state.naoCompareceuAvaliacao[chave];
+      storageSet("gpv_nao_compareceu_avaliacao", state.naoCompareceuAvaliacao);
+      renderCandidatos();
+      renderDashboardSeAtiva();
+      atualizarRelatoriosSeAtiva();
+    }
   }
   function salvarNomeUnidadeEditado(cod, novoNome, aoTerminar){
     novoNome = (novoNome||"").trim();
@@ -4916,6 +5029,7 @@
     state.ntesHabilitados = storageGet("gpv_ntes_habilitados", {});
     state.substituicoes = storageGet("gpv_substituicoes", []);
     state.nomesUnidadesEditados = storageGet("gpv_nomes_unidades", {});
+    state.naoCompareceuAvaliacao = storageGet("gpv_nao_compareceu_avaliacao", {});
     atualizarContadorBase();
     atualizarContadorUnidades();
     atualizarContadorSubstituicoes();
@@ -4964,6 +5078,7 @@
   function iniciarListeners(){
     pararListeners();
     carregarNomesUnidadesEditados();
+    carregarNaoCompareceuAvaliacao();
     criarListenerResiliente("avaliacoes", function(onErro){
       return db.collection("avaliacoes").limit(1000).onSnapshot(function(snap){
         atualizarStatusConexao("on");
