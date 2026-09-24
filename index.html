@@ -1550,6 +1550,15 @@
     if(meus===null) return base;
     return base.filter(function(u){ return meus.indexOf(nteNumero(u.nte)) !== -1; });
   }
+  /* Encaminhamentos guardam uma cópia (snapshot) da unidade no momento do registro.
+     Se o nome da unidade for corrigido depois (✎ Editar nome), essa cópia salva não
+     muda sozinha — esta função busca o nome mais atual pelo código, pra exibição e
+     impressão sempre refletirem a correção, mesmo em encaminhamentos antigos. */
+  function nomeUnidadeAtual(u){
+    if(!u) return "";
+    if(u.cod && state.nomesUnidadesEditados[u.cod]) return state.nomesUnidadesEditados[u.cod];
+    return u.unidade || "";
+  }
   function nteHabilitado(nte){
     return state.ntesHabilitados[nte] !== false; // ausente = habilitado por padrão
   }
@@ -2757,13 +2766,13 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
-          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>'+
           '<td>'+situacaoPillHTML(h)+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     confirmados: {
@@ -2784,12 +2793,12 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
-          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     naocompareceu: {
@@ -2810,12 +2819,12 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
-          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     naoassumiu: {
@@ -2836,12 +2845,12 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
-          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     semreda: {
@@ -2862,12 +2871,12 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
-          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+situacaoPillHTML(h)+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     naoencaminhados: {
@@ -2920,7 +2929,7 @@
       montarLinha: function(u){
         var totalReda = todasSubstituicoes().filter(function(s){ return s.cod===u.cod; }).length;
         var vinculados = todasSubstituicoes().filter(function(s){ return s.cod===u.cod && s.vinculadoA; }).length;
-        return '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+        return '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+'</td>'+
           '<td>'+escapeHtml(u.nte||"—")+'</td>'+
@@ -3484,7 +3493,7 @@
       '</div>';
     document.getElementById("cardEncUnidade").style.display = "block";
 
-    selecionarUnidadeEnc(h.unidade);
+    selecionarUnidadeEnc(Object.assign({}, h.unidade, {unidade: nomeUnidadeAtual(h.unidade)}));
     document.getElementById("encData").value = h.data || hojeISO();
     document.getElementById("encSexo").value = h.sexo || "";
     if(h.redaSubstituido && h.redaSubstituido.id){
@@ -3823,6 +3832,9 @@
         state.nomesUnidadesEditados[cod] = novoNome;
         atualizarContadorUnidades();
         atualizarVagasEnc();
+        renderEncaminhamentos();
+        renderCandidatos();
+        atualizarRelatoriosSeAtiva();
         if(aoTerminar) aoTerminar();
       }).catch(function(err){
         console.error("Firestore (salvar nome de unidade):", err);
@@ -3833,6 +3845,9 @@
       storageSet("gpv_nomes_unidades", state.nomesUnidadesEditados);
       atualizarContadorUnidades();
       atualizarVagasEnc();
+      renderEncaminhamentos();
+      renderCandidatos();
+      atualizarRelatoriosSeAtiva();
       if(aoTerminar) aoTerminar();
     }
   }
@@ -4314,7 +4329,7 @@
         '<td><input type="checkbox" class="enc-check" data-idx="'+i+'"></td>'+
         '<td>'+fmtDataBR(h.data)+'</td>'+
         '<td>'+escapeHtml(c.nome||"—")+'</td>'+
-        '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+        '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
         '<td>'+escapeHtml(u.cod||"—")+'</td>'+
         '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
         '<td>'+(subst?escapeHtml(subst.nome):'—')+'</td>'+
@@ -4458,7 +4473,7 @@
     '  <div class="oficio-linha-divisoria"></div>'+
     '  <div class="oficio-corpo">'+
     '    <div class="oficio-data">Salvador, '+dataExtenso(h.data)+'</div>'+
-    '    <div class="oficio-destinatario">'+escapeHtml(u.unidade||"")+(u.mun? ' – '+escapeHtml(u.mun):'')+'</div>'+
+    '    <div class="oficio-destinatario">'+escapeHtml(nomeUnidadeAtual(u))+(u.mun? ' – '+escapeHtml(u.mun):'')+'</div>'+
     '    <p>Senhor(a) Diretor(a),</p>'+
     '    <p>Encaminhamos '+artigo+' '+palavraServidor+' <strong>'+escapeHtml(c.nome||"")+'</strong>, CPF nº '+maskCPF(c.cpf)+', com carga horária de 40 horas, para atuar na função de técnico administrativo, através do Regime Especial de Direito Administrativo - REDA.</p>'+
     '    <p>O termo de assunção deverá ser entregue em 03 (três) vias, em 48 horas, nesta Coordenação, sala 116.</p>'+
