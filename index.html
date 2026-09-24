@@ -119,6 +119,12 @@
     background:var(--surface-2); color:var(--text); font-size:14.5px;
   }
   select{ cursor:pointer; }
+  .situacao-inline-select{
+    font-size:11.5px; font-weight:600; padding:4px 6px; border-radius:6px;
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text);
+    max-width:170px;
+  }
+  .situacao-inline-select:disabled{ opacity:.6; cursor:wait; }
   select option{ background:var(--surface); color:var(--text); }
   .field{ margin-bottom:14px; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
@@ -1999,7 +2005,12 @@
         : '—';
       var enc = encaminhadoInfo(c);
       var encHtml = enc.temRegistro
-        ? situacaoPillHTML(enc.registro)
+        ? '<select class="situacao-inline-select" data-situacao-cand="'+i+'">'+
+          Object.keys(SITUACOES_ENCAMINHAMENTO).map(function(chave){
+            var sel = situacaoEncaminhamento(enc.registro)===chave ? ' selected' : '';
+            return '<option value="'+chave+'"'+sel+'>'+SITUACOES_ENCAMINHAMENTO[chave].icone+' '+SITUACOES_ENCAMINHAMENTO[chave].label+'</option>';
+          }).join("")+
+          '</select>'
         : '<span class="status-pill pend">— Pendente</span>';
       var acaoHtml = av.avaliado
         ? '<span class="row-actions">'+
@@ -2021,6 +2032,19 @@
         '</tr>';
     }).join("");
 
+    tbody.querySelectorAll("[data-situacao-cand]").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var c = listaPagina[parseInt(sel.getAttribute("data-situacao-cand"),10)];
+        var enc = encaminhadoInfo(c);
+        if(!enc.temRegistro) return;
+        var valorAnterior = situacaoEncaminhamento(enc.registro);
+        sel.disabled = true;
+        salvarSituacaoEncaminhamento(enc.registro, sel.value, function(){
+          sel.disabled = false;
+          if(!(firebaseAtivo && db)){ /* já rerenderizado dentro da função */ }
+        });
+      });
+    });
     tbody.querySelectorAll("[data-avaliar]").forEach(function(btn){
       btn.addEventListener("click", function(){
         var c = listaPagina[parseInt(btn.getAttribute("data-avaliar"),10)];
@@ -4262,6 +4286,40 @@
       storageSet("gpv_encaminhamentos", state.encaminhamentos);
       renderEncaminhamentos();
       renderCandidatos();
+    }
+  }
+  function salvarSituacaoEncaminhamento(h, novaSituacao, aoTerminar){
+    if(!SITUACOES_ENCAMINHAMENTO[novaSituacao]) return;
+    if(!souAdmin() && situacaoEncaminhamento(h)==="confirmado" && novaSituacao!=="confirmado"){
+      alert("Somente administrador pode desmarcar um encaminhamento já confirmado.");
+      if(aoTerminar) aoTerminar();
+      return;
+    }
+    var campos = {
+      situacao: novaSituacao,
+      confirmado: novaSituacao==="confirmado",
+      confirmadoPor: novaSituacao==="confirmado" ? quemSouEu() : null
+    };
+    if(firebaseAtivo && db){
+      campos.confirmadoEm = novaSituacao==="confirmado" ? firebase.firestore.FieldValue.serverTimestamp() : null;
+      db.collection("encaminhamentos").doc(h.id).update(campos).then(function(){
+        if(aoTerminar) aoTerminar();
+      }).catch(function(err){
+        console.error("Firestore (salvar situação):", err);
+        alert("Não foi possível atualizar a situação deste encaminhamento.");
+        if(aoTerminar) aoTerminar();
+      });
+    }else{
+      h.situacao = campos.situacao;
+      h.confirmado = campos.confirmado;
+      h.confirmadoPor = campos.confirmadoPor;
+      h.confirmadoEm = novaSituacao==="confirmado" ? new Date().toISOString() : null;
+      storageSet("gpv_encaminhamentos", state.encaminhamentos);
+      renderEncaminhamentos();
+      renderCandidatos();
+      atualizarRelatoriosSeAtiva();
+      renderDashboardSeAtiva();
+      if(aoTerminar) aoTerminar();
     }
   }
 
