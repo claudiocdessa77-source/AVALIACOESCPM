@@ -261,6 +261,8 @@
   .rel-perfil-secao{ margin-bottom:22px; }
   .rel-perfil-secao:last-child{ margin-bottom:0; }
   .rel-perfil-secao h3{ font-size:13.5px; margin:0 0 10px; }
+  .cand-filtros-grid{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin:12px 0 16px; }
+  .cand-filtros-grid .field{ min-width:140px; }
 
   .conn-status{
     display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
@@ -433,6 +435,8 @@
   .status-pill{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; }
   .status-pill.ok{ color:var(--escola); }
   .status-pill.pend{ color:var(--text-muted); }
+  .status-pill.alerta{ color:var(--hibrido); }
+  .status-pill.risco{ color:var(--danger); }
   .btn-icon{
     appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-muted);
     width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:13px; line-height:1;
@@ -749,9 +753,47 @@
             </select>
           </div>
         </div>
+        <div class="cand-filtros-grid">
+          <div class="field" style="margin-bottom:0;">
+            <label for="candFiltroMun" style="font-size:11px;">Município</label>
+            <select id="candFiltroMun"><option value="">Todos</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="candFiltroFormacao" style="font-size:11px;">Formação</label>
+            <select id="candFiltroFormacao"><option value="">Todas</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="candFiltroAvaliacao" style="font-size:11px;">Avaliação</label>
+            <select id="candFiltroAvaliacao">
+              <option value="">Todos</option>
+              <option value="avaliado">Avaliado</option>
+              <option value="pendente">Pendente</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="candFiltroPcd" style="font-size:11px;">PcD</label>
+            <select id="candFiltroPcd">
+              <option value="">Todos</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="candFiltroSituacao" style="font-size:11px;">Situação</label>
+            <select id="candFiltroSituacao">
+              <option value="">Todas</option>
+              <option value="semRegistro">Não encaminhado</option>
+              <option value="pendente">Pendente</option>
+              <option value="confirmado">Encaminhado</option>
+              <option value="naoAssumiu">Não Assumiu</option>
+              <option value="naoCompareceu">Não Compareceu</option>
+            </select>
+          </div>
+          <button class="link-btn" type="button" id="btnLimparFiltrosCand" style="align-self:center;">Limpar filtros</button>
+        </div>
         <div class="table-scroll">
           <table class="hist" id="candTable">
-            <thead><tr><th data-sort="nome">Nome</th><th data-sort="cpf">CPF</th><th data-sort="insc">Inscrição</th><th data-sort="mun">Município</th><th data-sort="formacao">Formação</th><th data-sort="avaliacao">Avaliação</th><th data-sort="pcd">PcD</th><th data-sort="encaminhado">Encaminhado</th><th></th></tr></thead>
+            <thead><tr><th data-sort="nome">Nome</th><th data-sort="cpf">CPF</th><th data-sort="insc">Inscrição</th><th data-sort="mun">Município</th><th data-sort="formacao">Formação</th><th data-sort="avaliacao">Avaliação</th><th data-sort="pcd">PcD</th><th data-sort="encaminhado">Situação</th><th></th></tr></thead>
             <tbody id="candBody"></tbody>
           </table>
         </div>
@@ -833,6 +875,10 @@
         <button class="report-menu-card" type="button" data-relatorio="naocompareceu">
           <div class="rmc-num" id="rmCount-naocompareceu">—</div>
           <div class="rmc-label">Não Compareceu</div>
+        </button>
+        <button class="report-menu-card" type="button" data-relatorio="naoassumiu">
+          <div class="rmc-num" id="rmCount-naoassumiu">—</div>
+          <div class="rmc-label">Não Assumiu</div>
         </button>
         <button class="report-menu-card" type="button" data-relatorio="semreda">
           <div class="rmc-num" id="rmCount-semreda">—</div>
@@ -956,6 +1002,15 @@
           </div>
         </div>
         <p style="font-size:12px; color:var(--text-muted); margin-top:-6px; margin-bottom:6px;">Usado para gerar o ofício de encaminhamento corretamente (o/a servidor/a).</p>
+        <div class="field" id="encSituacaoBox" style="display:none; max-width:260px;">
+          <label for="encSituacao">Situação</label>
+          <select id="encSituacao">
+            <option value="pendente">Pendente</option>
+            <option value="confirmado">Encaminhado (compareceu)</option>
+            <option value="naoAssumiu">Não Assumiu</option>
+            <option value="naoCompareceu">Não Compareceu</option>
+          </select>
+        </div>
         <div class="btn-row" style="margin-top:6px;">
           <button class="btn btn-primary" type="button" id="btnRegistrarEncaminhamento">Registrar encaminhamento</button>
           <button class="btn btn-sm" type="button" id="btnCancelarEncaminhamento">Cancelar</button>
@@ -973,11 +1028,14 @@
         </div>
         <div class="table-scroll">
           <table class="hist" id="encTable">
-            <thead><tr><th data-sort="data">Data</th><th data-sort="servidor">Servidor</th><th data-sort="unidade">Unidade de destino</th><th data-sort="cod">Código</th><th data-sort="mun">Município / NTE</th><th data-sort="subst">Substituído</th><th data-sort="matricula">Matrícula</th><th data-sort="registrado">Registrado por</th><th></th></tr></thead>
+            <thead><tr><th><input type="checkbox" id="encSelecionarTudo"></th><th data-sort="data">Data</th><th data-sort="servidor">Servidor</th><th data-sort="unidade">Unidade de destino</th><th data-sort="cod">Código</th><th data-sort="mun">Município / NTE</th><th data-sort="subst">Substituído</th><th data-sort="matricula">Matrícula</th><th data-sort="registrado">Registrado por</th><th></th></tr></thead>
             <tbody id="encBody"></tbody>
           </table>
         </div>
         <div class="hist-empty" id="encEmpty" style="display:none">Nenhum encaminhamento registrado.</div>
+        <div class="report-toolbar no-print" style="justify-content:flex-start;">
+          <button class="btn btn-primary" type="button" id="btnImprimirLoteEnc" disabled>Imprimir selecionados (<span id="encSelCount">0</span>)</button>
+        </div>
       </div>
     </div>
 
@@ -1492,6 +1550,22 @@
       return meus.indexOf(nteNumero((h.candidato||{}).nte)) !== -1;
     });
   }
+  var SITUACOES_ENCAMINHAMENTO = {
+    pendente:      { label:"Pendente",        classe:"pend",   icone:"—" },
+    confirmado:    { label:"Encaminhado",     classe:"ok",     icone:"✓" },
+    naoAssumiu:    { label:"Não Assumiu",     classe:"alerta", icone:"⚠" },
+    naoCompareceu: { label:"Não Compareceu",  classe:"risco",  icone:"✕" }
+  };
+  function situacaoEncaminhamento(h){
+    if(h.situacao && SITUACOES_ENCAMINHAMENTO[h.situacao]) return h.situacao;
+    return h.confirmado ? "confirmado" : "pendente";
+  }
+  function situacaoPillHTML(h){
+    var chave = situacaoEncaminhamento(h);
+    var s = SITUACOES_ENCAMINHAMENTO[chave];
+    var sufixoData = (chave==="confirmado") ? " ("+fmtDataBR(h.data)+")" : "";
+    return '<span class="status-pill '+s.classe+'">'+s.icone+' '+s.label+sufixoData+'</span>';
+  }
   function encaminhamentosVisiveis(){
     var meus = meusNtesNumeros();
     if(meus===null) return state.encaminhamentos||[];
@@ -1831,9 +1905,10 @@
     return achados;
   }
   function encaminhadoInfo(c){
-    var confirmados = registrosEncaminhamentoDoCandidato(c).filter(function(h){ return !!h.confirmado; });
-    if(confirmados.length===0) return {encaminhado:false};
-    return {encaminhado:true, data:confirmados[0].data, unidade:confirmados[0].unidade||{}, total:confirmados.length, por:confirmados[0].confirmadoPor};
+    var registros = registrosEncaminhamentoDoCandidato(c);
+    if(registros.length===0) return {temRegistro:false};
+    var maisRecente = registros[0];
+    return {temRegistro:true, situacao:situacaoEncaminhamento(maisRecente), data:maisRecente.data, unidade:maisRecente.unidade||{}, total:registros.length, registro:maisRecente};
   }
 
   function renderCandidatos(){
@@ -1841,20 +1916,59 @@
     if(!tbody) return;
     var termo = normaliza(document.getElementById("candBusca").value);
     var termoDig = digits(document.getElementById("candBusca").value);
-    var lista = todosCandidatos().filter(function(c){
-      if(!termo) return true;
-      var matchNome = normaliza(c.nome).indexOf(termo) !== -1;
-      var matchCpf = termoDig.length>=3 && digits(c.cpf).indexOf(termoDig) !== -1;
-      var matchInsc = termoDig.length>=3 && (c.insc||"").indexOf(termoDig) !== -1;
-      var matchFormacao = normaliza(c.formacao).indexOf(termo) !== -1;
-      return matchNome || matchCpf || matchInsc || matchFormacao;
+    var todos = todosCandidatos();
+
+    var selMun = document.getElementById("candFiltroMun");
+    var selFormacao = document.getElementById("candFiltroFormacao");
+    var municipios = Array.from(new Set(todos.map(function(c){ return c.mun||""; }).filter(Boolean))).sort();
+    var formacoes = Array.from(new Set(todos.map(function(c){ return c.formacao||""; }).filter(Boolean))).sort();
+    if(selMun.dataset.preenchido!=="1"){
+      selMun.innerHTML = '<option value="">Todos</option>'+municipios.map(function(m){ return '<option value="'+escapeHtml(m)+'">'+escapeHtml(m)+'</option>'; }).join("");
+      selMun.dataset.preenchido = "1";
+    }
+    if(selFormacao.dataset.preenchido!=="1"){
+      selFormacao.innerHTML = '<option value="">Todas</option>'+formacoes.map(function(f){ return '<option value="'+escapeHtml(f)+'">'+escapeHtml(f)+'</option>'; }).join("");
+      selFormacao.dataset.preenchido = "1";
+    }
+
+    var fMun = selMun.value, fFormacao = selFormacao.value;
+    var fAvaliacao = document.getElementById("candFiltroAvaliacao").value;
+    var fPcd = document.getElementById("candFiltroPcd").value;
+    var fSituacao = document.getElementById("candFiltroSituacao").value;
+
+    var lista = todos.filter(function(c){
+      if(termo){
+        var matchNome = normaliza(c.nome).indexOf(termo) !== -1;
+        var matchCpf = termoDig.length>=3 && digits(c.cpf).indexOf(termoDig) !== -1;
+        var matchInsc = termoDig.length>=3 && (c.insc||"").indexOf(termoDig) !== -1;
+        var matchFormacao = normaliza(c.formacao).indexOf(termo) !== -1;
+        if(!(matchNome || matchCpf || matchInsc || matchFormacao)) return false;
+      }
+      if(fMun && c.mun!==fMun) return false;
+      if(fFormacao && c.formacao!==fFormacao) return false;
+      if(fAvaliacao){
+        var av = avaliadoInfo(c).avaliado;
+        if(fAvaliacao==="avaliado" && !av) return false;
+        if(fAvaliacao==="pendente" && av) return false;
+      }
+      if(fPcd){
+        var temPcd = avaliadoInfo(c).avaliado && (avaliacaoMaisRecente(c)||{}).deficiencia && (avaliacaoMaisRecente(c)||{}).deficiencia.possui;
+        if(fPcd==="sim" && !temPcd) return false;
+        if(fPcd==="nao" && temPcd) return false;
+      }
+      if(fSituacao){
+        var en = encaminhadoInfo(c);
+        var situacaoAtual = en.temRegistro ? en.situacao : "semRegistro";
+        if(situacaoAtual!==fSituacao) return false;
+      }
+      return true;
     });
 
     var estadoCand = estadoOrdenacaoDe("__candidatos");
     var valorCand = function(c, campo){
       if(campo==="avaliacao"){ var av=avaliadoInfo(c); return av.avaliado?av.data:""; }
       if(campo==="pcd"){ var av2=avaliadoInfo(c); return av2.avaliado?textoPcdResumo((avaliacaoMaisRecente(c)||{}).deficiencia):""; }
-      if(campo==="encaminhado"){ var en=encaminhadoInfo(c); return en.encaminhado?en.data:""; }
+      if(campo==="encaminhado"){ var en=encaminhadoInfo(c); return en.temRegistro?en.data:""; }
       return c[campo];
     };
     lista = aplicarOrdenacao(lista, estadoCand, valorCand);
@@ -1884,8 +1998,8 @@
         ? escapeHtml(textoPcdResumo((avaliacaoMaisRecente(c)||{}).deficiencia))
         : '—';
       var enc = encaminhadoInfo(c);
-      var encHtml = enc.encaminhado
-        ? '<span class="status-pill ok" title="'+enc.total+' encaminhamento(s) confirmado(s) — mais recente em '+fmtDataBR(enc.data)+' para '+escapeHtml(enc.unidade.unidade||"")+(enc.por?' · confirmado por '+escapeHtml(enc.por.nome):'')+'">✓ Encaminhado ('+fmtDataBR(enc.data)+')</span>'
+      var encHtml = enc.temRegistro
+        ? situacaoPillHTML(enc.registro)
         : '<span class="status-pill pend">— Pendente</span>';
       var acaoHtml = av.avaliado
         ? '<span class="row-actions">'+
@@ -1945,6 +2059,17 @@
   }
   document.getElementById("candBusca").addEventListener("input", function(){ state.candPagina = 1; renderCandidatos(); });
   document.getElementById("candPorPagina").addEventListener("change", function(){ state.candPagina = 1; renderCandidatos(); });
+  ["candFiltroMun","candFiltroFormacao","candFiltroAvaliacao","candFiltroPcd","candFiltroSituacao"].forEach(function(id){
+    document.getElementById(id).addEventListener("change", function(){ state.candPagina = 1; renderCandidatos(); });
+  });
+  document.getElementById("btnLimparFiltrosCand").addEventListener("click", function(){
+    document.getElementById("candBusca").value = "";
+    ["candFiltroMun","candFiltroFormacao","candFiltroAvaliacao","candFiltroPcd","candFiltroSituacao"].forEach(function(id){
+      document.getElementById(id).value = "";
+    });
+    state.candPagina = 1;
+    renderCandidatos();
+  });
   document.getElementById("candPagAnterior").addEventListener("click", function(){ state.candPagina--; renderCandidatos(); window.scrollTo({top:0, behavior:"smooth"}); });
   document.getElementById("candPagProxima").addEventListener("click", function(){ state.candPagina++; renderCandidatos(); window.scrollTo({top:0, behavior:"smooth"}); });
   document.getElementById("irParaCandidatos").addEventListener("click", function(){ ativarAba("candidatos"); ativarSubTabCandidatos("adicionar"); });
@@ -2552,7 +2677,7 @@
         if(campo==="cod") return u.cod;
         if(campo==="mun") return u.mun;
         if(campo==="subst") return h.redaSubstituido&&h.redaSubstituido.nome;
-        if(campo==="status") return h.confirmado?1:0;
+        if(campo==="status") return situacaoEncaminhamento(h);
       },
       temSelecao: true,
       montarLinha: function(h){
@@ -2563,14 +2688,14 @@
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>'+
-          '<td>'+(h.confirmado?'<span class="status-pill ok">✓ Confirmado</span>':'<span class="status-pill pend">— Pendente</span>')+'</td>';
+          '<td>'+situacaoPillHTML(h)+'</td>';
       },
       buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     confirmados: {
       titulo: "Relatório de Encaminhados Confirmados",
-      getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return !!h.confirmado; }); },
+      getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return situacaoEncaminhamento(h)==="confirmado"; }); },
       colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"}],
       getValor: function(h, campo){
         var c=h.candidato||{}, u=h.unidade||{};
@@ -2596,7 +2721,33 @@
     },
     naocompareceu: {
       titulo: "Relatório — Não Compareceu",
-      getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return !h.confirmado; }); },
+      getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return situacaoEncaminhamento(h)==="naoCompareceu"; }); },
+      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"}],
+      getValor: function(h, campo){
+        var c=h.candidato||{}, u=h.unidade||{};
+        if(campo==="data") return h.data;
+        if(campo==="servidor") return c.nome;
+        if(campo==="unidade") return u.unidade;
+        if(campo==="cod") return u.cod;
+        if(campo==="mun") return u.mun;
+        if(campo==="subst") return h.redaSubstituido&&h.redaSubstituido.nome;
+      },
+      temSelecao: true,
+      montarLinha: function(h){
+        var c=h.candidato||{}, u=h.unidade||{};
+        return '<td>'+fmtDataBR(h.data)+'</td>'+
+          '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
+          '<td>'+escapeHtml(u.cod||"—")+'</td>'+
+          '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
+          '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>';
+      },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      imprimirLote: imprimirOficiosLote
+    },
+    naoassumiu: {
+      titulo: "Relatório — Não Assumiu",
+      getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return situacaoEncaminhamento(h)==="naoAssumiu"; }); },
       colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"}],
       getValor: function(h, campo){
         var c=h.candidato||{}, u=h.unidade||{};
@@ -2631,7 +2782,7 @@
         if(campo==="unidade") return u.unidade;
         if(campo==="cod") return u.cod;
         if(campo==="mun") return u.mun;
-        if(campo==="status") return h.confirmado?1:0;
+        if(campo==="status") return situacaoEncaminhamento(h);
       },
       temSelecao: true,
       montarLinha: function(h){
@@ -2641,7 +2792,7 @@
           '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
-          '<td>'+(h.confirmado?'<span class="status-pill ok">✓ Confirmado</span>':'<span class="status-pill pend">— Pendente</span>')+'</td>';
+          '<td>'+situacaoPillHTML(h)+'</td>';
       },
       buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
@@ -3081,13 +3232,16 @@
       '  <button class="chip-x" type="button" id="btnTrocarUnidadeEnc" title="Trocar unidade" aria-label="Trocar unidade">✕</button>'+
       '</div>'+
       '<div id="encUnidChipEdit" style="display:none; margin-top:8px;">'+
-      '  <div class="field"><label>Nome completo da unidade</label><input type="text" id="inputNomeUnidEnc" value="'+escapeHtml(u.unidade)+'"></div>'+
+      '  <div class="row2">'+
+      '    <div class="field"><label>Nome completo da unidade</label><input type="text" id="inputNomeUnidEnc" value="'+escapeHtml(u.unidade)+'"></div>'+
+      '    <div class="field"><label>Código</label><input type="text" id="inputCodUnidEnc" value="'+escapeHtml(u.cod||"")+'"></div>'+
+      '  </div>'+
       '  <div class="btn-row">'+
       '    <button class="btn btn-primary btn-sm" type="button" id="btnCorrigirNomeUnidEnc">Corrigir esta unidade</button>'+
       '    <button class="btn btn-sm" type="button" id="btnCriarNovaUnidEnc">Criar como unidade nova</button>'+
       '    <button class="btn btn-sm" type="button" id="btnCancelarNomeUnidEnc">Cancelar</button>'+
       '  </div>'+
-      '  <p class="pcd-base-legal">"Corrigir" altera o nome desta unidade (cód. '+escapeHtml(u.cod||"—")+') para todo o sistema. "Criar como unidade nova" mantém "'+escapeHtml(u.unidade)+'" como está e cadastra este nome como um destino separado.</p>'+
+      '  <p class="pcd-base-legal" id="encEditarNomeAviso">"Corrigir" altera o nome desta unidade (cód. '+escapeHtml(u.cod||"—")+') para todo o sistema, mantendo o código. "Criar como unidade nova" mantém "'+escapeHtml(u.unidade)+'" como está e cadastra o nome e código informados acima como um destino separado — informe o código correto da nova unidade.</p>'+
       '</div>';
     document.getElementById("btnTrocarUnidadeEnc").addEventListener("click", limparUnidadeEnc);
     document.getElementById("btnEditarNomeUnidEnc").addEventListener("click", function(){
@@ -3108,8 +3262,20 @@
     });
     document.getElementById("btnCriarNovaUnidEnc").addEventListener("click", function(){
       var novo = document.getElementById("inputNomeUnidEnc").value.trim();
-      if(!novo) return;
-      criarUnidadeComoNova(u, novo, function(nova){
+      var novoCod = document.getElementById("inputCodUnidEnc").value.trim();
+      var aviso = document.getElementById("encEditarNomeAviso");
+      if(!novo || !novoCod){
+        aviso.textContent = "Informe o nome e o código da nova unidade.";
+        aviso.style.color = "var(--danger)";
+        return;
+      }
+      var conflito = todasUnidades().some(function(x){ return x.cod===novoCod; });
+      if(conflito){
+        aviso.textContent = "Já existe uma unidade com o código \""+novoCod+"\". Informe um código diferente.";
+        aviso.style.color = "var(--danger)";
+        return;
+      }
+      criarUnidadeComoNova(u, novo, novoCod, function(nova){
         selecionarUnidadeEnc(nova);
       });
     });
@@ -3214,6 +3380,8 @@
     document.getElementById("encData").value = hojeISO();
     document.getElementById("encSexo").value = "";
     document.getElementById("encErro").style.display = "none";
+    document.getElementById("encSituacaoBox").style.display = "none";
+    document.getElementById("encSituacao").value = "pendente";
     state.encEditandoId = null;
     state.encRegistroOriginal = null;
     document.getElementById("encEditBanner").style.display = "none";
@@ -3250,6 +3418,8 @@
       document.getElementById("encRedaSelect").value = h.redaSubstituido.id;
     }
     atualizarMatriculaSubstituido();
+    document.getElementById("encSituacaoBox").style.display = "block";
+    document.getElementById("encSituacao").value = situacaoEncaminhamento(h);
 
     document.getElementById("encEditBanner").style.display = "flex";
     document.getElementById("encEditBannerTexto").textContent = "Editando encaminhamento de "+h.candidato.nome+".";
@@ -3282,12 +3452,14 @@
     var redaId = document.getElementById("encRedaSelect").value || null;
     var redaSelecionado = redaId ? (state.substituicoes||[]).filter(function(s){ return s.id===redaId; })[0] : null;
     var redaIdAntigo = (editandoId && state.encRegistroOriginal.redaSubstituido) ? state.encRegistroOriginal.redaSubstituido.id : null;
+    var situacaoEscolhida = editandoId ? document.getElementById("encSituacao").value : "pendente";
     var registro = {
       data: document.getElementById("encData").value || hojeISO(),
       candidato: state.encCandidato,
       unidade: state.encUnidade,
       sexo: sexo,
-      confirmado: editandoId ? !!state.encRegistroOriginal.confirmado : false,
+      situacao: situacaoEscolhida,
+      confirmado: situacaoEscolhida==="confirmado",
       criadoPor: editandoId ? state.encRegistroOriginal.criadoPor : quemSouEu(),
       redaSubstituido: redaSelecionado ? { id: redaSelecionado.id, nome: redaSelecionado.nome, nPessoal: redaSelecionado.nPessoal||"" } : null
     };
@@ -3526,18 +3698,10 @@
       if(aoTerminar) aoTerminar();
     }
   }
-  function proximoCodigoDisponivel(codBase){
-    codBase = codBase || "SEMCOD";
-    var existentes = {};
-    todasUnidades().forEach(function(u){ if(u.cod) existentes[u.cod] = true; });
-    var n = 2;
-    while(existentes[codBase+"-"+n]) n++;
-    return codBase+"-"+n;
-  }
-  function criarUnidadeComoNova(unidadeOriginal, novoNome, aoTerminar){
+  function criarUnidadeComoNova(unidadeOriginal, novoNome, novoCod, aoTerminar){
     novoNome = (novoNome||"").trim();
-    if(!novoNome) return;
-    var novoCod = proximoCodigoDisponivel(unidadeOriginal.cod);
+    novoCod = (novoCod||"").trim();
+    if(!novoNome || !novoCod) return;
     var nova = { nte: unidadeOriginal.nte||"", mun: unidadeOriginal.mun||"", cod: novoCod, unidade: novoNome };
     if(firebaseAtivo && db){
       db.collection("unidades").add(nova).then(function(docRef){
@@ -3880,7 +4044,15 @@
         if(corrigir){
           salvarNomeUnidadeEditado(u.cod, novo);
         }else{
-          criarUnidadeComoNova(u, novo);
+          var novoCod = prompt("Código da nova unidade (não pode repetir um já existente):", "");
+          if(novoCod===null) return;
+          novoCod = novoCod.trim();
+          if(!novoCod){ alert("É preciso informar um código para a nova unidade."); return; }
+          if(todasUnidades().some(function(x){ return x.cod===novoCod; })){
+            alert("Já existe uma unidade com o código \""+novoCod+"\".");
+            return;
+          }
+          criarUnidadeComoNova(u, novo, novoCod);
         }
       });
     });
@@ -4001,6 +4173,7 @@
         ? (souAdmin() ? 'Encaminhado — compareceu (clique para desmarcar)' : 'Encaminhado — compareceu (somente administrador pode desmarcar)')
         : 'Marcar como encaminhado (compareceu)';
       return '<tr>'+
+        '<td><input type="checkbox" class="enc-check" data-idx="'+i+'"></td>'+
         '<td>'+fmtDataBR(h.data)+'</td>'+
         '<td>'+escapeHtml(c.nome||"—")+'</td>'+
         '<td>'+escapeHtml(u.unidade||"—")+'</td>'+
@@ -4017,6 +4190,11 @@
         '</span></td>'+
         '</tr>';
     }).join("");
+    tbody._listaAtual = lista;
+    var cbTudoEnc = document.getElementById("encSelecionarTudo");
+    cbTudoEnc.checked = false;
+    tbody.querySelectorAll(".enc-check").forEach(function(cb){ cb.addEventListener("change", atualizarSelecaoLoteEnc); });
+    atualizarSelecaoLoteEnc();
     tbody.querySelectorAll("[data-confirmar-enc]:not([disabled])").forEach(function(btn){
       btn.addEventListener("click", function(){
         var h = lista[parseInt(btn.getAttribute("data-confirmar-enc"),10)];
@@ -4044,11 +4222,30 @@
     });
   }
   document.getElementById("encBusca").addEventListener("input", renderEncaminhamentos);
+  function atualizarSelecaoLoteEnc(){
+    var tbody = document.getElementById("encBody");
+    var marcados = tbody.querySelectorAll(".enc-check:checked");
+    document.getElementById("encSelCount").textContent = marcados.length;
+    document.getElementById("btnImprimirLoteEnc").disabled = marcados.length===0;
+  }
+  document.getElementById("encSelecionarTudo").addEventListener("change", function(){
+    var marcar = this.checked;
+    document.querySelectorAll("#encBody .enc-check").forEach(function(cb){ cb.checked = marcar; });
+    atualizarSelecaoLoteEnc();
+  });
+  document.getElementById("btnImprimirLoteEnc").addEventListener("click", function(){
+    var tbody = document.getElementById("encBody");
+    var idxs = Array.from(tbody.querySelectorAll(".enc-check:checked")).map(function(cb){ return parseInt(cb.getAttribute("data-idx"),10); });
+    var lista = (tbody._listaAtual||[]).filter(function(item,i){ return idxs.indexOf(i)!==-1; });
+    if(lista.length===0) return;
+    imprimirOficiosLote(lista);
+  });
 
   function alternarConfirmadoEncaminhamento(h){
     var novoValor = !h.confirmado;
     var campos = {
       confirmado: novoValor,
+      situacao: novoValor ? "confirmado" : "pendente",
       confirmadoPor: novoValor ? quemSouEu() : null
     };
     if(firebaseAtivo && db){
@@ -4059,6 +4256,7 @@
       });
     }else{
       h.confirmado = campos.confirmado;
+      h.situacao = campos.situacao;
       h.confirmadoPor = campos.confirmadoPor;
       h.confirmadoEm = novoValor ? new Date().toISOString() : null;
       storageSet("gpv_encaminhamentos", state.encaminhamentos);
@@ -4588,7 +4786,8 @@
     avaliacoes.forEach(function(h){ if(perfilCount[h.chave]!==undefined) perfilCount[h.chave]++; });
 
     var encTotal = (state.encaminhamentos||[]).length;
-    var encConfirmados = (state.encaminhamentos||[]).filter(function(h){ return h.confirmado; }).length;
+    var encConfirmados = (state.encaminhamentos||[]).filter(function(h){ return situacaoEncaminhamento(h)==="confirmado"; }).length;
+    var encNaoConfirmados = encTotal - encConfirmados;
 
     var redaTotal = (state.substituicoes||[]).length;
     var redaVinculados = (state.substituicoes||[]).filter(function(s){ return s.vinculadoA; }).length;
@@ -4625,6 +4824,7 @@
         '<div class="dash-card" style="--dc:var(--dc1)"><div class="num">'+candidatosTotal+'</div><div class="lbl">Candidatos na base</div></div>'+
         '<div class="dash-card" style="--dc:var(--dc2)"><div class="num">'+avaliadosTotal+' <small>de '+candidatosTotal+'</small></div><div class="lbl">Avaliados</div></div>'+
         '<div class="dash-card" style="--dc:var(--dc4)"><div class="num">'+pcdTotal+'</div><div class="lbl">PcD identificados</div></div>'+
+        '<div class="dash-card" style="--dc:var(--dc7)"><div class="num">'+encNaoConfirmados+' <small>de '+encTotal+'</small></div><div class="lbl">Encaminhados e não confirmados</div></div>'+
         '<div class="dash-card" style="--dc:var(--dc3)"><div class="num">'+encConfirmados+' <small>de '+encTotal+'</small></div><div class="lbl">Encaminhados confirmados</div></div>'+
         '<div class="dash-card" style="--dc:var(--dc6)"><div class="num">'+redaVinculados+' <small>de '+redaTotal+'</small></div><div class="lbl">REDA vinculados</div></div>'+
         '<div class="dash-card" style="--dc:var(--dc5)"><div class="num">'+unidadesComVaga+'</div><div class="lbl">Vagas Disponíveis</div><div class="rmc-sub" style="margin-top:2px;">Unidades com REDA ainda não usado</div></div>'+
