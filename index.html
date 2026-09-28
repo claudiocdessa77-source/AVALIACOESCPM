@@ -588,6 +588,7 @@
     <button class="tab-btn" data-tab="candidatos" type="button">Candidatos <span id="candCount"></span></button>
     <button class="tab-btn" data-tab="encaminhamento" type="button">Encaminhamento</button>
     <button class="tab-btn" data-tab="relatorios" type="button">Relatórios</button>
+    <button class="tab-btn" data-tab="recepcao" type="button">Recepção</button>
     <button class="tab-btn" data-tab="usuarios" type="button" id="tabBtnUsuarios" style="display:none">Usuários</button>
     <button class="tab-btn" data-tab="configuracoes" type="button" id="tabBtnConfiguracoes" style="display:none">Configurações</button>
   </div>
@@ -930,6 +931,74 @@
 
   </div>
 
+  <div class="tab-panel no-print" id="panel-recepcao">
+    <div class="subtabs">
+      <button class="subtab-btn active" data-subtab="horarios" type="button">Horários</button>
+      <button class="subtab-btn" data-subtab="agendar" type="button">Agendar Candidatos</button>
+    </div>
+
+    <div class="subtab-panel active" id="recsub-horarios">
+      <div class="card">
+        <div class="card-head">
+          <h2>Novo horário de recepção</h2>
+        </div>
+        <div class="row3">
+          <div class="field"><label for="recHorData">Data *</label><input type="date" id="recHorData"></div>
+          <div class="field"><label for="recHorHora">Horário *</label><input type="time" id="recHorHora"></div>
+          <div class="field"><label for="recHorCapacidade">Capacidade (opcional)</label><input type="number" id="recHorCapacidade" min="1" placeholder="Sem limite"></div>
+        </div>
+        <div class="field"><label for="recHorLabel">Observação (opcional)</label><input type="text" id="recHorLabel" placeholder="Ex.: Turma A, Auditório 2..."></div>
+        <button class="btn btn-primary" type="button" id="btnAddHorarioRecepcao">Adicionar horário</button>
+        <p class="hint" id="recHorStatus"></p>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h2>Horários cadastrados <span id="recHorCount"></span></h2>
+        </div>
+        <div class="table-scroll">
+          <table class="hist" id="recHorTable">
+            <thead><tr><th>Data</th><th>Horário</th><th>Observação</th><th>Capacidade</th><th>Agendados</th><th></th></tr></thead>
+            <tbody id="recHorBody"></tbody>
+          </table>
+        </div>
+        <div class="hist-empty" id="recHorEmpty" style="display:none">Nenhum horário cadastrado ainda.</div>
+      </div>
+    </div>
+
+    <div class="subtab-panel" id="recsub-agendar">
+      <div class="card">
+        <div class="card-head">
+          <h2>Agendar candidatos <span id="recAgCount"></span></h2>
+          <span class="hint">Selecione um ou mais candidatos e escolha o horário</span>
+        </div>
+        <div class="row2">
+          <div class="field"><input type="text" id="recAgBusca" placeholder="Buscar por nome, inscrição ou município…"></div>
+          <div class="field">
+            <select id="recAgFiltro">
+              <option value="">Todos os candidatos</option>
+              <option value="semHorario">Sem horário definido</option>
+              <option value="comHorario">Já agendados</option>
+              <option value="origemDiario">Somente recém-convocados (Diário)</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="hist" id="recAgTable">
+            <thead><tr><th><input type="checkbox" id="recAgSelecionarTudo"></th><th>Nome</th><th>Inscrição</th><th>Município</th><th>Horário atual</th></tr></thead>
+            <tbody id="recAgBody"></tbody>
+          </table>
+        </div>
+        <div class="hist-empty" id="recAgEmpty" style="display:none">Nenhum candidato encontrado.</div>
+        <div class="report-toolbar no-print" style="justify-content:flex-start; flex-wrap:wrap;">
+          <select id="recAgHorarioAlvo" style="max-width:320px;"><option value="">Escolha o horário…</option></select>
+          <button class="btn btn-primary" type="button" id="btnAgendarSelecionados" disabled>Agendar selecionados (<span id="recAgSelCount">0</span>)</button>
+          <button class="btn btn-sm" type="button" id="btnDesagendarSelecionados" disabled>Remover agendamento dos selecionados</button>
+        </div>
+        <p class="hint" id="recAgStatus"></p>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== ABA: ENCAMINHAMENTO ===================== -->
   <div class="tab-panel no-print" id="panel-encaminhamento">
 
@@ -1124,6 +1193,7 @@
     <div class="subtabs">
       <button class="subtab-btn active" data-subtab="baseunidades" type="button">Base de Unidades</button>
       <button class="subtab-btn" data-subtab="reda" type="button">Base de REDA</button>
+      <button class="subtab-btn" data-subtab="diario" type="button">Diário Oficial</button>
       <button class="subtab-btn" data-subtab="habilitarnte" type="button">Habilitar NTE</button>
       <button class="subtab-btn" data-subtab="backup" type="button">Backup e recuperação</button>
     </div>
@@ -1229,6 +1299,34 @@
         <div class="hist-empty" id="substEmpty" style="display:none">Nenhum servidor REDA cadastrado ainda.</div>
       </div>
 
+    </div>
+
+    <div class="subtab-panel" id="cfgsub-diario">
+      <div class="card">
+        <div class="card-head">
+          <h2>Carregar publicação do Diário Oficial</h2>
+          <span class="hint">Importa novos candidatos convocados</span>
+        </div>
+        <p class="pcd-base-legal">Prepare uma planilha (.xlsx ou .csv) com uma linha por candidato e as colunas: <strong>NTE</strong>, <strong>Município</strong>, <strong>Inscrição</strong>, <strong>Nome</strong>, <strong>Nota</strong>, <strong>Classificação</strong>. Repita o NTE e o Município em cada linha do grupo, mesmo que na publicação apareçam só uma vez no cabeçalho da seção.</p>
+        <div class="field">
+          <label for="inputDiarioArquivo">Arquivo da planilha</label>
+          <input type="file" id="inputDiarioArquivo" accept=".xlsx,.xls,.csv">
+        </div>
+        <div id="diarioPreviewBox" style="display:none;">
+          <p class="hint" id="diarioPreviewResumo"></p>
+          <div class="table-scroll" style="max-height:320px;">
+            <table class="hist" id="diarioPreviewTable">
+              <thead><tr><th>NTE</th><th>Município</th><th>Inscrição</th><th>Nome</th><th>Nota</th><th>Classificação</th><th>Situação</th></tr></thead>
+              <tbody id="diarioPreviewBody"></tbody>
+            </table>
+          </div>
+          <div class="btn-row" style="margin-top:12px;">
+            <button class="btn btn-primary" type="button" id="btnConfirmarImportDiario">Confirmar carga</button>
+            <button class="btn btn-sm" type="button" id="btnCancelarImportDiario">Cancelar</button>
+          </div>
+        </div>
+        <p class="hint" id="diarioImportStatus"></p>
+      </div>
     </div>
 
     <div class="subtab-panel" id="cfgsub-habilitarnte">
@@ -1404,6 +1502,8 @@
     relatorioAtivo: null,
     nomesUnidadesEditados: {},
     naoCompareceuAvaliacao: {},
+    horariosRecepcao: [],
+    agendamentosRecepcao: {},
     unidades: [],              // {nte,mun,cod,unidade,sexo}
     encaminhamentos: [],       // {id,data,candidato,unidade}
     substituicoes: [],         // {id,nome,nte,mun,cod,unidade,selecionado}
@@ -3155,6 +3255,7 @@
     });
     document.getElementById("cfgsub-baseunidades").classList.toggle("active", nome==="baseunidades");
     document.getElementById("cfgsub-reda").classList.toggle("active", nome==="reda");
+    document.getElementById("cfgsub-diario").classList.toggle("active", nome==="diario");
     document.getElementById("cfgsub-habilitarnte").classList.toggle("active", nome==="habilitarnte");
     document.getElementById("cfgsub-backup").classList.toggle("active", nome==="backup");
     if(nome==="baseunidades") renderUnidades();
@@ -3163,6 +3264,20 @@
   }
   document.querySelectorAll("#panel-configuracoes .subtab-btn").forEach(function(b){
     b.addEventListener("click", function(){ ativarSubTabConfiguracoes(b.getAttribute("data-subtab")); });
+  });
+
+  /* ================= Sub-abas do módulo Recepção ================= */
+  function ativarSubTabRecepcao(nome){
+    document.querySelectorAll("#panel-recepcao .subtab-btn").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-subtab")===nome);
+    });
+    document.getElementById("recsub-horarios").classList.toggle("active", nome==="horarios");
+    document.getElementById("recsub-agendar").classList.toggle("active", nome==="agendar");
+    if(nome==="horarios") renderHorariosRecepcao();
+    if(nome==="agendar") renderAgendarRecepcao();
+  }
+  document.querySelectorAll("#panel-recepcao .subtab-btn").forEach(function(b){
+    b.addEventListener("click", function(){ ativarSubTabRecepcao(b.getAttribute("data-subtab")); });
   });
 
   /* ================= Módulo Encaminhamento ================= */
@@ -3824,6 +3939,255 @@
       atualizarRelatoriosSeAtiva();
     }
   }
+  /* ================= Módulo Recepção: horários e agendamento ================= */
+  function fmtDataHoraRecepcao(h){ return fmtDataBR(h.data)+' · '+h.horario; }
+  function contarAgendadosNoHorario(horarioId){
+    return Object.keys(state.agendamentosRecepcao).filter(function(k){
+      return state.agendamentosRecepcao[k] && state.agendamentosRecepcao[k].horarioId===horarioId;
+    }).length;
+  }
+  function limparFormHorarioRecepcao(){
+    document.getElementById("recHorData").value = "";
+    document.getElementById("recHorHora").value = "";
+    document.getElementById("recHorCapacidade").value = "";
+    document.getElementById("recHorLabel").value = "";
+  }
+  function renderHorariosRecepcao(){
+    var tbody = document.getElementById("recHorBody");
+    if(!tbody) return;
+    var lista = state.horariosRecepcao.slice().sort(function(a,b){ return (a.data+a.horario).localeCompare(b.data+b.horario); });
+    document.getElementById("recHorCount").textContent = "("+lista.length+")";
+    var empty = document.getElementById("recHorEmpty");
+    if(lista.length===0){
+      tbody.innerHTML = "";
+      empty.style.display = "block";
+      atualizarSelectHorariosAlvo();
+      return;
+    }
+    empty.style.display = "none";
+    tbody.innerHTML = lista.map(function(h,i){
+      var agendados = contarAgendadosNoHorario(h.id);
+      return '<tr><td>'+fmtDataBR(h.data)+'</td><td>'+escapeHtml(h.horario)+'</td><td>'+escapeHtml(h.label||"—")+'</td>'+
+        '<td>'+(h.capacidade?h.capacidade:'Sem limite')+'</td><td>'+agendados+'</td>'+
+        '<td>'+(souAdmin() ? '<button class="btn-icon" type="button" data-excluir-horario="'+i+'" title="Excluir" aria-label="Excluir">✕</button>' : '')+'</td></tr>';
+    }).join("");
+    tbody.querySelectorAll("[data-excluir-horario]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var h = lista[parseInt(btn.getAttribute("data-excluir-horario"),10)];
+        var agendados = contarAgendadosNoHorario(h.id);
+        if(agendados>0 && !confirm("Este horário tem "+agendados+" candidato(s) agendado(s). Excluir mesmo assim? Os agendamentos ficarão sem horário atribuído.")) return;
+        excluirHorarioRecepcao(h);
+      });
+    });
+    atualizarSelectHorariosAlvo();
+  }
+  function atualizarSelectHorariosAlvo(){
+    var sel = document.getElementById("recAgHorarioAlvo");
+    if(!sel) return;
+    var valorAtual = sel.value;
+    var lista = state.horariosRecepcao.slice().sort(function(a,b){ return (a.data+a.horario).localeCompare(b.data+b.horario); });
+    sel.innerHTML = '<option value="">Escolha o horário…</option>'+lista.map(function(h){
+      var agendados = contarAgendadosNoHorario(h.id);
+      var lotado = h.capacidade && agendados>=h.capacidade;
+      return '<option value="'+h.id+'"'+(lotado?' disabled':'')+'>'+fmtDataHoraRecepcao(h)+(h.label?' · '+escapeHtml(h.label):'')+' — '+agendados+(h.capacidade?'/'+h.capacidade:'')+(lotado?' (lotado)':'')+'</option>';
+    }).join("");
+    if(lista.some(function(h){ return h.id===valorAtual; })) sel.value = valorAtual;
+    var selEl = document.getElementById("recAgBody");
+    if(selEl) atualizarSelecaoRecAg();
+  }
+  document.getElementById("btnAddHorarioRecepcao").addEventListener("click", function(){
+    var data = document.getElementById("recHorData").value;
+    var hora = document.getElementById("recHorHora").value;
+    var cap = document.getElementById("recHorCapacidade").value;
+    var label = document.getElementById("recHorLabel").value.trim();
+    var statusEl = document.getElementById("recHorStatus");
+    if(!data || !hora){ statusEl.textContent = "Informe data e horário."; return; }
+    var novo = { data:data, horario:hora, capacidade: cap ? parseInt(cap,10) : null, label:label };
+    if(firebaseAtivo && db){
+      db.collection("horariosRecepcao").add(novo).then(function(ref){
+        novo.id = ref.id;
+        state.horariosRecepcao.push(novo);
+        limparFormHorarioRecepcao();
+        statusEl.textContent = "Horário adicionado.";
+        renderHorariosRecepcao();
+      }).catch(function(err){
+        console.error("Firestore (adicionar horário):", err);
+        statusEl.textContent = "Não foi possível adicionar este horário.";
+      });
+    }else{
+      novo.id = uid();
+      state.horariosRecepcao.push(novo);
+      storageSet("gpv_horarios_recepcao", state.horariosRecepcao);
+      limparFormHorarioRecepcao();
+      statusEl.textContent = "Horário adicionado (salvo neste navegador).";
+      renderHorariosRecepcao();
+    }
+  });
+  function excluirHorarioRecepcao(h){
+    if(firebaseAtivo && db){
+      db.collection("horariosRecepcao").doc(h.id).delete().then(function(){
+        state.horariosRecepcao = state.horariosRecepcao.filter(function(x){ return x.id!==h.id; });
+        renderHorariosRecepcao();
+      }).catch(function(err){
+        console.error("Firestore (excluir horário):", err);
+        alert("Não foi possível excluir este horário.");
+      });
+    }else{
+      state.horariosRecepcao = state.horariosRecepcao.filter(function(x){ return x.id!==h.id; });
+      storageSet("gpv_horarios_recepcao", state.horariosRecepcao);
+      renderHorariosRecepcao();
+    }
+  }
+
+  function renderAgendarRecepcao(){
+    var tbody = document.getElementById("recAgBody");
+    if(!tbody) return;
+    var termo = normaliza(document.getElementById("recAgBusca").value);
+    var filtro = document.getElementById("recAgFiltro").value;
+    var todos = todosCandidatos();
+    var lista = todos.filter(function(c){
+      if(termo){
+        var ok = normaliza(c.nome).indexOf(termo)!==-1 ||
+                 (c.insc||"").indexOf(termo)!==-1 ||
+                 normaliza(c.mun).indexOf(termo)!==-1;
+        if(!ok) return false;
+      }
+      var ag = state.agendamentosRecepcao[chaveCandidato(c)];
+      if(filtro==="semHorario" && ag) return false;
+      if(filtro==="comHorario" && !ag) return false;
+      if(filtro==="origemDiario" && !c.origemDiario) return false;
+      return true;
+    });
+    document.getElementById("recAgCount").textContent = "("+lista.length+")";
+    var empty = document.getElementById("recAgEmpty");
+    if(lista.length===0){
+      tbody.innerHTML = "";
+      empty.style.display = "block";
+      tbody._listaAtual = [];
+      atualizarSelecaoRecAg();
+      return;
+    }
+    empty.style.display = "none";
+    var horariosPorId = {};
+    state.horariosRecepcao.forEach(function(h){ horariosPorId[h.id] = h; });
+    tbody.innerHTML = lista.map(function(c,i){
+      var ag = state.agendamentosRecepcao[chaveCandidato(c)];
+      var h = ag && horariosPorId[ag.horarioId];
+      var horarioTxt = h ? fmtDataHoraRecepcao(h) : (ag ? '<span class="hint">Horário removido</span>' : '—');
+      return '<tr><td><input type="checkbox" class="recag-check" data-idx="'+i+'"></td>'+
+        '<td>'+escapeHtml(c.nome)+'</td><td>'+escapeHtml(c.insc||"—")+'</td><td>'+escapeHtml(c.mun||"—")+'</td>'+
+        '<td>'+horarioTxt+'</td></tr>';
+    }).join("");
+    tbody._listaAtual = lista;
+    tbody.querySelectorAll(".recag-check").forEach(function(cb){ cb.addEventListener("change", atualizarSelecaoRecAg); });
+    document.getElementById("recAgSelecionarTudo").checked = false;
+    atualizarSelecaoRecAg();
+  }
+  function atualizarSelecaoRecAg(){
+    var tbody = document.getElementById("recAgBody");
+    if(!tbody) return;
+    var marcados = tbody.querySelectorAll(".recag-check:checked");
+    document.getElementById("recAgSelCount").textContent = marcados.length;
+    document.getElementById("btnAgendarSelecionados").disabled = marcados.length===0 || !document.getElementById("recAgHorarioAlvo").value;
+    document.getElementById("btnDesagendarSelecionados").disabled = marcados.length===0;
+  }
+  document.getElementById("recAgBusca").addEventListener("input", renderAgendarRecepcao);
+  document.getElementById("recAgFiltro").addEventListener("change", renderAgendarRecepcao);
+  document.getElementById("recAgHorarioAlvo").addEventListener("change", atualizarSelecaoRecAg);
+  document.getElementById("recAgSelecionarTudo").addEventListener("change", function(){
+    var marcar = this.checked;
+    document.querySelectorAll("#recAgBody .recag-check").forEach(function(cb){ cb.checked = marcar; });
+    atualizarSelecaoRecAg();
+  });
+  function agendarCandidatosRecepcao(candidatos, horarioId){
+    var statusEl = document.getElementById("recAgStatus");
+    statusEl.textContent = "Agendando "+candidatos.length+" candidato(s)…";
+    var pendentes = candidatos.length, falhas = 0;
+    function terminouUm(){
+      pendentes--;
+      if(pendentes===0){
+        statusEl.textContent = (candidatos.length-falhas)+" de "+candidatos.length+" candidato(s) agendado(s).";
+        renderAgendarRecepcao();
+        renderHorariosRecepcao();
+      }
+    }
+    candidatos.forEach(function(c){
+      var chave = chaveCandidato(c);
+      var dado = { horarioId: horarioId, nome: c.nome, insc: c.insc||"", marcadoPor: quemSouEu() };
+      if(firebaseAtivo && db){
+        dado.marcadoEm = firebase.firestore.FieldValue.serverTimestamp();
+        db.collection("agendamentosRecepcao").doc(chave).set(dado).then(function(){
+          state.agendamentosRecepcao[chave] = dado;
+          terminouUm();
+        }).catch(function(err){ console.error("Firestore (agendar):", err); falhas++; terminouUm(); });
+      }else{
+        dado.marcadoEm = new Date().toISOString();
+        state.agendamentosRecepcao[chave] = dado;
+        storageSet("gpv_agendamentos_recepcao", state.agendamentosRecepcao);
+        terminouUm();
+      }
+    });
+  }
+  function desagendarCandidatosRecepcao(candidatos){
+    var statusEl = document.getElementById("recAgStatus");
+    var pendentes = candidatos.length;
+    function terminouUm(){
+      pendentes--;
+      if(pendentes===0){
+        statusEl.textContent = "Agendamento removido dos selecionados.";
+        renderAgendarRecepcao();
+        renderHorariosRecepcao();
+      }
+    }
+    candidatos.forEach(function(c){
+      var chave = chaveCandidato(c);
+      if(firebaseAtivo && db){
+        db.collection("agendamentosRecepcao").doc(chave).delete().then(function(){
+          delete state.agendamentosRecepcao[chave];
+          terminouUm();
+        }).catch(function(err){ console.error("Firestore (desagendar):", err); terminouUm(); });
+      }else{
+        delete state.agendamentosRecepcao[chave];
+        storageSet("gpv_agendamentos_recepcao", state.agendamentosRecepcao);
+        terminouUm();
+      }
+    });
+  }
+  document.getElementById("btnAgendarSelecionados").addEventListener("click", function(){
+    var horarioId = document.getElementById("recAgHorarioAlvo").value;
+    if(!horarioId) return;
+    var tbody = document.getElementById("recAgBody");
+    var idxs = Array.from(tbody.querySelectorAll(".recag-check:checked")).map(function(cb){ return parseInt(cb.getAttribute("data-idx"),10); });
+    var selecionados = (tbody._listaAtual||[]).filter(function(c,i){ return idxs.indexOf(i)!==-1; });
+    if(selecionados.length===0) return;
+    agendarCandidatosRecepcao(selecionados, horarioId);
+  });
+  document.getElementById("btnDesagendarSelecionados").addEventListener("click", function(){
+    var tbody = document.getElementById("recAgBody");
+    var idxs = Array.from(tbody.querySelectorAll(".recag-check:checked")).map(function(cb){ return parseInt(cb.getAttribute("data-idx"),10); });
+    var selecionados = (tbody._listaAtual||[]).filter(function(c,i){ return idxs.indexOf(i)!==-1; });
+    if(selecionados.length===0) return;
+    if(!confirm("Remover o agendamento de "+selecionados.length+" candidato(s)?")) return;
+    desagendarCandidatosRecepcao(selecionados);
+  });
+  function recarregarHorariosRecepcao(){
+    if(!(firebaseAtivo && db)) return Promise.resolve();
+    return db.collection("horariosRecepcao").get().then(function(snap){
+      state.horariosRecepcao = snap.docs.map(function(d){ var x=d.data(); x.id=d.id; return x; });
+      renderHorariosRecepcao();
+      renderAgendarRecepcao();
+    }).catch(function(err){ console.error("Firestore (horários recepção):", err); });
+  }
+  function recarregarAgendamentosRecepcao(){
+    if(!(firebaseAtivo && db)) return Promise.resolve();
+    return db.collection("agendamentosRecepcao").get().then(function(snap){
+      var mapa = {};
+      snap.docs.forEach(function(d){ mapa[d.id] = d.data(); });
+      state.agendamentosRecepcao = mapa;
+      renderHorariosRecepcao();
+      renderAgendarRecepcao();
+    }).catch(function(err){ console.error("Firestore (agendamentos recepção):", err); });
+  }
   function salvarNomeUnidadeEditado(cod, novoNome, aoTerminar){
     novoNome = (novoNome||"").trim();
     if(!cod || !novoNome) return;
@@ -4004,6 +4368,101 @@
   function atualizarContadorSubstituicoes(){
     renderSubstituicoes();
   }
+  /* ================= Importação: Diário Oficial (novos convocados) ================= */
+  var _diarioLinhasProcessadas = [];
+  document.getElementById("inputDiarioArquivo").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        var wb = XLSX.read(evt.target.result, {type:"array"});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+        var existentes = todosCandidatos();
+        var jaVistosNoArquivo = {};
+        var linhas = rows.map(function(r){
+          var keys = Object.keys(r);
+          function pick(nomes){
+            for(var i=0;i<keys.length;i++){
+              var kn = normaliza(keys[i]);
+              for(var j=0;j<nomes.length;j++){
+                if(kn.indexOf(nomes[j]) !== -1) return r[keys[i]];
+              }
+            }
+            return "";
+          }
+          var nteBruto = String(pick(["nte"])||"").trim();
+          var nteNum = (nteBruto.match(/\d+/)||[])[0] || nteBruto;
+          var insc = String(pick(["inscricao","inscrição"])||"").trim();
+          var nome = String(pick(["nome"])||"").trim().toUpperCase();
+          var jaExistiaAntes = existentes.some(function(c){ return c.insc && c.insc===insc; });
+          var duplicadoNoArquivo = insc && jaVistosNoArquivo[insc];
+          if(insc) jaVistosNoArquivo[insc] = true;
+          return {
+            nte: nteNum,
+            mun: String(pick(["municipio","município"])||"").trim().toUpperCase(),
+            insc: insc,
+            nome: nome,
+            nota: String(pick(["nota"])||"").trim(),
+            classificacao: String(pick(["classificacao","classificação"])||"").trim(),
+            situacao: !insc || !nome ? "invalido" : duplicadoNoArquivo ? "duplicado" : jaExistiaAntes ? "jaexiste" : "novo"
+          };
+        }).filter(function(l){ return l.insc || l.nome; });
+
+        _diarioLinhasProcessadas = linhas;
+        var novos = linhas.filter(function(l){ return l.situacao==="novo"; }).length;
+        var jaExiste = linhas.filter(function(l){ return l.situacao==="jaexiste"; }).length;
+        var invalidos = linhas.filter(function(l){ return l.situacao==="invalido" || l.situacao==="duplicado"; }).length;
+        document.getElementById("diarioPreviewResumo").textContent =
+          linhas.length+" linha(s) lida(s) — "+novos+" novo(s) a importar, "+jaExiste+" já cadastrado(s) (serão ignorados), "+invalidos+" sem inscrição/nome ou duplicado(s) no arquivo (ignorados).";
+        var rotulo = {novo:"Novo", jaexiste:"Já existe", invalido:"Sem dados", duplicado:"Duplicado no arquivo"};
+        document.getElementById("diarioPreviewBody").innerHTML = linhas.map(function(l){
+          return "<tr><td>"+escapeHtml(l.nte)+"</td><td>"+escapeHtml(l.mun)+"</td><td>"+escapeHtml(l.insc)+"</td><td>"+escapeHtml(l.nome)+"</td><td>"+escapeHtml(l.nota)+"</td><td>"+escapeHtml(l.classificacao)+"</td><td>"+rotulo[l.situacao]+"</td></tr>";
+        }).join("");
+        document.getElementById("diarioPreviewBox").style.display = "block";
+        document.getElementById("diarioImportStatus").textContent = "";
+      }catch(err){
+        document.getElementById("diarioImportStatus").textContent = "Não foi possível ler este arquivo.";
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  });
+  document.getElementById("btnCancelarImportDiario").addEventListener("click", function(){
+    _diarioLinhasProcessadas = [];
+    document.getElementById("diarioPreviewBox").style.display = "none";
+  });
+  document.getElementById("btnConfirmarImportDiario").addEventListener("click", function(){
+    var novos = _diarioLinhasProcessadas.filter(function(l){ return l.situacao==="novo"; }).map(function(l){
+      return { nome:l.nome, cpf:"", insc:l.insc, mun:l.mun, nte:l.nte, pne:"", formacao:"", nota:l.nota, classificacao:l.classificacao, origemDiario:true };
+    });
+    if(novos.length===0){
+      document.getElementById("diarioImportStatus").textContent = "Nenhum candidato novo para importar.";
+      document.getElementById("diarioPreviewBox").style.display = "none";
+      return;
+    }
+    document.getElementById("diarioImportStatus").textContent = "Importando "+novos.length+" candidato(s)…";
+    if(firebaseAtivo && db){
+      gravarEmLoteResiliente("candidatosExtra", novos).then(function(r){
+        var msg = r.sucesso+" de "+novos.length+" candidato(s) importado(s).";
+        if(r.falhas>0) msg += " "+r.falhas+" falharam.";
+        document.getElementById("diarioImportStatus").textContent = msg;
+        _diarioLinhasProcessadas = [];
+        document.getElementById("diarioPreviewBox").style.display = "none";
+      });
+    }else{
+      novos.forEach(function(c){ c.id = uid(); });
+      state.candidatosExtra = state.candidatosExtra.concat(novos);
+      storageSet("gpv_candidatos_extra", state.candidatosExtra);
+      atualizarContadorBase();
+      renderCandidatos();
+      document.getElementById("diarioImportStatus").textContent = novos.length+" candidato(s) adicionado(s) (salvos neste navegador).";
+      _diarioLinhasProcessadas = [];
+      document.getElementById("diarioPreviewBox").style.display = "none";
+    }
+  });
+
   /* Substituições (REDA) não usam onSnapshot em tempo real — é a coleção mais
      pesada de leitura (centenas de documentos) e recarregar em toda alteração
      de tela custaria caro na cota do Firestore. Em vez disso, busca uma vez ao
@@ -4873,6 +5332,7 @@
     document.getElementById("panel-nova").classList.toggle("active", nome==="nova");
     document.getElementById("panel-candidatos").classList.toggle("active", nome==="candidatos");
     document.getElementById("panel-relatorios").classList.toggle("active", nome==="relatorios");
+    document.getElementById("panel-recepcao").classList.toggle("active", nome==="recepcao");
     document.getElementById("panel-encaminhamento").classList.toggle("active", nome==="encaminhamento");
     document.getElementById("panel-usuarios").classList.toggle("active", nome==="usuarios");
     document.getElementById("panel-configuracoes").classList.toggle("active", nome==="configuracoes");
@@ -4880,6 +5340,7 @@
     if(nome==="dashboard"){ renderDashboard(); window.scrollTo({top:0, behavior:"instant"}); }
     if(nome==="candidatos") renderCandidatos();
     if(nome==="relatorios") voltarMenuRelatorios();
+    if(nome==="recepcao"){ renderHorariosRecepcao(); renderAgendarRecepcao(); }
     if(nome==="encaminhamento"){ renderEncaminhamentos(); }
     if(nome==="usuarios"){ renderUsuarios(); renderAcessos(); }
     if(nome==="configuracoes"){ renderUnidades(); }
@@ -5064,6 +5525,8 @@
     state.substituicoes = storageGet("gpv_substituicoes", []);
     state.nomesUnidadesEditados = storageGet("gpv_nomes_unidades", {});
     state.naoCompareceuAvaliacao = storageGet("gpv_nao_compareceu_avaliacao", {});
+    state.horariosRecepcao = storageGet("gpv_horarios_recepcao", []);
+    state.agendamentosRecepcao = storageGet("gpv_agendamentos_recepcao", {});
     atualizarContadorBase();
     atualizarContadorUnidades();
     atualizarContadorSubstituicoes();
@@ -5113,6 +5576,8 @@
     pararListeners();
     carregarNomesUnidadesEditados();
     carregarNaoCompareceuAvaliacao();
+    recarregarHorariosRecepcao();
+    recarregarAgendamentosRecepcao();
     criarListenerResiliente("avaliacoes", function(onErro){
       return db.collection("avaliacoes").limit(1000).onSnapshot(function(snap){
         atualizarStatusConexao("on");
