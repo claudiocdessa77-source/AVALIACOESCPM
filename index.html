@@ -3055,9 +3055,10 @@
       getDados: function(){
         return todasUnidades().filter(function(u){ return vagasDisponiveis(u.cod) > 0; });
       },
-      colunas: [{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município",c:"mun"},{l:"NTE",c:"nte"},{l:"Total REDA",c:"totalreda"},{l:"Vinculados",c:"vinculados"},{l:"Vagas disponíveis",c:"vagas"}],
+      colunas: [{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município",c:"mun"},{l:"NTE",c:"nte"},{l:"Total REDA",c:"totalreda"},{l:"Vinculados",c:"vinculados"},{l:"Vagas utilizadas",c:"utilizadas"},{l:"Vagas disponíveis",c:"vagas"}],
       getValor: function(u, campo){
         if(campo==="vagas") return vagasDisponiveis(u.cod);
+        if(campo==="utilizadas") return Math.max(0, todasSubstituicoes().filter(function(s){ return s.cod===u.cod; }).length - vagasDisponiveis(u.cod));
         if(campo==="totalreda") return todasSubstituicoes().filter(function(s){ return s.cod===u.cod; }).length;
         if(campo==="vinculados") return todasSubstituicoes().filter(function(s){ return s.cod===u.cod && s.vinculadoA; }).length;
         return u[campo];
@@ -3083,6 +3084,7 @@
           '<td>'+escapeHtml(u.nte||"—")+'</td>'+
           '<td>'+totalReda+'</td>'+
           '<td>'+vinculados+'</td>'+
+          '<td>'+Math.max(0, totalReda - vagasDisponiveis(u.cod))+'</td>'+
           '<td><span class="vagas-badge ok">'+vagasDisponiveis(u.cod)+'</span></td>';
       },
       buscaTexto: function(u){ return (u.unidade||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
