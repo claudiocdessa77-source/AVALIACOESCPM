@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Avaliação de Perfil Vocacional — Técnico de Nível Médio [build 2026-10-13-a]</title>
+<title>Avaliação de Perfil Vocacional — Técnico de Nível Médio [build 2026-10-13-b]</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -246,6 +246,22 @@
   .dash-legend-item{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text); }
   .dash-legend-dot{ width:11px; height:11px; border-radius:50%; flex:none; }
   .dash-legend-item b{ margin-left:auto; padding-left:14px; }
+  /* ---- Painel de Convocações ---- */
+  .conv-bloco{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:18px; margin-bottom:18px; }
+  .conv-bloco-head{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .conv-bloco-head h3{ font-size:15px; margin:0; }
+  .conv-bloco-head .hint{ font-size:12px; color:var(--text-muted); margin-left:auto; }
+  .conv-mini-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(132px,1fr)); gap:10px; }
+  .conv-mini{ display:block; width:100%; text-align:left; font:inherit; background:var(--surface-2); border:1px solid var(--border); border-left:4px solid var(--dc); border-radius:var(--radius-sm); padding:11px 13px; cursor:pointer; transition:border-color .15s, transform .1s; }
+  .conv-mini:hover{ border-color:var(--dc); transform:translateY(-1px); }
+  .conv-mini .num{ font-size:22px; font-weight:800; color:var(--text); line-height:1.15; }
+  .conv-mini .num small{ font-size:13px; font-weight:600; color:var(--text-muted); }
+  .conv-mini .lbl{ font-size:11.5px; color:var(--text-muted); font-weight:600; margin-top:3px; }
+  .conv-secao{ font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin:18px 0 8px; }
+  .conv-det{ margin-top:16px; }
+  .conv-det summary{ cursor:pointer; font-size:12.5px; font-weight:600; color:var(--blue); }
+  .conv-det[open] summary{ margin-bottom:10px; }
+  .conv-zero{ color:var(--text-muted); }
   .dash-bar-row{ margin-bottom:11px; }
   .dash-bar-row:last-child{ margin-bottom:0; }
   .dash-bar-top{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
@@ -600,7 +616,24 @@
 
   <!-- ===================== ABA: DASHBOARD ===================== -->
   <div class="tab-panel active no-print" id="panel-dashboard">
-    <div id="dashboardConteudo"></div>
+
+    <div class="subtabs">
+      <button class="subtab-btn active" data-subtab="geral" type="button">Visão Geral</button>
+      <button class="subtab-btn" data-subtab="convocacoes" type="button">Convocações</button>
+    </div>
+
+    <div class="subtab-panel active" id="subpanel-dash-geral">
+      <div id="dashboardConteudo"></div>
+    </div>
+
+    <div class="subtab-panel" id="subpanel-dash-convocacoes">
+      <div class="report-toolbar no-print" style="justify-content:flex-start; margin-bottom:14px;">
+        <button class="btn btn-primary btn-sm" type="button" id="btnImprimirPainelConv">Imprimir painel</button>
+        <span class="hint">Todo número deste painel abre a lista de registros que o compõe.</span>
+      </div>
+      <div id="dashConvocacoesConteudo"></div>
+    </div>
+
   </div>
 
   <!-- ===================== ABA: NOVA AVALIAÇÃO ===================== -->
@@ -819,6 +852,7 @@
             <select id="candFiltroSituacao">
               <option value="">Todas</option>
               <option value="semRegistro">Não encaminhado</option>
+              <option value="comRegistro">Encaminhado (qualquer situação)</option>
               <option value="pendente">Pendente</option>
               <option value="confirmado">Encaminhado</option>
               <option value="naoAssumiu">Não Assumiu</option>
@@ -948,6 +982,7 @@
           <input type="text" id="relDetalheBusca" placeholder="Buscar…">
         </div>
         <div id="relFiltroUnidadeBox" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px;"><span class="pcd-base-legal" id="relFiltroUnidadeTexto" style="margin:0;"></span><button class="link-btn" type="button" id="btnLimparFiltroUnidadeRel">Ver todos os encaminhados</button></div>
+        <div id="relFiltroConvBox" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px;"><span class="pcd-base-legal" id="relFiltroConvTexto" style="margin:0;"></span><button class="link-btn" type="button" id="btnLimparFiltroConvRel">Ver todas as convocações</button></div>
         <div id="relCorpo"></div>
         <div class="hist-empty" id="relEmpty" style="display:none"></div>
       </div>
@@ -2667,6 +2702,9 @@
     relatorioAtivo: null,
     relFiltroUnidadeCod: null,
     relFiltroUnidadeNome: "",
+    relFiltroConvocacao: null,
+    relFiltroPerfil: null,
+    dashSubtab: "geral",
     nomesUnidadesEditados: {},
     naoCompareceuAvaliacao: {},
     horariosRecepcao: [],
@@ -3415,7 +3453,8 @@
       if(fSituacao){
         var en = encaminhadoInfo(c);
         var situacaoAtual = en.temRegistro ? en.situacao : "semRegistro";
-        if(situacaoAtual!==fSituacao) return false;
+        if(fSituacao==="comRegistro"){ if(!en.temRegistro) return false; }
+        else if(situacaoAtual!==fSituacao) return false;
       }
       return true;
     });
@@ -4453,9 +4492,34 @@
     if(elPerfil) elPerfil.textContent = historicoVisivel().length;
   }
 
+  /* Como cada relatório encontra a convocação de um item: pelo snapshot do registro
+     (avaliações/encaminhamentos) ou pelo próprio candidato. O relatório de vagas é por
+     unidade, não por pessoa, e por isso não entra nesta lista. */
+  var ESCOPO_CONVOCACAO_REL = {
+    perfil:"registro", avaliados:"registro", encaminhados:"registro", confirmados:"registro",
+    naocompareceu:"registro", naoassumiu:"registro", semreda:"registro",
+    naoavaliados:"candidato", naocompareceuavaliacao:"candidato", naoencaminhados:"candidato"
+  };
+  function relAceitaFiltroConvocacao(tipo){ return !!ESCOPO_CONVOCACAO_REL[tipo]; }
+  function filtrarPorConvocacaoRel(tipo, lista){
+    var alvo = state.relFiltroConvocacao, escopo = ESCOPO_CONVOCACAO_REL[tipo];
+    if(!(alvo > 0) || !escopo) return lista;
+    return lista.filter(function(item){
+      return (escopo==="registro" ? convocacaoDoRegistro(item) : convocacaoDe(item)) === alvo;
+    });
+  }
+  /* Título do relatório já com os filtros aplicados (vale também para a impressão). */
+  function tituloRelatorio(tipo){
+    var base = tipo==="perfil" ? "Relatório por Perfil" : ((RELATORIOS_CONFIG[tipo]||{}).titulo || "");
+    if(state.relFiltroConvocacao && relAceitaFiltroConvocacao(tipo)) base += " — "+rotuloConvocacao(state.relFiltroConvocacao)+" convocação";
+    if(state.relFiltroPerfil && tipo==="perfil" && DIAGNOSTICOS[state.relFiltroPerfil]) base += " — "+DIAGNOSTICOS[state.relFiltroPerfil].perfil;
+    return base;
+  }
   function abrirRelatorio(tipo){
     state.relatorioAtivo = tipo;
     state.relFiltroUnidadeCod = null;
+    state.relFiltroConvocacao = null;
+    state.relFiltroPerfil = null;
     document.getElementById("relMenu").style.display = "none";
     document.getElementById("relDetalhe").style.display = "block";
     renderRelatorioDetalhe();
@@ -4468,14 +4532,30 @@
     document.getElementById("relDetalheBusca").value = "";
     renderRelatorioDetalhe();
   }
+  /* Abre um relatório restrito a uma convocação (e, no relatório por perfil, a um perfil).
+     Usado pelos números do painel de Convocações. */
+  function abrirRelatorioDaConvocacao(tipo, numeroConvocacao, perfilChave){
+    abrirRelatorio(tipo);
+    state.relFiltroConvocacao = numeroConvocacao > 0 ? numeroConvocacao : null;
+    state.relFiltroPerfil = perfilChave || null;
+    document.getElementById("relDetalheBusca").value = "";
+    renderRelatorioDetalhe();
+  }
   function voltarMenuRelatorios(){
     state.relatorioAtivo = null;
     state.relFiltroUnidadeCod = null;
+    state.relFiltroConvocacao = null;
+    state.relFiltroPerfil = null;
     document.getElementById("relDetalhe").style.display = "none";
     document.getElementById("relMenu").style.display = "block";
     atualizarContadoresRelMenu();
   }
   document.getElementById("btnVoltarRelMenu").addEventListener("click", voltarMenuRelatorios);
+  document.getElementById("btnLimparFiltroConvRel").addEventListener("click", function(){
+    state.relFiltroConvocacao = null;
+    state.relFiltroPerfil = null;
+    renderRelatorioDetalhe();
+  });
   document.getElementById("btnLimparFiltroUnidadeRel").addEventListener("click", function(){
     state.relFiltroUnidadeCod = null;
     renderRelatorioDetalhe();
@@ -4501,10 +4581,21 @@
   function renderRelatorioDetalhe(){
     var tipo = state.relatorioAtivo;
     if(!tipo) return;
-    document.getElementById("relDetalheTitulo").textContent = tipo==="perfil" ? "Relatório por Perfil" : RELATORIOS_CONFIG[tipo].titulo;
+    document.getElementById("relDetalheTitulo").textContent = tituloRelatorio(tipo);
     var filtroUnidadeAtivo = tipo==="encaminhados" && !!state.relFiltroUnidadeCod;
     document.getElementById("relFiltroUnidadeBox").style.display = filtroUnidadeAtivo ? "flex" : "none";
     if(filtroUnidadeAtivo) document.getElementById("relFiltroUnidadeTexto").textContent = "Mostrando só os encaminhados para: "+state.relFiltroUnidadeNome+" (cód. "+state.relFiltroUnidadeCod+")";
+    if(state.relFiltroConvocacao && !relAceitaFiltroConvocacao(tipo)) state.relFiltroConvocacao = null;
+    if(state.relFiltroPerfil && tipo!=="perfil") state.relFiltroPerfil = null;
+    var filtroConvAtivo = !!(state.relFiltroConvocacao || state.relFiltroPerfil);
+    document.getElementById("relFiltroConvBox").style.display = filtroConvAtivo ? "flex" : "none";
+    if(filtroConvAtivo){
+      var partesFiltro = [];
+      if(state.relFiltroConvocacao) partesFiltro.push(rotuloConvocacao(state.relFiltroConvocacao)+" convocação");
+      if(state.relFiltroPerfil && DIAGNOSTICOS[state.relFiltroPerfil]) partesFiltro.push("perfil "+DIAGNOSTICOS[state.relFiltroPerfil].perfil);
+      document.getElementById("relFiltroConvTexto").textContent = "Mostrando só: "+partesFiltro.join(" · ")+".";
+      document.getElementById("btnLimparFiltroConvRel").textContent = state.relFiltroPerfil ? "Ver todos os registros" : "Ver todas as convocações";
+    }
     var corpo = document.getElementById("relCorpo");
     var empty = document.getElementById("relEmpty");
     var termo = normaliza(document.getElementById("relDetalheBusca").value);
@@ -4522,7 +4613,7 @@
         if(campo==="mun") return h.candidato&&h.candidato.mun;
         if(campo==="nte") return h.candidato&&h.candidato.nte;
       };
-      var todos = historicoVisivel().filter(function(h){
+      var todos = filtrarPorConvocacaoRel("perfil", historicoVisivel()).filter(function(h){
         if(!termo) return true;
         return normaliza(((h.candidato&&h.candidato.nome)||"")+" "+textoBuscaConvocacao(convocacaoDoRegistro(h))).indexOf(termo)!==-1;
       });
@@ -4534,6 +4625,7 @@
       }
       empty.style.display = "none";
       var grupos = [["escola","Escola / Atendimento Direto"],["gestao","Gestão / Unidade Administrativa"],["hibrido","Perfil Coringa / Híbrido"]];
+      if(state.relFiltroPerfil) grupos = grupos.filter(function(g){ return g[0]===state.relFiltroPerfil; });
       var idxGlobal = 0;
       var listaOrdenada = [];
       corpo.innerHTML = grupos.map(function(g){
@@ -4570,7 +4662,7 @@
     var cfg = RELATORIOS_CONFIG[tipo];
     if(!cfg) return;
     var estado = estadoOrdenacaoDe(tipo);
-    var dados = cfg.getDados();
+    var dados = filtrarPorConvocacaoRel(tipo, cfg.getDados());
     var lista = !termo ? dados.slice() : dados.filter(function(item){ return normaliza(cfg.buscaTexto(item)).indexOf(termo)!==-1; });
     lista = aplicarOrdenacao(lista, estado, cfg.getValor);
     document.getElementById("relCount").textContent = lista.length+" de "+dados.length+" registro(s)";
@@ -4627,7 +4719,7 @@
     var corpo = document.getElementById("relCorpo");
     var lista = corpo._listaAtual||[];
     if(lista.length===0) return;
-    imprimirListaRelatorio(cfg.titulo, cfg.colunas, lista, cfg.montarLinha);
+    imprimirListaRelatorio(tituloRelatorio(tipo), cfg.colunas, lista, cfg.montarLinha);
   });
 
   /* ================= Sub-abas do módulo Candidatos ================= */
@@ -6918,7 +7010,7 @@
     document.getElementById("panel-usuarios").classList.toggle("active", nome==="usuarios");
     document.getElementById("panel-configuracoes").classList.toggle("active", nome==="configuracoes");
     state.ativeTab = nome;
-    if(nome==="dashboard"){ renderDashboard(); window.scrollTo({top:0, behavior:"instant"}); }
+    if(nome==="dashboard"){ renderDashboardAtivo(); window.scrollTo({top:0, behavior:"instant"}); }
     if(nome==="candidatos") renderCandidatos();
     if(nome==="relatorios") voltarMenuRelatorios();
     if(nome==="recepcao"){ renderHorariosRecepcao(); renderAgendarRecepcao(); }
@@ -6952,8 +7044,217 @@
     }
   }
   function renderDashboardSeAtiva(){
-    if(state.ativeTab==="dashboard") renderDashboard();
+    if(state.ativeTab==="dashboard") renderDashboardAtivo();
   }
+  function renderDashboardAtivo(){
+    if(state.dashSubtab==="convocacoes") renderDashboardConvocacoes();
+    else renderDashboard();
+  }
+  function ativarSubTabDashboard(nome){
+    state.dashSubtab = nome;
+    document.querySelectorAll("#panel-dashboard .subtab-btn").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-subtab")===nome);
+    });
+    document.getElementById("subpanel-dash-geral").classList.toggle("active", nome==="geral");
+    document.getElementById("subpanel-dash-convocacoes").classList.toggle("active", nome==="convocacoes");
+    renderDashboardAtivo();
+  }
+  document.querySelectorAll("#panel-dashboard .subtab-btn").forEach(function(b){
+    b.addEventListener("click", function(){ ativarSubTabDashboard(b.getAttribute("data-subtab")); });
+  });
+
+  /* ================= Painel de Convocações =================
+     Um retrato de cada convocação (1ª, 2ª, …): quantos foram convocados, avaliados,
+     encaminhados e em que situação estão. Todo número abre a lista correspondente. */
+  var LISTAS_CONVOCACAO = ["Ampla", "Cota Negro", "Cota PCD"];
+  function resumoConvocacao(numero){
+    var r = {
+      numero: numero, candidatos: 0, avaliados: 0, naoAvaliados: 0, naoCompareceuAvaliacao: 0,
+      pcd: 0, comEncaminhamento: 0, semEncaminhamento: 0,
+      encaminhamentos: 0, confirmados: 0, pendentes: 0, naoAssumiu: 0,
+      perfis: {escola:0, gestao:0, hibrido:0},
+      listas: {"Ampla":0, "Cota Negro":0, "Cota PCD":0, "semLista":0},
+      ntes: {}
+    };
+    todosCandidatos().forEach(function(c){
+      if(convocacaoDe(c) !== numero) return;
+      r.candidatos++;
+      var nte = nteNumero(c.nte) || "—";
+      if(!r.ntes[nte]) r.ntes[nte] = {nte:nte, total:0, avaliados:0, naoAvaliados:0, encaminhados:0};
+      var linhaNte = r.ntes[nte];
+      linhaNte.total++;
+      var avaliacao = avaliacaoMaisRecente(c);
+      if(avaliacao){
+        r.avaliados++; linhaNte.avaliados++;
+        if(r.perfis[avaliacao.chave] !== undefined) r.perfis[avaliacao.chave]++;
+        if(avaliacao.deficiencia && avaliacao.deficiencia.possui) r.pcd++;
+      }else if(candidatoNaoCompareceuAvaliacao(c)){
+        r.naoCompareceuAvaliacao++;
+      }else{
+        r.naoAvaliados++; linhaNte.naoAvaliados++;
+      }
+      if(encaminhadoInfo(c).temRegistro){ r.comEncaminhamento++; linhaNte.encaminhados++; }
+      else r.semEncaminhamento++;
+      var lista = modalidadeDe(c);
+      if(r.listas[lista] !== undefined) r.listas[lista]++; else r.listas.semLista++;
+    });
+    encaminhamentosVisiveis().forEach(function(h){
+      if(convocacaoDoRegistro(h) !== numero) return;
+      r.encaminhamentos++;
+      var situacao = situacaoEncaminhamento(h);
+      if(situacao==="confirmado") r.confirmados++;
+      else if(situacao==="naoAssumiu") r.naoAssumiu++;
+      else r.pendentes++;
+    });
+    r.listaNtes = Object.keys(r.ntes).map(function(k){ return r.ntes[k]; })
+      .sort(function(a,b){ return (parseInt(a.nte,10)||999) - (parseInt(b.nte,10)||999); });
+    return r;
+  }
+  var _acoesPainelConv = [];
+  function acaoPainelConv(acao){ return _acoesPainelConv.push(acao) - 1; }
+  function cardConv(valor, deTotal, rotulo, cor, acao){
+    var i = acaoPainelConv(acao);
+    return '<button class="conv-mini" type="button" style="--dc:'+cor+'" data-conv-idx="'+i+'" title="Ver os registros que formam este número">'+
+      '<div class="num">'+valor+(deTotal!=null ? ' <small>de '+deTotal+'</small>' : '')+'</div>'+
+      '<div class="lbl">'+escapeHtml(rotulo)+'</div></button>';
+  }
+  function numeroConv(valor, acao){
+    if(!valor) return '<span class="conv-zero">0</span>';
+    var i = acaoPainelConv(acao);
+    return '<button class="link-btn" type="button" data-conv-idx="'+i+'" title="Ver os registros que formam este número">'+valor+'</button>';
+  }
+  function renderDashboardConvocacoes(){
+    var el = document.getElementById("dashConvocacoesConteudo");
+    if(!el) return;
+    _acoesPainelConv = [];
+    var numeros = convocacoesExistentes();
+    var resumos = numeros.map(resumoConvocacao);
+    el._resumos = resumos;
+    if(resumos.length===0 || todosCandidatos().length===0){
+      el.innerHTML = '<div class="conv-bloco"><p class="pcd-base-legal" style="margin:0;">Nenhum candidato na base ainda. Carregue uma convocação em Configurações → Diário Oficial ou pela aba Candidatos.</p></div>';
+      return;
+    }
+
+    /* ---- Quadro comparativo (uma linha por convocação + total) ---- */
+    var colunas = [
+      {l:"Convocação", k:null},
+      {l:"Candidatos", k:"candidatos"},
+      {l:"Avaliados", k:"avaliados"},
+      {l:"Não avaliados", k:"naoAvaliados"},
+      {l:"Não compareceu", k:"naoCompareceuAvaliacao"},
+      {l:"Encaminhados", k:"comEncaminhamento"},
+      {l:"Confirmados", k:"confirmados"},
+      {l:"Não assumiu", k:"naoAssumiu"},
+      {l:"Não encaminhados", k:"semEncaminhamento"}
+    ];
+    function acaoDaColuna(chave, numeroConvocacao){
+      var conv = numeroConvocacao ? {candFiltroConvocacao:numeroConvocacao} : {};
+      if(chave==="candidatos") return {tipo:"cand", filtros:conv};
+      if(chave==="avaliados") return {tipo:"rel", rel:"avaliados", conv:numeroConvocacao};
+      if(chave==="naoAvaliados") return {tipo:"rel", rel:"naoavaliados", conv:numeroConvocacao};
+      if(chave==="naoCompareceuAvaliacao") return {tipo:"rel", rel:"naocompareceuavaliacao", conv:numeroConvocacao};
+      if(chave==="comEncaminhamento") return {tipo:"cand", filtros:Object.assign({candFiltroSituacao:"comRegistro"}, conv)};
+      if(chave==="confirmados") return {tipo:"rel", rel:"confirmados", conv:numeroConvocacao};
+      if(chave==="naoAssumiu") return {tipo:"rel", rel:"naoassumiu", conv:numeroConvocacao};
+      if(chave==="semEncaminhamento") return {tipo:"rel", rel:"naoencaminhados", conv:numeroConvocacao};
+      return null;
+    }
+    var totais = {};
+    colunas.forEach(function(col){
+      if(!col.k) return;
+      totais[col.k] = resumos.reduce(function(soma, r){ return soma + r[col.k]; }, 0);
+    });
+    var linhasQuadro = resumos.map(function(r){
+      return '<tr><td><strong>'+tagConvocacao(r.numero)+'</strong></td>'+
+        colunas.slice(1).map(function(col){ return '<td>'+numeroConv(r[col.k], acaoDaColuna(col.k, r.numero))+'</td>'; }).join("")+'</tr>';
+    }).join("");
+    var linhaTotal = '<tr><td><strong>Total</strong></td>'+
+      colunas.slice(1).map(function(col){ return '<td><strong>'+numeroConv(totais[col.k], acaoDaColuna(col.k, null))+'</strong></td>'; }).join("")+'</tr>';
+
+    var html = '<div class="conv-bloco">'+
+      '<div class="conv-bloco-head"><h3>Quadro comparativo</h3><span class="hint">'+resumos.length+' convocação(ões) na base</span></div>'+
+      '<div class="table-scroll"><table class="hist"><thead><tr>'+
+      colunas.map(function(col){ return '<th>'+escapeHtml(col.l)+'</th>'; }).join("")+
+      '</tr></thead><tbody>'+linhasQuadro+linhaTotal+'</tbody></table></div></div>';
+
+    /* ---- Um bloco por convocação ---- */
+    html += resumos.map(function(r){
+      var conv = {candFiltroConvocacao:r.numero};
+      var pct = r.candidatos ? Math.round(r.avaliados*100/r.candidatos) : 0;
+      var blocos =
+        '<div class="conv-mini-grid">'+
+          cardConv(r.candidatos, null, "Candidatos convocados", "var(--dc1)", {tipo:"cand", filtros:conv})+
+          cardConv(r.avaliados, r.candidatos, "Avaliados", "var(--dc2)", {tipo:"rel", rel:"avaliados", conv:r.numero})+
+          cardConv(r.naoAvaliados, r.candidatos, "Não avaliados", "var(--dc7)", {tipo:"rel", rel:"naoavaliados", conv:r.numero})+
+          cardConv(r.naoCompareceuAvaliacao, null, "Não compareceu (avaliação)", "var(--dc8)", {tipo:"rel", rel:"naocompareceuavaliacao", conv:r.numero})+
+          cardConv(r.pcd, null, "PcD identificados", "var(--dc4)", {tipo:"cand", filtros:Object.assign({candFiltroPcd:"sim"}, conv)})+
+        '</div>'+
+        '<div class="conv-secao">Encaminhamento</div>'+
+        '<div class="conv-mini-grid">'+
+          cardConv(r.comEncaminhamento, r.candidatos, "Encaminhados", "var(--dc3)", {tipo:"cand", filtros:Object.assign({candFiltroSituacao:"comRegistro"}, conv)})+
+          cardConv(r.confirmados, r.encaminhamentos, "Confirmados", "var(--dc2)", {tipo:"rel", rel:"confirmados", conv:r.numero})+
+          cardConv(r.pendentes, r.encaminhamentos, "Pendentes", "var(--dc9)", {tipo:"cand", filtros:Object.assign({candFiltroSituacao:"pendente"}, conv)})+
+          cardConv(r.naoAssumiu, r.encaminhamentos, "Não assumiu", "var(--dc5)", {tipo:"rel", rel:"naoassumiu", conv:r.numero})+
+          cardConv(r.semEncaminhamento, r.candidatos, "Não encaminhados", "var(--dc6)", {tipo:"rel", rel:"naoencaminhados", conv:r.numero})+
+        '</div>'+
+        '<div class="conv-secao">Lista de convocação</div>'+
+        '<div class="conv-mini-grid">'+
+          LISTAS_CONVOCACAO.map(function(lista){
+            return cardConv(r.listas[lista], r.candidatos, lista, "var(--dc1)", {tipo:"cand", filtros:Object.assign({candFiltroModalidade:lista}, conv)});
+          }).join("")+
+          (r.listas.semLista ? cardConv(r.listas.semLista, r.candidatos, "Lista não informada", "var(--dc6)", {tipo:"cand", filtros:conv}) : "")+
+        '</div>'+
+        '<div class="conv-secao">Perfil indicado (entre os avaliados)</div>'+
+        '<div class="conv-mini-grid">'+
+          cardConv(r.perfis.escola, r.avaliados, "Escola / Atendimento Direto", "var(--escola)", {tipo:"rel", rel:"perfil", conv:r.numero, perfil:"escola"})+
+          cardConv(r.perfis.gestao, r.avaliados, "Gestão / Unidade Administrativa", "var(--gestao)", {tipo:"rel", rel:"perfil", conv:r.numero, perfil:"gestao"})+
+          cardConv(r.perfis.hibrido, r.avaliados, "Perfil Coringa / Híbrido", "var(--hibrido)", {tipo:"rel", rel:"perfil", conv:r.numero, perfil:"hibrido"})+
+        '</div>'+
+        '<details class="conv-det"><summary>Por NTE ('+r.listaNtes.length+' NTE(s) nesta convocação)</summary>'+
+          '<div class="table-scroll"><table class="hist"><thead><tr><th>NTE</th><th>Candidatos</th><th>Avaliados</th><th>Não avaliados</th><th>Encaminhados</th></tr></thead><tbody>'+
+          r.listaNtes.map(function(linha){
+            var base = {candFiltroConvocacao:r.numero, candFiltroNte:linha.nte};
+            return '<tr><td>NTE '+escapeHtml(linha.nte)+'</td>'+
+              '<td>'+numeroConv(linha.total, {tipo:"cand", filtros:base})+'</td>'+
+              '<td>'+numeroConv(linha.avaliados, {tipo:"cand", filtros:Object.assign({candFiltroAvaliacao:"avaliado"}, base)})+'</td>'+
+              '<td>'+numeroConv(linha.naoAvaliados, {tipo:"cand", filtros:Object.assign({candFiltroAvaliacao:"pendente"}, base)})+'</td>'+
+              '<td>'+numeroConv(linha.encaminhados, {tipo:"cand", filtros:Object.assign({candFiltroSituacao:"comRegistro"}, base)})+'</td></tr>';
+          }).join("")+
+          '</tbody></table></div></details>';
+      return '<div class="conv-bloco">'+
+        '<div class="conv-bloco-head"><h3>'+tagConvocacao(r.numero)+' convocação</h3>'+
+        '<span class="hint">'+pct+'% dos convocados já avaliados · '+r.encaminhamentos+' encaminhamento(s) registrado(s)</span></div>'+
+        blocos+'</div>';
+    }).join("");
+
+    el.innerHTML = html;
+    el.querySelectorAll("[data-conv-idx]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        executarAcaoPainelConv(_acoesPainelConv[parseInt(btn.getAttribute("data-conv-idx"),10)]);
+      });
+    });
+  }
+  function executarAcaoPainelConv(acao){
+    if(!acao) return;
+    if(acao.tipo==="cand"){ irParaCandidatosFiltrado(acao.filtros); return; }
+    ativarAba("relatorios");
+    abrirRelatorioDaConvocacao(acao.rel, acao.conv, acao.perfil);
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  document.getElementById("btnImprimirPainelConv").addEventListener("click", function(){
+    var resumos = document.getElementById("dashConvocacoesConteudo")._resumos || [];
+    if(resumos.length===0) return;
+    imprimirListaRelatorio(
+      "Painel de Convocações",
+      [{l:"Convocação"},{l:"Candidatos"},{l:"Avaliados"},{l:"Não avaliados"},{l:"Não compareceu"},{l:"Encaminhados"},{l:"Confirmados"},{l:"Não assumiu"},{l:"Não encaminhados"}],
+      resumos,
+      function(r){
+        return '<td>'+rotuloConvocacao(r.numero)+' convocação</td><td>'+r.candidatos+'</td><td>'+r.avaliados+'</td>'+
+          '<td>'+r.naoAvaliados+'</td><td>'+r.naoCompareceuAvaliacao+'</td><td>'+r.comEncaminhamento+'</td>'+
+          '<td>'+r.confirmados+'</td><td>'+r.naoAssumiu+'</td><td>'+r.semEncaminhamento+'</td>';
+      }
+    );
+  });
   function svgDonut(segmentos){
     var total = segmentos.reduce(function(s,x){ return s+x.valor; }, 0);
     if(total===0) return '<div class="dash-chart-empty">Sem dados ainda.</div>';
@@ -7085,6 +7386,26 @@
     el.querySelectorAll("[data-dash-nav]").forEach(function(card){
       card.addEventListener("click", function(){ navegarDoCardDashboard(card.getAttribute("data-dash-nav")); });
     });
+  }
+  var IDS_FILTRO_CAND = ["candFiltroConvocacao","candFiltroNte","candFiltroMun","candFiltroModalidade","candFiltroFormacao","candFiltroAvaliacao","candFiltroPcd","candFiltroSituacao"];
+  /* Abre a Base de Candidatos já filtrada (usado pelos números do painel de Convocações). */
+  function irParaCandidatosFiltrado(filtros){
+    ativarAba("candidatos");
+    ativarSubTabCandidatos("base");
+    document.getElementById("candBusca").value = "";
+    IDS_FILTRO_CAND.forEach(function(id){ document.getElementById(id).value = ""; });
+    state.candPagina = 1;
+    renderCandidatos(); // repopula os selects dinâmicos (convocação, NTE, município) antes de aplicar
+    Object.keys(filtros||{}).forEach(function(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      var valor = String(filtros[id]);
+      var existe = Array.prototype.some.call(el.options, function(o){ return o.value===valor; });
+      if(!existe) el.add(new Option(valor, valor));
+      el.value = valor;
+    });
+    renderCandidatos();
+    window.scrollTo({top:0, behavior:"smooth"});
   }
   function navegarDoCardDashboard(destino){
     if(destino==="candidatos"){
