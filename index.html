@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Avaliação de Perfil Vocacional — Técnico de Nível Médio [build 2026-09-19-a]</title>
+<title>Avaliação de Perfil Vocacional — Técnico de Nível Médio [build 2026-10-13-a]</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -433,6 +433,7 @@
   .badge.escola{ background:var(--escola-soft); color:var(--escola); }
   .badge.gestao{ background:var(--gestao-soft); color:var(--gestao); }
   .badge.hibrido{ background:var(--hibrido-soft); color:var(--hibrido); }
+  .conv-tag{ display:inline-block; padding:2px 9px; border-radius:20px; font-size:12px; font-weight:700; background:var(--blue-soft); color:var(--blue); white-space:nowrap; }
   .hist-empty{ padding:28px 10px; text-align:center; color:var(--text-muted); font-size:13.5px; }
   .hist-actions{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
   .table-scroll{ overflow-x:auto; }
@@ -488,6 +489,7 @@
     #printStage .print-page{ page-break-after:always; }
     #printStage .print-page:last-child{ page-break-after:auto; }
     #printStage .rep-titulo{ color:#1F3864 !important; }
+    #printStage .conv-tag{ background:none !important; color:#111 !important; padding:0; border-radius:0; font-weight:700; }
     #printStage .rep-resultado{ background:#F5F5F5 !important; border-color:#ccc !important; }
     #printStage .rep-resultado.escola{ border-left-color:#1F7A5C !important; }
     #printStage .rep-resultado.gestao{ border-left-color:#2E5395 !important; }
@@ -639,6 +641,9 @@
         <div class="row2">
           <div class="field"><label for="manInsc">Nº de inscrição</label><input type="text" id="manInsc" placeholder="Opcional"></div>
           <div class="field"><label for="manMun">Município</label><input type="text" id="manMun" placeholder="Opcional"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="manConvocacao">Convocação</label><input type="number" id="manConvocacao" min="1" step="1" inputmode="numeric" placeholder="Ex.: 2"></div>
         </div>
         <button class="btn btn-sm" type="button" id="btnUsarManual">Usar estes dados</button>
       </div>
@@ -1136,12 +1141,12 @@
         <div class="hist-actions">
           <h2 style="font-size:15px;">Encaminhamentos registrados <span id="encCountLabel"></span></h2>
         </div>
-        <div class="field" style="max-width:340px;">
-          <input type="text" id="encBusca" placeholder="Buscar por servidor, unidade, município ou NTE…">
+        <div class="field" style="max-width:480px;">
+          <input type="text" id="encBusca" placeholder="Buscar por servidor, convocação, unidade, município ou NTE…">
         </div>
         <div class="table-scroll">
           <table class="hist" id="encTable">
-            <thead><tr><th><input type="checkbox" id="encSelecionarTudo"></th><th data-sort="data">Data</th><th data-sort="servidor">Servidor</th><th data-sort="unidade">Unidade de destino</th><th data-sort="cod">Código</th><th data-sort="mun">Município / NTE</th><th data-sort="subst">Substituído</th><th data-sort="matricula">Matrícula</th><th data-sort="registrado">Registrado por</th><th></th></tr></thead>
+            <thead><tr><th><input type="checkbox" id="encSelecionarTudo"></th><th data-sort="data">Data</th><th data-sort="servidor">Servidor</th><th data-sort="convocacao">Convocação</th><th data-sort="unidade">Unidade de destino</th><th data-sort="cod">Código</th><th data-sort="mun">Município / NTE</th><th data-sort="subst">Substituído</th><th data-sort="matricula">Matrícula</th><th data-sort="registrado">Registrado por</th><th></th></tr></thead>
             <tbody id="encBody"></tbody>
           </table>
         </div>
@@ -2744,6 +2749,7 @@
   function metaCandidato(c){
     var partes = [ temCpf(c) ? maskCPF(c.cpf) : "CPF não informado" ];
     if(c.insc) partes.push("Insc. "+escapeHtml(c.insc));
+    partes.push(rotuloConvocacao(convocacaoDe(c))+" convocação");
     if(c.mun) partes.push(escapeHtml(c.mun)+(nteNumero(c.nte) ? " · NTE "+escapeHtml(nteNumero(c.nte)) : ""));
     return partes.join(" · ");
   }
@@ -2834,11 +2840,47 @@
   }
 
   /* ---- Convocação: nº da convocação (1ª, 2ª, ...) gravado em cada candidato ---- */
-  function convocacaoDe(c){
+  /* Nº da convocação gravado no próprio registro (0 = não gravado). */
+  function convocacaoGravada(c){
     var n = parseInt(c && c.convocacao, 10);
-    return n > 0 ? n : 1;
+    return n > 0 ? n : 0;
   }
+  /* Índice inscrição/CPF → convocação da base viva (embutida + adicionados); refeito só quando a base muda. */
+  var _indiceConv = { ref:null, tam:-1, porInsc:{}, porCpf:{} };
+  function indiceConvocacoes(){
+    var extra = state.candidatosExtra || [];
+    if(_indiceConv.ref === extra && _indiceConv.tam === extra.length) return _indiceConv;
+    var porInsc = {}, porCpf = {};
+    CANDIDATOS_BASE.concat(extra).forEach(function(c){
+      var n = convocacaoGravada(c) || 1;
+      var insc = String(c.insc || "").trim();
+      var cpf = digits(c.cpf);
+      if(insc) porInsc[insc] = n;
+      if(cpf) porCpf[cpf] = n;
+    });
+    _indiceConv = { ref:extra, tam:extra.length, porInsc:porInsc, porCpf:porCpf };
+    return _indiceConv;
+  }
+  /* Convocação de um candidato OU do snapshot gravado numa avaliação/encaminhamento: a gravada no registro;
+     se o registro é anterior ao campo, a que consta na base (por inscrição ou CPF); na falta, 1ª. */
+  function convocacaoDe(c){
+    var n = convocacaoGravada(c);
+    if(n) return n;
+    if(c){
+      var idx = indiceConvocacoes();
+      var insc = String(c.insc || "").trim();
+      if(insc && idx.porInsc[insc]) return idx.porInsc[insc];
+      var cpf = digits(c.cpf);
+      if(cpf && idx.porCpf[cpf]) return idx.porCpf[cpf];
+    }
+    return 1;
+  }
+  function convocacaoDoRegistro(h){ return convocacaoDe(h && h.candidato); }
   function rotuloConvocacao(n){ return n + "ª"; }
+  /* Selo para células de tabela: o texto continua sendo "nª" (ordena, busca e imprime como texto). */
+  function tagConvocacao(n){ return '<span class="conv-tag" title="'+n+'ª convocação">'+rotuloConvocacao(n)+'</span>'; }
+  /* Texto para a busca das listas: digitar "2ª", "2a" ou "2 convocacao" acha a 2ª convocação. */
+  function textoBuscaConvocacao(n){ return n + "ª " + n + "a " + n + " convocacao"; }
   function convocacoesExistentes(){
     var vistos = {};
     CANDIDATOS_BASE.concat(state.candidatosExtra).forEach(function(c){ vistos[convocacaoDe(c)] = true; });
@@ -3079,6 +3121,7 @@
     // cópia: o CPF digitado aqui vale para esta avaliação e não altera a base de candidatos
     var c = Object.assign({}, cOriginal);
     if(!temCpf(c)){ var cpfJa = cpfConhecido(c); if(cpfJa) c.cpf = cpfJa; }
+    c.convocacao = convocacaoDe(cOriginal); // a avaliação guarda a convocação do candidato
     state.candidato = c;
     if(c.pne){
       setPcdUI(true, "", "", "Classificado(a) na lista de convocação com ranking PcD ("+c.pne+"). Confirme o tipo de deficiência abaixo.");
@@ -3120,6 +3163,7 @@
     document.getElementById("manCpf").value = "";
     document.getElementById("manInsc").value = "";
     document.getElementById("manMun").value = "";
+    document.getElementById("manConvocacao").value = "";
     document.getElementById("cardQuestionario").style.display = "none";
     setPcdUI(false, "", "", null);
     atualizarRelatorio();
@@ -3127,6 +3171,8 @@
 
   document.getElementById("btnManual").addEventListener("click", function(){
     document.getElementById("manualBox").style.display = "block";
+    var inpConvMan = document.getElementById("manConvocacao");
+    if(!inpConvMan.value) inpConvMan.value = ultimaConvocacao(); // sugere a convocação mais recente
   });
   document.getElementById("btnUsarManual").addEventListener("click", function(){
     var nome = document.getElementById("manNome").value.trim();
@@ -3136,6 +3182,7 @@
       cpf:document.getElementById("manCpf").value.trim(),
       insc:document.getElementById("manInsc").value.trim(),
       mun:document.getElementById("manMun").value.trim(),
+      convocacao: (parseInt(document.getElementById("manConvocacao").value,10) > 0 ? parseInt(document.getElementById("manConvocacao").value,10) : ultimaConvocacao()),
       nte:"", manual:true
     });
   });
@@ -3443,7 +3490,7 @@
         '<td>'+escapeHtml(c.nome)+'</td>'+
         '<td>'+(cpfConhecido(c) ? maskCPF(cpfConhecido(c)) : '—')+'</td>'+
         '<td>'+escapeHtml(c.insc||"—")+'</td>'+
-        '<td>'+rotuloConvocacao(convocacaoDe(c))+'</td>'+
+        '<td>'+tagConvocacao(convocacaoDe(c))+'</td>'+
         '<td>'+escapeHtml(rotuloClassificacao(c))+'</td>'+
         '<td>'+escapeHtml(nteNumero(c.nte)||"—")+'</td>'+
         '<td>'+escapeHtml(c.mun||"—")+'</td>'+
@@ -3879,7 +3926,8 @@
     '  <div><dt>Nome</dt><dd>'+escapeHtml(c.nome)+'</dd></div>'+
     '  <div><dt>CPF</dt><dd>'+(temCpf(c) ? maskCPF(c.cpf) : 'Não informado')+'</dd></div>'+
     '  <div><dt>Nº de inscrição</dt><dd>'+escapeHtml(c.insc||"—")+'</dd></div>'+
-    '  <div><dt>Município / NTE</dt><dd>'+escapeHtml(c.mun||"—")+(c.nte? ' · NTE '+escapeHtml(c.nte):'')+'</dd></div>'+
+    '  <div><dt>Convocação</dt><dd>'+rotuloConvocacao(convocacaoDe(c))+' convocação</dd></div>'+
+    '  <div class="full"><dt>Município / NTE</dt><dd>'+escapeHtml(c.mun||"—")+(c.nte? ' · NTE '+escapeHtml(c.nte):'')+'</dd></div>'+
     (c.formacao ? '  <div class="full"><dt>Formação</dt><dd>'+escapeHtml(c.formacao)+'</dd></div>' : '')+
     '  <div><dt>Data da avaliação</dt><dd>'+fmtDataBR(d.data)+'</dd></div>'+
     (d.bairro ? '  <div><dt>Bairro onde reside</dt><dd>'+escapeHtml(d.bairro)+'</dd></div>' : '')+
@@ -4082,10 +4130,11 @@
     avaliados: {
       titulo: "Relatório de Avaliados",
       getDados: function(){ return historicoVisivel(); },
-      colunas: [{l:"Data",c:"data"},{l:"Candidato",c:"nome"},{l:"Município",c:"mun"},{l:"NTE",c:"nte"},{l:"Perfil",c:"perfil"}],
+      colunas: [{l:"Data",c:"data"},{l:"Candidato",c:"nome"},{l:"Convocação",c:"convocacao"},{l:"Município",c:"mun"},{l:"NTE",c:"nte"},{l:"Perfil",c:"perfil"}],
       getValor: function(h, campo){
         if(campo==="data") return h.data;
         if(campo==="nome") return h.candidato&&h.candidato.nome;
+        if(campo==="convocacao") return convocacaoDoRegistro(h);
         if(campo==="mun") return h.candidato&&h.candidato.mun;
         if(campo==="nte") return h.candidato&&h.candidato.nte;
         if(campo==="perfil") return DIAGNOSTICOS[h.chave]&&DIAGNOSTICOS[h.chave].perfil;
@@ -4095,11 +4144,12 @@
         var diag = DIAGNOSTICOS[h.chave];
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(h.candidato.nome)+'</td>'+
+          '<td>'+tagConvocacao(convocacaoDoRegistro(h))+'</td>'+
           '<td>'+escapeHtml((h.candidato&&h.candidato.mun)||"—")+'</td>'+
           '<td>'+escapeHtml((h.candidato&&h.candidato.nte)||"—")+'</td>'+
           '<td><span class="badge '+h.chave+'">'+diag.perfil+'</span></td>';
       },
-      buscaTexto: function(h){ return (h.candidato&&h.candidato.nome||"")+" "+(h.candidato&&h.candidato.mun||"")+" "+(h.candidato&&h.candidato.nte||""); },
+      buscaTexto: function(h){ return (h.candidato&&h.candidato.nome||"")+" "+(h.candidato&&h.candidato.mun||"")+" "+(h.candidato&&h.candidato.nte||"")+" "+textoBuscaConvocacao(convocacaoDoRegistro(h)); },
       imprimirLote: imprimirRelatorios
     },
     naoavaliados: {
@@ -4117,7 +4167,7 @@
         return '<td>'+escapeHtml(c.nome)+'</td>'+
           '<td>'+(cpfConhecido(c) ? maskCPF(cpfConhecido(c)) : '—')+'</td>'+
           '<td>'+escapeHtml(c.insc||"—")+'</td>'+
-          '<td>'+rotuloConvocacao(convocacaoDe(c))+'</td>'+
+          '<td>'+tagConvocacao(convocacaoDe(c))+'</td>'+
           '<td>'+escapeHtml(nteNumero(c.nte)||"—")+'</td>'+
           '<td>'+escapeHtml(c.mun||"—")+'</td>'+
           '<td>'+escapeHtml(c.formacao||"—")+'</td>'+
@@ -4148,7 +4198,7 @@
         return '<td>'+escapeHtml(c.nome)+'</td>'+
           '<td>'+(cpfConhecido(c) ? maskCPF(cpfConhecido(c)) : '—')+'</td>'+
           '<td>'+escapeHtml(c.insc||"—")+'</td>'+
-          '<td>'+rotuloConvocacao(convocacaoDe(c))+'</td>'+
+          '<td>'+tagConvocacao(convocacaoDe(c))+'</td>'+
           '<td>'+escapeHtml(nteNumero(c.nte)||"—")+'</td>'+
           '<td>'+escapeHtml(c.mun||"—")+'</td>'+
           '<td>'+escapeHtml(c.formacao||"—")+'</td>';
@@ -4160,11 +4210,12 @@
       getDados: function(){
         return encaminhamentosVisiveis().filter(function(h){ return !state.relFiltroUnidadeCod || (h.unidade && h.unidade.cod===state.relFiltroUnidadeCod); });
       },
-      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"},{l:"Status",c:"status"}],
+      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Convocação",c:"convocacao"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"},{l:"Status",c:"status"}],
       getValor: function(h, campo){
         var c=h.candidato||{}, u=h.unidade||{};
         if(campo==="data") return h.data;
         if(campo==="servidor") return c.nome;
+        if(campo==="convocacao") return convocacaoDoRegistro(h);
         if(campo==="unidade") return u.unidade;
         if(campo==="cod") return u.cod;
         if(campo==="mun") return u.mun;
@@ -4176,23 +4227,25 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+tagConvocacao(convocacaoDoRegistro(h))+'</td>'+
           '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>'+
           '<td>'+situacaoPillHTML(h)+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+textoBuscaConvocacao(convocacaoDoRegistro(h))+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     confirmados: {
       titulo: "Relatório de Encaminhados Confirmados",
       getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return situacaoEncaminhamento(h)==="confirmado"; }); },
-      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"}],
+      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Convocação",c:"convocacao"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"}],
       getValor: function(h, campo){
         var c=h.candidato||{}, u=h.unidade||{};
         if(campo==="data") return h.data;
         if(campo==="servidor") return c.nome;
+        if(campo==="convocacao") return convocacaoDoRegistro(h);
         if(campo==="unidade") return u.unidade;
         if(campo==="cod") return u.cod;
         if(campo==="mun") return u.mun;
@@ -4203,22 +4256,24 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+tagConvocacao(convocacaoDoRegistro(h))+'</td>'+
           '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+textoBuscaConvocacao(convocacaoDoRegistro(h))+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     naocompareceu: {
       titulo: "Relatório — Não Compareceu",
       getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return situacaoEncaminhamento(h)==="naoCompareceu"; }); },
-      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"}],
+      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Convocação",c:"convocacao"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"}],
       getValor: function(h, campo){
         var c=h.candidato||{}, u=h.unidade||{};
         if(campo==="data") return h.data;
         if(campo==="servidor") return c.nome;
+        if(campo==="convocacao") return convocacaoDoRegistro(h);
         if(campo==="unidade") return u.unidade;
         if(campo==="cod") return u.cod;
         if(campo==="mun") return u.mun;
@@ -4229,22 +4284,24 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+tagConvocacao(convocacaoDoRegistro(h))+'</td>'+
           '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+textoBuscaConvocacao(convocacaoDoRegistro(h))+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     naoassumiu: {
       titulo: "Relatório — Não Assumiu",
       getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return situacaoEncaminhamento(h)==="naoAssumiu"; }); },
-      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"}],
+      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Convocação",c:"convocacao"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Substituído",c:"subst"}],
       getValor: function(h, campo){
         var c=h.candidato||{}, u=h.unidade||{};
         if(campo==="data") return h.data;
         if(campo==="servidor") return c.nome;
+        if(campo==="convocacao") return convocacaoDoRegistro(h);
         if(campo==="unidade") return u.unidade;
         if(campo==="cod") return u.cod;
         if(campo==="mun") return u.mun;
@@ -4255,22 +4312,24 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+tagConvocacao(convocacaoDoRegistro(h))+'</td>'+
           '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+(h.redaSubstituido?escapeHtml(h.redaSubstituido.nome):'—')+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+textoBuscaConvocacao(convocacaoDoRegistro(h))+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     semreda: {
       titulo: "Relatório — Encaminhados para Unidade sem REDA",
       getDados: function(){ return encaminhamentosVisiveis().filter(function(h){ return h.unidade && !unidadeTemRedaCadastrado(h.unidade.cod); }); },
-      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Status",c:"status"}],
+      colunas: [{l:"Data",c:"data"},{l:"Servidor",c:"servidor"},{l:"Convocação",c:"convocacao"},{l:"Unidade",c:"unidade"},{l:"Código",c:"cod"},{l:"Município/NTE",c:"mun"},{l:"Status",c:"status"}],
       getValor: function(h, campo){
         var c=h.candidato||{}, u=h.unidade||{};
         if(campo==="data") return h.data;
         if(campo==="servidor") return c.nome;
+        if(campo==="convocacao") return convocacaoDoRegistro(h);
         if(campo==="unidade") return u.unidade;
         if(campo==="cod") return u.cod;
         if(campo==="mun") return u.mun;
@@ -4281,12 +4340,13 @@
         var c=h.candidato||{}, u=h.unidade||{};
         return '<td>'+fmtDataBR(h.data)+'</td>'+
           '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+          '<td>'+tagConvocacao(convocacaoDoRegistro(h))+'</td>'+
           '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
           '<td>'+escapeHtml(u.cod||"—")+'</td>'+
           '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
           '<td>'+situacaoPillHTML(h)+'</td>';
       },
-      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
+      buscaTexto: function(h){ var c=h.candidato||{},u=h.unidade||{}; return (c.nome||"")+" "+textoBuscaConvocacao(convocacaoDoRegistro(h))+" "+(nomeUnidadeAtual(u)||"")+" "+(u.mun||"")+" "+(u.nte||"")+" "+(u.cod||""); },
       imprimirLote: imprimirOficiosLote
     },
     naoencaminhados: {
@@ -4304,7 +4364,7 @@
         return '<td>'+escapeHtml(c.nome)+'</td>'+
           '<td>'+(cpfConhecido(c) ? maskCPF(cpfConhecido(c)) : '—')+'</td>'+
           '<td>'+escapeHtml(c.insc||"—")+'</td>'+
-          '<td>'+rotuloConvocacao(convocacaoDe(c))+'</td>'+
+          '<td>'+tagConvocacao(convocacaoDe(c))+'</td>'+
           '<td>'+escapeHtml(nteNumero(c.nte)||"—")+'</td>'+
           '<td>'+escapeHtml(c.mun||"—")+'</td>'+
           '<td>'+escapeHtml(c.formacao||"—")+'</td>'+
@@ -4454,16 +4514,17 @@
     if(tipo==="perfil"){
       document.getElementById("relToolbarImprimir").style.display = "flex";
       var estadoPerfil = estadoOrdenacaoDe("perfil");
-      var colsPerfil = [{l:"Data",c:"data"},{l:"Candidato",c:"nome"},{l:"Município",c:"mun"},{l:"NTE",c:"nte"}];
+      var colsPerfil = [{l:"Data",c:"data"},{l:"Candidato",c:"nome"},{l:"Convocação",c:"convocacao"},{l:"Município",c:"mun"},{l:"NTE",c:"nte"}];
       var valorPerfil = function(h,campo){
         if(campo==="data") return h.data;
         if(campo==="nome") return h.candidato&&h.candidato.nome;
+        if(campo==="convocacao") return convocacaoDoRegistro(h);
         if(campo==="mun") return h.candidato&&h.candidato.mun;
         if(campo==="nte") return h.candidato&&h.candidato.nte;
       };
       var todos = historicoVisivel().filter(function(h){
         if(!termo) return true;
-        return normaliza((h.candidato&&h.candidato.nome)||"").indexOf(termo)!==-1;
+        return normaliza(((h.candidato&&h.candidato.nome)||"")+" "+textoBuscaConvocacao(convocacaoDoRegistro(h))).indexOf(termo)!==-1;
       });
       document.getElementById("relCount").textContent = todos.length+" avaliação(ões)";
       if(todos.length===0){
@@ -4482,7 +4543,7 @@
           var i = idxGlobal++;
           listaOrdenada.push(h);
           return '<tr><td><input type="checkbox" class="rel-check" data-idx="'+i+'"></td>'+
-            '<td>'+fmtDataBR(h.data)+'</td><td>'+escapeHtml(h.candidato.nome)+'</td>'+
+            '<td>'+fmtDataBR(h.data)+'</td><td>'+escapeHtml(h.candidato.nome)+'</td><td>'+tagConvocacao(convocacaoDoRegistro(h))+'</td>'+
             '<td>'+escapeHtml((h.candidato&&h.candidato.mun)||"—")+'</td><td>'+escapeHtml((h.candidato&&h.candidato.nte)||"—")+'</td></tr>';
         }).join("");
         return '<div class="rel-perfil-secao"><h3>'+g[1]+' ('+doGrupo.length+')</h3>'+
@@ -4670,6 +4731,7 @@
     // cópia: o CPF informado aqui vale para este encaminhamento e não altera a base de candidatos
     var c = Object.assign({}, cOriginal);
     if(!temCpf(c)){ var cpfJa = cpfConhecido(c); if(cpfJa) c.cpf = cpfJa; }
+    c.convocacao = convocacaoDe(cOriginal); // o encaminhamento guarda a convocação do candidato
     state.encCandidato = c;
     encBuscaInput.value = "";
     encBuscaResultados.classList.remove("show");
@@ -4946,7 +5008,7 @@
     state.encEditandoId = h.id;
     state.encRegistroOriginal = h;
 
-    state.encCandidato = Object.assign({}, h.candidato);
+    state.encCandidato = Object.assign({}, h.candidato, { convocacao: convocacaoDoRegistro(h) });
     document.getElementById("encBuscaBox").style.display = "none";
     document.getElementById("encJaEncaminhadoAviso").style.display = "none";
     document.getElementById("encJaEncaminhadoAviso").innerHTML = "";
@@ -5450,7 +5512,7 @@
       var h = ag && horariosPorId[ag.horarioId];
       var horarioTxt = h ? fmtDataHoraRecepcao(h) : (ag ? '<span class="hint">Horário removido</span>' : '—');
       return '<tr><td><input type="checkbox" class="recag-check" data-idx="'+i+'"></td>'+
-        '<td>'+escapeHtml(c.nome)+'</td><td>'+escapeHtml(c.insc||"—")+'</td><td>'+rotuloConvocacao(convocacaoDe(c))+'</td><td>'+escapeHtml(modalidadeDe(c)||"—")+'</td><td>'+escapeHtml(nteNumero(c.nte)||"—")+'</td><td>'+escapeHtml(c.mun||"—")+'</td>'+
+        '<td>'+escapeHtml(c.nome)+'</td><td>'+escapeHtml(c.insc||"—")+'</td><td>'+tagConvocacao(convocacaoDe(c))+'</td><td>'+escapeHtml(modalidadeDe(c)||"—")+'</td><td>'+escapeHtml(nteNumero(c.nte)||"—")+'</td><td>'+escapeHtml(c.mun||"—")+'</td>'+
         '<td>'+horarioTxt+'</td></tr>';
     }).join("");
     tbody._listaAtual = lista;
@@ -5900,7 +5962,7 @@
       ", "+jaExiste+" já cadastrado(s) (serão ignorados), "+invalidos+" sem inscrição/nome ou duplicado(s) no arquivo (ignorados).";
     var rotulo = {novo:"Novo", jaexiste:"Já existe", invalido:"Sem dados", duplicado:"Duplicado no arquivo"};
     document.getElementById("diarioPreviewBody").innerHTML = linhas.map(function(l){
-      return "<tr><td>"+escapeHtml(l.nte)+"</td><td>"+escapeHtml(l.mun)+"</td><td>"+escapeHtml(l.insc)+"</td><td>"+escapeHtml(l.nome)+"</td><td>"+escapeHtml(l.nota)+"</td><td>"+escapeHtml(l.classificacao)+"</td><td>"+escapeHtml(l.modalidade||"—")+"</td><td>"+rotuloConvocacao(l.convocacao)+"</td><td>"+rotulo[l.situacao]+"</td></tr>";
+      return "<tr><td>"+escapeHtml(l.nte)+"</td><td>"+escapeHtml(l.mun)+"</td><td>"+escapeHtml(l.insc)+"</td><td>"+escapeHtml(l.nome)+"</td><td>"+escapeHtml(l.nota)+"</td><td>"+escapeHtml(l.classificacao)+"</td><td>"+escapeHtml(l.modalidade||"—")+"</td><td>"+tagConvocacao(l.convocacao)+"</td><td>"+rotulo[l.situacao]+"</td></tr>";
     }).join("");
     document.getElementById("diarioPreviewBox").style.display = "block";
   }
@@ -6261,6 +6323,7 @@
       if(!termo) return true;
       var c = h.candidato||{}, u = h.unidade||{};
       return normaliza(c.nome).indexOf(termo)!==-1 ||
+             normaliza(textoBuscaConvocacao(convocacaoDoRegistro(h))).indexOf(termo)!==-1 ||
              normaliza(u.unidade).indexOf(termo)!==-1 ||
              normaliza(u.mun).indexOf(termo)!==-1 ||
              normaliza(u.nte).indexOf(termo)!==-1 ||
@@ -6272,6 +6335,7 @@
       var c=h.candidato||{}, u=h.unidade||{};
       if(campo==="data") return h.data;
       if(campo==="servidor") return c.nome;
+      if(campo==="convocacao") return convocacaoDoRegistro(h);
       if(campo==="unidade") return u.unidade;
       if(campo==="cod") return u.cod;
       if(campo==="mun") return u.mun;
@@ -6304,6 +6368,7 @@
         '<td><input type="checkbox" class="enc-check" data-idx="'+i+'"></td>'+
         '<td>'+fmtDataBR(h.data)+'</td>'+
         '<td>'+escapeHtml(c.nome||"—")+'</td>'+
+        '<td>'+tagConvocacao(convocacaoDoRegistro(h))+'</td>'+
         '<td>'+escapeHtml(nomeUnidadeAtual(u)||"—")+'</td>'+
         '<td>'+escapeHtml(u.cod||"—")+'</td>'+
         '<td>'+escapeHtml(u.mun||"—")+(u.nte?' · NTE '+escapeHtml(u.nte):'')+'</td>'+
